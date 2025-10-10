@@ -1,3 +1,0 @@
-frames=12
-framespeed=16
-priority=-9

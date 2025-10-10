@@ -383,7 +383,7 @@ do
     end
 
 
-    
+
     function smwMap.startTransition(middleFunction,endFunction,args)
         if smwMap.transitionDrawFunction ~= nil then
             return
@@ -769,7 +769,7 @@ do
 
         return true
     end
-    
+
 
     function onTickEncounterObj(v)
         local data = v.data
@@ -810,7 +810,7 @@ do
 
             data.alreadyWalkedOnPaths = {}
             data.walkedOnPathCount = 0
-            
+
 
             local levelObj = findLevel(v,v.x,v.y)
 
@@ -871,7 +871,7 @@ do
             v.x = newPosition.x
             v.y = newPosition.y
 
-            
+
             v.graphicsOffsetX = 0
             v.graphicsOffsetY = 0
 
@@ -889,7 +889,7 @@ do
                     if not startedWalking then
                         data.state = smwMap.ENCOUNTER_STATE.NORMAL
                         data.timer = 0
-                        
+
                         smwMap.movingEncountersCount = smwMap.movingEncountersCount - 1
                     end
                 else
@@ -981,12 +981,12 @@ function smwMap.onInitAPI()
     registerEvent(smwMap,"onTick","onTickObjects")
 
     registerEvent(smwMap,"onTick","onTickPlayers")
-    
+
     registerEvent(smwMap,"onTick")
     registerEvent(smwMap,"onDraw")
 
     registerEvent(smwMap,"onDraw","updateMusic")
-    
+
     registerEvent(smwMap,"onTick","onTickTransition")
     registerEvent(smwMap,"onDraw","onDrawTransition")
 
@@ -1011,10 +1011,10 @@ function smwMap.onStart()
         if warpTransition.currentTransitionType ~= nil then
             warpTransition.currentTransitionType = nil
             warpTransition.transitionTimer = 0
-        
+
             warpTransition.transitionIsFromLevelStart = false
             warpTransition.currentWarp = nil
-        
+
             Misc.unpause()
         end
 
@@ -1087,10 +1087,10 @@ do
         v.state = PLAYER_STATE.NORMAL
         v.timer = 0
         v.timer2 = 0
-    
+
         v.direction = 0
         v.frame = 0
-    
+
         v.animationTimer = 0
 
 
@@ -1155,7 +1155,7 @@ do
 
         table.insert(smwMap.players,v)
 
-        
+
         return v
     end
 
@@ -1326,7 +1326,7 @@ do
                 table.insert(ret,warpObj)
             end
         end
-        
+
         return ret
     end
 
@@ -1441,7 +1441,7 @@ do
 
                     eventObj.neededSceneryProgress = math.max(eventObj.neededSceneryProgress,scenery.globalSettings.showDelay)
                 end
-                
+
                 if scenery.globalSettings.hidePathName == name and (scenery.opacity == 1 or scenery.globalSettings.showPathName == name) then
                     table.insert(eventObj.hideSceneries,scenery)
 
@@ -1480,7 +1480,7 @@ do
             v.isUnderwater = smwMap.getObjectConfig(levelObj.id).isWater
             v.isClimbing = false
 
-            
+
             levelObj.lockedFade = 0
 
 
@@ -1637,7 +1637,7 @@ do
                     smwMap.currentBackgroundArea = nil
                     smwMap.currentMusicArea = nil
                     smwMap.currentCameraArea = nil
-                    
+
                     hasCollided = true
                 end
 
@@ -1651,7 +1651,7 @@ do
                 if areaObj.backgroundName ~= "" or areaObj.backgroundColor ~= Color.black then
                     smwMap.currentBackgroundArea = areaObj
                 end
-                
+
                 if areaObj.restrictCamera then
                     smwMap.currentCameraArea = areaObj
                 end
@@ -1889,7 +1889,7 @@ do
             v.state = PLAYER_STATE.NORMAL
             v.timer = 0
             v.timer2 = 0
-            
+
             gameData.winType = LEVEL_WIN_TYPE_NONE
         end
 
@@ -1927,7 +1927,7 @@ do
             return
         end
 
-        
+
         if not saveData.beatenLevels[v.levelObj.settings.levelFilename] and isNormalLevel(v.levelObj.id) then -- hasn't already beaten the level
             -- Releasing blocks from switch palace
             local config = smwMap.getObjectConfig(v.levelObj.id)
@@ -1968,7 +1968,7 @@ do
 
         -- Unlock any paths
         unlockLevelPaths(v.levelObj,gameData.winType)
-        
+
 
         -- End the state
         gameData.winType = LEVEL_WIN_TYPE_NONE
@@ -2045,7 +2045,7 @@ do
 
                 setLevel(p,v.levelObj)
             end
-            
+
             SFX.play(26)
 
             return
@@ -2137,7 +2137,7 @@ do
     local cantEnterLookAroundStates = table.map{PLAYER_STATE.SELECTED,PLAYER_STATE.WON,PLAYER_STATE.CUSTOM_WARPING,PLAYER_STATE.SELECT_START}
 
     lookAroundStateFunctions[LOOK_AROUND_STATE.INACTIVE] = (function(v)
-        if v.isMainPlayer and player.keys.altJump == KEYS_PRESSED and #smwMap.activeEvents == 0 and smwMap.movingEncountersCount == 0 and smwMap.transitionDrawFunction == nil and not cantEnterLookAroundStates[v.state] then -- attempt to look around            
+        if v.isMainPlayer and player.keys.altJump == KEYS_PRESSED and #smwMap.activeEvents == 0 and smwMap.movingEncountersCount == 0 and smwMap.transitionDrawFunction == nil and not cantEnterLookAroundStates[v.state] then -- attempt to look around
             -- Is the area big enough?
             local areaObj = smwMap.currentCameraArea
 
@@ -2200,7 +2200,7 @@ do
     end)
 
 
-    
+
     local function updatePlayer(v)
         if v.isMainPlayer then
             updateActiveAreas(v,0)
@@ -2213,7 +2213,7 @@ do
             if v.isMainPlayer and #smwMap.players > 0 then
                 -- Record this player's movement history
                 table.insert(v.movementHistory,1,"")
-    
+
                 for i = ((#smwMap.players-1) * FOLLOWING_DELAY)+1, #v.movementHistory do
                     v.movementHistory[i] = nil
                 end
@@ -2562,7 +2562,7 @@ do
     smwMap.tiles = {}
 
     smwMap.tileConfig = {}
-    
+
     function smwMap.getTileConfig(id)
         if smwMap.tileConfig[id] == nil then
             smwMap.tileConfig[id] = {}
@@ -2619,7 +2619,7 @@ do
         blockConfig:setDefaultProperty("hillpart","")
     end
 
-    
+
     function smwMap.getSceneryConfig(id)
         if smwMap.sceneryConfig[id] == nil then
             smwMap.sceneryConfig[id] = {}
@@ -2760,7 +2760,7 @@ do
 
             vc[1] = x1
             vc[2] = y1
-            
+
             vc[3] = x1
             vc[4] = y2
 
@@ -2788,7 +2788,7 @@ do
 
             tc[1] = x1
             tc[2] = y1
-            
+
             tc[3] = x1
             tc[4] = y2
 
@@ -2848,7 +2848,7 @@ do
 
     function smwMap.drawObject(v)
         local config = smwMap.getObjectConfig(v.id)
-        
+
         local texture = config.texture
 
         if texture == nil or v.toRemove or (v.lockedFade >= 1 and v.hideIfLocked) or (config.hidden and not (Misc.inEditor() and Misc.GetKeyState(VK_T))) then
@@ -2864,7 +2864,7 @@ do
         local x = v.x - width*0.5 + v.graphicsOffsetX + config.gfxoffsetx
         local y = v.y + v.height*0.5 + v.graphicsOffsetY - height + config.gfxoffsety
 
-        
+
         if not isOnCamera(x,y,width,height) then
             v.isOffScreen = true
             return
@@ -2891,7 +2891,7 @@ do
             doBasicGlDrawSetup(waterImage, x + width*0.5 - waterImage.width*0.5 - smwMap.camera.x,y + height - waterHeight - smwMap.camera.y,waterImage.width,waterHeight,0,waterFrame*waterHeight,waterImage.width,waterHeight)
 
             Graphics.glDraw(basicGlDrawArgs)
-            
+
 
             height = height - waterHeight
             sourceHeight = sourceHeight - waterHeight
@@ -3173,7 +3173,7 @@ do
     local PATH_MAX_LENGTH = 2048
     local PATH_STRAIGHTEN_LENIENCY = math.rad(10)
 
-    
+
     local finalPathDrawArgs = {vertexCoords = {},textureCoords = {},shader = lockedShader,uniforms = {}}
     local finalPathDrawOldVertexCount = 0
 
@@ -3184,9 +3184,9 @@ do
 
 
     local partsInPathTypes = {
-        ["normal"]     = 3, -- middle, middle, end        (start is just flipped end)       
+        ["normal"]     = 3, -- middle, middle, end        (start is just flipped end)
         ["unique"]     = 4, -- middle, middle, end, start (for having unique start and ends)
-        ["continuous"] = 2, -- middle, middle             (for having no start and end)     
+        ["continuous"] = 2, -- middle, middle             (for having no start and end)
     }
 
     local pathConfig = {}
@@ -3195,7 +3195,7 @@ do
         if pathConfig[type] == nil then
             -- Load config file
             local configPath = Misc.resolveFile("paths/".. type.. ".txt")
-            
+
             if configPath ~= nil then
                 config = configFileReader.rawParse(configPath,true)
             else
@@ -3237,7 +3237,7 @@ do
         return pathConfig[type]
     end
 
-    
+
     local function getPathLockedFade(pathObj,distance)
         if not smwMap.pathIsUnlocked(pathObj.name) then
             return 1
@@ -3340,7 +3340,7 @@ do
                     return
                 end
 
-                
+
                 drawGroup.texture = config.image
 
                 drawGroup.vertexCoords = {}
@@ -3410,7 +3410,7 @@ do
 
             local sinAngle = math.sin(rotation)
             local cosAngle = math.cos(rotation)
-    
+
             local w1 = cosAngle*width*0.5
             local w2 = sinAngle*width*0.5
             local h1 = sinAngle*height
@@ -3460,7 +3460,7 @@ do
 
             local hasStartAndEnd = (config.textureType ~= "continuous")
             local startAndEndLength = math.min((typeEndDistance - typeStartDistance) * 0.5, config.partHeight)
-            
+
 
             local x1 = 0
             local x2 = 1 / config.frames
@@ -3552,7 +3552,7 @@ do
             return
         end
 
-        
+
         calculatePathVertexStuff(pathObj)
 
 
@@ -3621,7 +3621,7 @@ do
 
             -- Set up some other stuff
             smwMap.pathBuffer:clear(drawGroup.priority)
-            
+
             args.target = smwMap.pathBuffer
 
             args.texture = drawGroup.texture
@@ -3756,7 +3756,7 @@ do
                     if p.mount == MOUNT_BOOT then -- bouncing along in a boot
                         bootBounceData[idx] = bootBounceData[idx] or {speed = 0,offset = 0}
                         local bounceData = bootBounceData[idx]
-                        
+
                         if not Misc.isPaused() then
                             bounceData.speed = bounceData.speed + Defines.player_grav
                             bounceData.offset = bounceData.offset + bounceData.speed
@@ -3867,7 +3867,7 @@ do
             xPosition = xPosition + widestCounterWidth
         end
 
-        
+
 
         if hudSettings.levelTitleEnabled then
             xPosition = xPosition + hudSettings.levelTitleOffsetX
@@ -3959,7 +3959,7 @@ do
     local backgroundShader = Shader()
     backgroundShader:compileFromFile(nil, Misc.resolveFile("smwMap/background.frag"))
 
-    
+
     local backgroundConfig = {}
 
     function smwMap.getBackgroundConfig(name)
@@ -4048,7 +4048,7 @@ do
         }
     end
 
-    
+
     function smwMap.onCameraDraw()
         basicGlDrawArgs.target = smwMap.mainBuffer
 
@@ -4238,7 +4238,7 @@ do
                     smwMap.unlockPath(pathObj.name)
                 end
             end
-            
+
             return true
         end),
         activateSFX = 27,
@@ -4356,7 +4356,7 @@ smwMap.hudSettings = {
 
     playerEnabled = true,
 
-    
+
     counterFont = textplus.loadFont("smwMap/counterFont.ini"),
     counterColor = Color.white,
     counterOffsetX = 64,
@@ -4432,7 +4432,7 @@ smwMap.transitionSettings = {
         drawFunction = smwMap.TRANSITION_MOSAIC,
         progressTime = 28,
         priority = 6,
-        
+
         waitTime = 0,startTime = 0, -- these are important! you probably shouldn't touch them
     },
 

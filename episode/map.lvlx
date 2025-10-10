@@ -8,12 +8,14 @@ BGO
 ID:751;X:-199936;Y:-200576;
 BGO_END
 NPC
-ID:752;X:-199776;Y:-200160;D:-1;XTRA:"{\n    \"name\"\: \"towhatever\"\,\n    \"points\"\: \"0\,32\,0\,-32\"\n}\n";
-ID:801;X:-199776;Y:-200192;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelTitle\"\: \"srgsdg\"\,\n    \"path_down\"\: \"towhatever\"\,\n    \"path_up\"\: \"to2\"\,\n    \"unlock_down\"\: 2\n}\n";
-ID:814;X:-199776;Y:-200128;D:-1;XTRA:"{\n    \"path_up\"\: \"towhatever\"\,\n    \"unlock_up\"\: 1\n}\n";
+ID:752;X:-199776;Y:-200160;D:-1;XTRA:"{\n    \"hideIfLocked\"\: true\,\n    \"name\"\: \"to1\"\,\n    \"points\"\: \"0\,32\,0\,-32\"\n}\n";
+ID:801;X:-199776;Y:-200192;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelTitle\"\: \"srgsdg\"\,\n    \"path_down\"\: \"to1\"\,\n    \"path_up\"\: \"to2\"\,\n    \"unlock_down\"\: 2\n}\n";
+ID:814;X:-199776;Y:-200128;D:-1;XTRA:"{\n    \"path_up\"\: \"to1\"\,\n    \"unlock_up\"\: 1\n}\n";
+ID:752;X:-199776;Y:-200224;D:-1;XTRA:"{\n    \"hideIfLocked\"\: true\,\n    \"name\"\: \"to2\"\,\n    \"points\"\: \"0\,32\,0\,-32\"\n}\n";
+ID:752;X:-199776;Y:-200288;D:-1;XTRA:"{\n    \"hideIfLocked\"\: true\,\n    \"name\"\: \"to3\"\,\n    \"points\"\: \"0\,32\,0\,-32\"\n}\n";
+ID:801;X:-199776;Y:-200320;D:-1;XTRA:"{\n    \"alwaysVisible\"\: false\,\n    \"levelTitle\"\: \"srgsdg\"\,\n    \"path_down\"\: \"to3\"\,\n    \"path_up\"\: \"\"\,\n    \"unlock_down\"\: 2\n}\n";
 ID:751;X:-199776;Y:-200128;D:-1;
-ID:801;X:-199776;Y:-200256;D:-1;XTRA:"{\n    \"alwaysVisible\"\: false\,\n    \"levelTitle\"\: \"srgsdg2\"\,\n    \"path_down\"\: \"to2\"\,\n    \"unlock_down\"\: 0\n}\n";
-ID:752;X:-199776;Y:-200224;D:-1;XTRA:"{\n    \"name\"\: \"to2\"\,\n    \"points\"\: \"0\,32\,0\,-32\"\n}\n";
+ID:812;X:-199776;Y:-200256;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"destroyAfterWin\"\: true\,\n    \"levelTitle\"\: \"asfasf\"\,\n    \"path_down\"\: \"to2\"\,\n    \"path_up\"\: \"to3\"\,\n    \"unlock_down\"\: 2\n}\n";
 NPC_END
 LAYERS
 LR:"Default";

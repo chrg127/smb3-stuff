@@ -1,2 +1,0 @@
-frames=6
-framespeed=8
