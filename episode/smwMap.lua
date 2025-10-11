@@ -286,6 +286,7 @@ local function findLevel(v,x,y)
             return obj
         end
     end
+    return nil
 end
 
 
@@ -1339,11 +1340,18 @@ do
 
         -- Failsafe: does the level actually exist?
         if v.levelObj == nil then
-            return false
+            return
+        end
+
+        if not smwMap.levelExitIsUnlocked(v.levelObj, directionName) then
+            return
         end
 
         -- Does a path exist here?
+        --[[
         local pathName = v.levelObj.settings["path_".. directionName]
+        -- maybe we should try trimming the pathName first. otherwise it's difficult
+        -- to detect spaces in the editor
         if pathName == nil or pathName == "" then
             return
         end
@@ -1354,6 +1362,7 @@ do
         end
 
         -- Is it unlocked?
+        print("checking unlocked")
         if not smwMap.pathIsUnlocked(pathObj.name) then
             return
         end
@@ -1362,35 +1371,26 @@ do
         v.pathObj = pathObj
 
         -- Figure out whether we're walking from the start or end
-        local distanceToStart,distanceToEnd = getDistanceToSplineStartAndEnd(pathObj.splineObj,v.x,v.y)
+        -- local distanceToStart,distanceToEnd = getDistanceToSplineStartAndEnd(pathObj.splineObj,v.x,v.y)
+        -- if distanceToStart < distanceToEnd then
+            -- v.walkingDirection = 1
+            -- v.walkingProgress = 0
+        -- else
+            -- v.walkingDirection = -1
+            -- v.walkingProgress = 1
+        -- end
 
-        if distanceToStart < distanceToEnd then
-            v.walkingDirection = 1
-            v.walkingProgress = 0
-        else
-            v.walkingDirection = -1
-            v.walkingProgress = 1
-        end
+        -- v.walkingDirection = 1
+        -- v.walkingProgress = 1
+        ]]
 
+        v.walkingDirection = ({ down = vector(0, 1), up = vector(0, -1),
+                                left = vector(-1, 0), right = vector(1, 0) })[directionName]
         v.state = PLAYER_STATE.WALKING
         v.timer = 0
         v.timer2 = 0
-
-
         v.movementHistory[1] = directionName
-
-
         return true
-    end
-
-
-    local function tryMove(v,directionName)
-        -- Has the direction just been pressed?
-        if player.keys[directionName] ~= KEYS_PRESSED then
-            return false
-        end
-
-        return smwMap.tryPlayerMove(v,directionName)
     end
 
 
@@ -1398,6 +1398,14 @@ do
         return saveData.unlockedPaths[name] or false
     end
 
+    function smwMap.levelExitIsUnlocked(levelObj, directionName)
+        return saveData.unlockedPaths[levelObj.settings.levelFilename .. "_" .. directionName] or false
+    end
+
+    function smwMap.unlockLevelPath(levelObj, directionName)
+        print("unlocking ", levelObj.settings.levelFilename)
+        saveData.unlockedPaths[levelObj.settings.levelFilename .. "_" .. directionName] = true
+    end
 
     function smwMap.unlockPath(name,fromPoint)
         if name == nil or name == "" or smwMap.pathIsUnlocked(name) then
@@ -1529,38 +1537,12 @@ do
 
 
     local function unlockLevelPaths(levelObj,winType)
-        local noPathsUnlocked = true
-        local forceWalkDirection
-
+        print("unlocking paths")
         for _,directionName in ipairs{"up","right","down","left"} do
             local unlockType = (levelObj.settings["unlock_".. directionName])
-
             if (type(unlockType) == "number" and (unlockType == 2 or unlockType-2 == winType)) or unlockType == true or winType < 0 then
-                local eventObj = smwMap.unlockPath(levelObj.settings["path_".. directionName],levelObj)
-
-                if eventObj ~= nil then
-                    -- The player will only be forced to walk if exactly 1 path was unlocked
-                    if noPathsUnlocked then
-                        forceWalkDirection = directionName
-                        noPathsUnlocked = false
-                    else
-                        forceWalkDirection = nil
-                    end
-                end
+                smwMap.unlockLevelPath(levelObj, directionName)
             end
-        end
-
-
-        -- Create the event for forcing a walk
-        if forceWalkDirection ~= nil then
-            local eventObj = {}
-
-            eventObj.type = EVENT_TYPE.FORCE_WALK
-
-            eventObj.timer = 0
-            eventObj.direction = forceWalkDirection
-
-            table.insert(smwMap.activeEvents,eventObj)
         end
     end
 
@@ -1582,26 +1564,29 @@ do
     local function updateWalkingPosition(v,walkSpeed)
         local walkSpeed = walkSpeed or (v.isClimbing and smwMap.playerSettings.climbSpeed) or smwMap.playerSettings.walkSpeed
 
-        local newProgress,newPosition = v.pathObj.splineObj:step(walkSpeed*v.walkingDirection,v.walkingProgress)
+        local newProgress, newPosition = 0.5, vector(v.x, v.y) + v.walkingDirection * walkSpeed
+        -- local newProgress,newPosition = v.pathObj.splineObj:step(walkSpeed*v.walkingDirection,v.walkingProgress)
+        print("pos = ", newPosition.x, newPosition.y)
 
 
         -- Figure out path type
+        --[[
         local pathType = v.pathObj.types[math.floor(newPosition.z)]
-
         if pathType ~= nil then
             local config = smwMap.getPathConfig(pathType)
-
             v.isUnderwater = config.isWater
             v.isClimbing = (config.isLadder and v.basePlayer.mount ~= MOUNT_CLOWNCAR)
         end
-
+        ]]
 
         -- Find direction to face
+        v.direction = 1
+
+        --[[
         if v.isClimbing then
             v.direction = 1
         elseif v.x ~= newPosition.x or v.y ~= newPosition.y then
             local angle = math.deg(math.atan2(newPosition.y - v.y,newPosition.x - v.x)) % 360
-
             if angle > 45 and angle < 135 then -- down
                 v.direction = 0
             elseif angle > 225 and angle < 315 then -- up
@@ -1612,6 +1597,7 @@ do
                 v.direction = 2
             end
         end
+        ]]
 
         v.x = newPosition.x
         v.y = newPosition.y
@@ -1786,10 +1772,11 @@ do
                 v.timer2 = 0
             else
                 -- moving
-                tryMove(v,"up")
-                tryMove(v,"right")
-                tryMove(v,"down")
-                tryMove(v,"left")
+                for _, dir in ipairs{"up", "down", "left", "right"} do
+                    if player.keys[dir] == KEYS_PRESSED then
+                        smwMap.tryPlayerMove(v, dir)
+                    end
+                end
             end
         elseif not v.isMainPlayer then
             -- If not the main player, mimic the main player's movement, delayed by a certain amount
@@ -1839,30 +1826,25 @@ do
 
         v.warpCooldown = math.max(0, v.warpCooldown - 1)
 
+        -- if the player has finished walking the path (i.e. is resting on a level)
+        local levelObj = findLevel(v,v.x,v.y)
+        if levelObj ~= nil and levelObj.x == v.x and levelObj.y == v.y then
+            v.state = PLAYER_STATE.NORMAL
+            v.timer = 0
+            v.timer2 = 0
 
-        if (v.walkingDirection == 1 and v.walkingProgress >= 1) or (v.walkingDirection == -1 and v.walkingProgress <= 0) then
-            local levelObj = findLevel(v,v.x,v.y)
+            v.warpCooldown = 0
 
-            if levelObj ~= nil then
-                v.state = PLAYER_STATE.NORMAL
-                v.timer = 0
-                v.timer2 = 0
+            setLevel(v,levelObj)
 
-                v.warpCooldown = 0
+            if v.isMainPlayer then
+                local encounterObj = findEncounter(v)
 
-                setLevel(v,levelObj)
-
-                if v.isMainPlayer then
-                    local encounterObj = findEncounter(v)
-
-                    if encounterObj ~= nil then
-                        enterEncounter(v,encounterObj)
-                    else
-                        SFX.play(26)
-                    end
+                if encounterObj ~= nil then
+                    enterEncounter(v,encounterObj)
+                else
+                    SFX.play(26)
                 end
-            else
-                v.walkingDirection = -v.walkingDirection
             end
         end
     end)
@@ -1929,6 +1911,7 @@ do
 
 
         if not saveData.beatenLevels[v.levelObj.settings.levelFilename] and isNormalLevel(v.levelObj.id) then -- hasn't already beaten the level
+
             -- Releasing blocks from switch palace
             local config = smwMap.getObjectConfig(v.levelObj.id)
 
@@ -2200,77 +2183,6 @@ do
     end)
 
 
-
-    local function updatePlayer(v)
-        if v.isMainPlayer then
-            updateActiveAreas(v,0)
-        end
-
-
-        lookAroundStateFunctions[v.lookAroundState](v)
-
-        if smwMap.mainPlayer.lookAroundState == LOOK_AROUND_STATE.INACTIVE then
-            if v.isMainPlayer and #smwMap.players > 0 then
-                -- Record this player's movement history
-                table.insert(v.movementHistory,1,"")
-
-                for i = ((#smwMap.players-1) * FOLLOWING_DELAY)+1, #v.movementHistory do
-                    v.movementHistory[i] = nil
-                end
-            end
-
-            -- Run main state
-            stateFunctions[v.state](v)
-        end
-
-
-        -- Animations
-        if v.state ~= PLAYER_STATE.SELECTED and (v.state ~= PLAYER_STATE.SELECT_START or v.timer > 0) then
-            -- Normal animation
-            v.animationTimer = v.animationTimer + 1
-
-            if v.basePlayer.mount == MOUNT_BOOT then
-                v.mountFrame = math.floor(v.animationTimer / 8) % smwMap.playerSettings.bootFrames
-
-                if v.direction == 0 and (v.state == PLAYER_STATE.NORMAL or v.state == PLAYER_STATE.WON) and v.bounceOffset == 0 then
-                    v.frame = math.floor(v.animationTimer / 8) % 4
-                else
-                    v.frame = 0
-                end
-
-
-                -- Bouncing
-                if v.isClimbing then
-                    v.bounceOffset = 0
-                    v.bounceSpeed = 0
-                else
-                    v.bounceSpeed = v.bounceSpeed + 0.3
-                    v.bounceOffset = math.min(0,v.bounceOffset + v.bounceSpeed)
-
-                    if v.bounceOffset >= 0 and v.state == PLAYER_STATE.WALKING then
-                        v.bounceSpeed = -2.3
-                    end
-                end
-            elseif v.basePlayer.mount == MOUNT_CLOWNCAR then
-                v.mountFrame = math.floor(v.animationTimer / 3) % smwMap.playerSettings.clownCarFrames
-                v.frame = 0
-            elseif v.basePlayer.mount == MOUNT_YOSHI then
-                v.mountFrame = math.floor(v.animationTimer / 8) % smwMap.playerSettings.yoshiFrames
-                v.frame = 6
-            else
-                v.frame = math.floor(v.animationTimer / 8) % 4
-            end
-
-            -- Climbing animation
-            if v.isClimbing and (v.basePlayer.mount == MOUNT_NONE or v.basePlayer.mount == MOUNT_BOOT) then
-                v.frame = (math.floor(v.animationTimer / 8) % 2) + 4
-            end
-        else
-            v.frame = 7
-        end
-    end
-
-
     local function updateNonMainPlayerCounts()
         local realPlayerCount = Player.count()
         local mapPlayerCount = #smwMap.players
@@ -2293,7 +2205,72 @@ do
         updateNonMainPlayerCounts()
 
         for _,v in ipairs(smwMap.players) do
-            updatePlayer(v)
+            if v.isMainPlayer then
+                updateActiveAreas(v,0)
+            end
+
+
+            lookAroundStateFunctions[v.lookAroundState](v)
+
+            if smwMap.mainPlayer.lookAroundState == LOOK_AROUND_STATE.INACTIVE then
+                if v.isMainPlayer and #smwMap.players > 0 then
+                    -- Record this player's movement history
+                    table.insert(v.movementHistory,1,"")
+
+                    for i = ((#smwMap.players-1) * FOLLOWING_DELAY)+1, #v.movementHistory do
+                        v.movementHistory[i] = nil
+                    end
+                end
+
+                -- Run main state
+                stateFunctions[v.state](v)
+            end
+
+
+            -- Animations
+            if v.state ~= PLAYER_STATE.SELECTED and (v.state ~= PLAYER_STATE.SELECT_START or v.timer > 0) then
+                -- Normal animation
+                v.animationTimer = v.animationTimer + 1
+
+                if v.basePlayer.mount == MOUNT_BOOT then
+                    v.mountFrame = math.floor(v.animationTimer / 8) % smwMap.playerSettings.bootFrames
+
+                    if v.direction == 0 and (v.state == PLAYER_STATE.NORMAL or v.state == PLAYER_STATE.WON) and v.bounceOffset == 0 then
+                        v.frame = math.floor(v.animationTimer / 8) % 4
+                    else
+                        v.frame = 0
+                    end
+
+
+                    -- Bouncing
+                    if v.isClimbing then
+                        v.bounceOffset = 0
+                        v.bounceSpeed = 0
+                    else
+                        v.bounceSpeed = v.bounceSpeed + 0.3
+                        v.bounceOffset = math.min(0,v.bounceOffset + v.bounceSpeed)
+
+                        if v.bounceOffset >= 0 and v.state == PLAYER_STATE.WALKING then
+                            v.bounceSpeed = -2.3
+                        end
+                    end
+                elseif v.basePlayer.mount == MOUNT_CLOWNCAR then
+                    v.mountFrame = math.floor(v.animationTimer / 3) % smwMap.playerSettings.clownCarFrames
+                    v.frame = 0
+                elseif v.basePlayer.mount == MOUNT_YOSHI then
+                    v.mountFrame = math.floor(v.animationTimer / 8) % smwMap.playerSettings.yoshiFrames
+                    v.frame = 6
+                else
+                    v.frame = math.floor(v.animationTimer / 8) % 4
+                end
+
+                -- Climbing animation
+                if v.isClimbing and (v.basePlayer.mount == MOUNT_NONE or v.basePlayer.mount == MOUNT_BOOT) then
+                    v.frame = (math.floor(v.animationTimer / 8) % 2) + 4
+                end
+            else
+                v.frame = 7
+            end
         end
     end
 

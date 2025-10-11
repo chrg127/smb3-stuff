@@ -5,17 +5,15 @@ SECTION
 SC:0;L:-200000;R:-199200;T:-200600;B:-200000;MZ:0;MF:"";BG:0;
 SECTION_END
 BGO
-ID:751;X:-199936;Y:-200576;
+ID:751;X:-199920;Y:-200576;
 BGO_END
 NPC
-ID:752;X:-199776;Y:-200160;D:-1;XTRA:"{\n    \"hideIfLocked\"\: true\,\n    \"name\"\: \"to1\"\,\n    \"points\"\: \"0\,32\,0\,-32\"\n}\n";
-ID:801;X:-199776;Y:-200192;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelTitle\"\: \"srgsdg\"\,\n    \"path_down\"\: \"to1\"\,\n    \"path_up\"\: \"to2\"\,\n    \"unlock_down\"\: 2\n}\n";
-ID:814;X:-199776;Y:-200128;D:-1;XTRA:"{\n    \"path_up\"\: \"to1\"\,\n    \"unlock_up\"\: 1\n}\n";
-ID:752;X:-199776;Y:-200224;D:-1;XTRA:"{\n    \"hideIfLocked\"\: true\,\n    \"name\"\: \"to2\"\,\n    \"points\"\: \"0\,32\,0\,-32\"\n}\n";
-ID:752;X:-199776;Y:-200288;D:-1;XTRA:"{\n    \"hideIfLocked\"\: true\,\n    \"name\"\: \"to3\"\,\n    \"points\"\: \"0\,32\,0\,-32\"\n}\n";
-ID:801;X:-199776;Y:-200320;D:-1;XTRA:"{\n    \"alwaysVisible\"\: false\,\n    \"levelTitle\"\: \"srgsdg\"\,\n    \"path_down\"\: \"to3\"\,\n    \"path_up\"\: \"\"\,\n    \"unlock_down\"\: 2\n}\n";
-ID:751;X:-199776;Y:-200128;D:-1;
-ID:812;X:-199776;Y:-200256;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"destroyAfterWin\"\: true\,\n    \"levelTitle\"\: \"asfasf\"\,\n    \"path_down\"\: \"to2\"\,\n    \"path_up\"\: \"to3\"\,\n    \"unlock_down\"\: 2\n}\n";
+ID:801;X:-199776;Y:-200208;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelFilename\"\: \"asdasf\"\,\n    \"levelTitle\"\: \"srgsdg\"\,\n    \"path_down\"\: \"to1\"\,\n    \"path_up\"\: \"to2\"\,\n    \"unlock_down\"\: 2\,\n    \"unlock_up\"\: 2\n}\n";
+ID:801;X:-199712;Y:-200208;D:-1;XTRA:"{\n    \"alwaysVisible\"\: false\,\n    \"levelFilename\"\: \"asd\"\,\n    \"levelTitle\"\: \"srgsdg\"\,\n    \"path_down\"\: \"to3\"\,\n    \"path_up\"\: \"\"\,\n    \"unlock_down\"\: 2\n}\n";
+ID:753;X:-200000;Y:-200416;D:-1;XTRA:"{\n    \"music\"\: 3\n}\n";
+ID:813;X:-199712;Y:-200328;D:-1;XTRA:"{\n    \"destroyAfterWin\"\: true\,\n    \"path_down\"\: \"to2\"\,\n    \"path_up\"\: \"to3\"\n}\n";
+ID:811;X:-199776;Y:-200144;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelFilename\"\: \"asddf\"\,\n    \"levelTitle\"\: \"start\"\,\n    \"path_up\"\: \"to1\"\,\n    \"unlock_up\"\: 1\n}\n";
+ID:751;X:-199776;Y:-200136;D:-1;
 NPC_END
 LAYERS
 LR:"Default";
