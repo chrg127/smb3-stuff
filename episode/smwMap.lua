@@ -1399,7 +1399,7 @@ do
     end
 
     function smwMap.levelExitIsUnlocked(levelObj, directionName)
-        return saveData.unlockedPaths[levelObj.settings.levelFilename .. "_" .. directionName] or false
+        return true -- saveData.unlockedPaths[levelObj.settings.levelFilename .. "_" .. directionName] or false
     end
 
     function smwMap.unlockLevelPath(levelObj, directionName)
@@ -1563,48 +1563,12 @@ do
 
     local function updateWalkingPosition(v,walkSpeed)
         local walkSpeed = walkSpeed or (v.isClimbing and smwMap.playerSettings.climbSpeed) or smwMap.playerSettings.walkSpeed
-
         local newProgress, newPosition = 0.5, vector(v.x, v.y) + v.walkingDirection * walkSpeed
-        -- local newProgress,newPosition = v.pathObj.splineObj:step(walkSpeed*v.walkingDirection,v.walkingProgress)
-        print("pos = ", newPosition.x, newPosition.y)
-
-
-        -- Figure out path type
-        --[[
-        local pathType = v.pathObj.types[math.floor(newPosition.z)]
-        if pathType ~= nil then
-            local config = smwMap.getPathConfig(pathType)
-            v.isUnderwater = config.isWater
-            v.isClimbing = (config.isLadder and v.basePlayer.mount ~= MOUNT_CLOWNCAR)
-        end
-        ]]
-
-        -- Find direction to face
-        v.direction = 1
-
-        --[[
-        if v.isClimbing then
-            v.direction = 1
-        elseif v.x ~= newPosition.x or v.y ~= newPosition.y then
-            local angle = math.deg(math.atan2(newPosition.y - v.y,newPosition.x - v.x)) % 360
-            if angle > 45 and angle < 135 then -- down
-                v.direction = 0
-            elseif angle > 225 and angle < 315 then -- up
-                v.direction = 1
-            elseif angle < 90 or angle > 270 then -- right
-                v.direction = 3
-            elseif angle > 90 then -- left
-                v.direction = 2
-            end
-        end
-        ]]
-
+        v.direction = 0
         v.x = newPosition.x
         v.y = newPosition.y
-
         v.walkingProgress = newProgress
     end
-
 
 
     local function updateActiveAreas(v,padding)
@@ -2236,11 +2200,10 @@ do
                     v.mountFrame = math.floor(v.animationTimer / 8) % smwMap.playerSettings.bootFrames
 
                     if v.direction == 0 and (v.state == PLAYER_STATE.NORMAL or v.state == PLAYER_STATE.WON) and v.bounceOffset == 0 then
-                        v.frame = math.floor(v.animationTimer / 8) % 4
+                        v.frame = math.floor(v.animationTimer / 8) % 2
                     else
                         v.frame = 0
                     end
-
 
                     -- Bouncing
                     if v.isClimbing then
@@ -2259,17 +2222,12 @@ do
                     v.frame = 0
                 elseif v.basePlayer.mount == MOUNT_YOSHI then
                     v.mountFrame = math.floor(v.animationTimer / 8) % smwMap.playerSettings.yoshiFrames
-                    v.frame = 6
+                    v.frame = 0
                 else
-                    v.frame = math.floor(v.animationTimer / 8) % 4
-                end
-
-                -- Climbing animation
-                if v.isClimbing and (v.basePlayer.mount == MOUNT_NONE or v.basePlayer.mount == MOUNT_BOOT) then
-                    v.frame = (math.floor(v.animationTimer / 8) % 2) + 4
+                    v.frame = math.floor(v.animationTimer / 8) % 2
                 end
             else
-                v.frame = 7
+                v.frame = 0
             end
         end
     end
@@ -2528,7 +2486,6 @@ do
 
     function smwMap.doBasicAnimation(v,frames,framespeed)
         v.data.animationTimer = (v.data.animationTimer or 0) + 1
-
         return math.floor(v.data.animationTimer / framespeed) % frames
     end
 end
@@ -3008,18 +2965,14 @@ do
         local shadowY = y
         local shadowOpacity = 0
 
-
         local priority = getSceneOrPlayerPriority(v.x,v.y + smwMap.playerSettings.gfxYOffset + height*0.5)
-
 
         local mountImage = getMountImage(v.basePlayer.mount,v.basePlayer.mountColor)
 
         local offsetFromMount = (smwMap.playerSettings.mountOffsets[v.basePlayer.mount] or 0)
 
-
         basicGlDrawArgs.target = v.buffer
         v.buffer:clear(0)
-
 
         if v.basePlayer.mount == MOUNT_BOOT then
             mainYOffset = mainYOffset + v.bounceOffset
@@ -3032,7 +2985,13 @@ do
             local mountWidth  = mountImage.width  / smwMap.playerSettings.framesX
             local mountHeight = mountImage.height / smwMap.playerSettings.bootFrames
 
-            doBasicGlDrawSetup(mountImage,v.buffer.width*0.5 + mainXOffset - mountWidth*0.5,v.buffer.height*0.5 + mainYOffset + height*0.5 - mountHeight,mountWidth,mountHeight,v.direction*mountWidth,v.mountFrame*mountHeight,mountWidth,mountHeight)
+            doBasicGlDrawSetup(mountImage,
+                v.buffer.width*0.5 + mainXOffset - mountWidth*0.5,
+                v.buffer.height*0.5 + mainYOffset + height*0.5 - mountHeight,
+                mountWidth, mountHeight,
+                v.direction*mountWidth, v.mountFrame*mountHeight,
+                mountWidth, mountHeight
+            )
 
             basicGlDrawArgs.priority = -98.5
 
@@ -3082,7 +3041,12 @@ do
             local mountWidth  = mountImage.width  / smwMap.playerSettings.framesX
             local mountHeight = mountImage.height / smwMap.playerSettings.yoshiFrames
 
-            doBasicGlDrawSetup(mountImage,v.buffer.width*0.5 - mountWidth*0.5,v.buffer.height*0.5 + smwMap.playerSettings.gfxYOffset + height*0.5 - mountHeight,mountWidth,mountHeight,v.direction*mountWidth,v.mountFrame*mountHeight,mountWidth,mountHeight)
+            doBasicGlDrawSetup(mountImage,
+                v.buffer.width*0.5 - mountWidth*0.5, v.buffer.height*0.5 + smwMap.playerSettings.gfxYOffset + height*0.5 - mountHeight,
+                mountWidth, mountHeight,
+                v.direction*mountWidth, v.mountFrame*mountHeight,
+                mountWidth, mountHeight
+            )
 
             Graphics.glDraw(basicGlDrawArgs)
         end
@@ -3108,7 +3072,12 @@ do
 
 
         -- Draw main player to the buffer
-        doBasicGlDrawSetup(texture,v.buffer.width*0.5 + mainXOffset - width*0.5,v.buffer.height*0.5 + mainYOffset - height*0.5,width,height,v.direction*width,v.frame*height,width,height)
+        doBasicGlDrawSetup(texture,
+            v.buffer.width*0.5 + mainXOffset - width*0.5, v.buffer.height*0.5 + mainYOffset - height*0.5,
+            width, height,
+            v.direction*width, v.frame*height,
+            width, height
+        )
 
         basicGlDrawArgs.priority = -99
 
@@ -4260,22 +4229,22 @@ smwMap.playerSettings = {
     canEnterDestroyedBonusLevels = false,
 
 
-    walkSpeed = 2,
-    climbSpeed = 0.75,
+    walkSpeed = 4,
+    climbSpeed = 0.75, -- should be unused
 
 
     lookAroundArrowImage = Graphics.loadImageResolved("smwMap/lookAroundArrow.png"),
     lookAroundMoveSpeed = 4,
 
 
-    framesX = 4,
-    framesY = 8,
+    framesX = 1,
+    framesY = 2,
 
     bootFrames = 2,
     clownCarFrames = 2,
     yoshiFrames = 2,
 
-    gfxYOffset = -8,
+    gfxYOffset = 0,
     mountOffsets = {
         [MOUNT_BOOT]     = -12,
         [MOUNT_CLOWNCAR] = -32,
