@@ -8,12 +8,12 @@ BGO
 ID:751;X:-199920;Y:-200592;
 BGO_END
 NPC
-ID:801;X:-199776;Y:-200224;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelFilename\"\: \"asdasf\"\,\n    \"levelTitle\"\: \"srgsdg\"\,\n    \"path_down\"\: \"\"\,\n    \"path_up\"\: \"\"\,\n    \"unlock_down\"\: 1\,\n    \"unlock_left\"\: 0\,\n    \"unlock_up\"\: 0\n}\n";
+ID:801;X:-199776;Y:-200224;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelFilename\"\: \"start.lvlx\"\,\n    \"levelTitle\"\: \"srgsdg\"\,\n    \"path_down\"\: \"\"\,\n    \"path_up\"\: \"\"\,\n    \"unlock_down\"\: 1\,\n    \"unlock_left\"\: 0\,\n    \"unlock_up\"\: 0\n}\n";
 ID:753;X:-200000;Y:-200416;D:-1;XTRA:"{\n    \"music\"\: 3\n}\n";
 ID:811;X:-199744;Y:-200224;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_left\"\: 1\,\n    \"unlock_up\"\: 1\n}\n";
 ID:811;X:-199744;Y:-200288;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 1\,\n    \"unlock_up\"\: 1\n}\n";
-ID:802;X:-199744;Y:-200352;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\n}\n";
-ID:814;X:-199776;Y:-200160;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelFilename\"\: \"start.lvlx\"\,\n    \"unlock_down\"\: 0\,\n    \"unlock_left\"\: 0\,\n    \"unlock_right\"\: 0\,\n    \"unlock_up\"\: 1\n}\n";
+ID:802;X:-199744;Y:-200352;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelFilename\"\: \"fwefwef\"\,\n    \"levelTitle\"\: \"wefwef\"\,\n    \"unlock_down\"\: 1\,\n    \"unlock_left\"\: 0\,\n    \"unlock_right\"\: 0\,\n    \"unlock_up\"\: 0\n}\n";
+ID:814;X:-199776;Y:-200160;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelFilename\"\: \"\"\,\n    \"unlock_down\"\: 0\,\n    \"unlock_left\"\: 0\,\n    \"unlock_right\"\: 0\,\n    \"unlock_up\"\: 1\n}\n";
 ID:751;X:-199776;Y:-200160;D:-1;
 NPC_END
 LAYERS

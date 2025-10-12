@@ -232,6 +232,7 @@ local function levelConnectsToPath(pathName,levelObj,directionName)
     return (levelObj.settings["path_".. directionName] == pathName)
 end
 
+--[[
 local function unlockConnectedLevels(pathObj)
     for _,levelObj in ipairs(smwMap.objects) do
         if smwMap.getObjectConfig(levelObj.id).isLevel and levelObj.lockedFade > 0 and (
@@ -251,11 +252,10 @@ local function unlockConnectedLevels(pathObj)
         end
     end
 end
-
+]]
 
 local function isNormalLevel(id)
     local config = smwMap.getObjectConfig(id)
-
     return (config.isLevel and not config.isWarp)
 end
 
@@ -479,7 +479,8 @@ end
 -- Events system
 -- Handles stuff like paths opening, castle destruction, etc.
 local EVENT_TYPE = {
-    UNLOCK_PATH        = 0,
+    -- UNLOCK_PATH        = 0,
+    BEAT_LEVEL         = 0,
     LEVEL_DESTROYED    = 1,
     SWITCH_PALACE      = 2,
     FORCE_WALK         = 3,
@@ -492,8 +493,11 @@ local unlockLoopObj
 do
     local updateFunctions = {}
 
+    -- when a normal level is beaten, substitute its icon with an icon corresponding to the player.
+    updateFunctions[EVENT_TYPE.BEAT_LEVEL] = function (eventObj)
+    end
 
-    -- Unlocking a path
+    --[[
     updateFunctions[EVENT_TYPE.UNLOCK_PATH] = (function(eventObj)
         if eventObj.sceneryProgress < eventObj.neededSceneryProgress then -- We have sceneries to reveal!
             eventObj.sceneryTimer = eventObj.sceneryTimer + 1
@@ -546,7 +550,7 @@ do
             unlockLoopObj:resume()
         end
     end)
-
+    ]]
 
     -- Force player move
     updateFunctions[EVENT_TYPE.FORCE_WALK] = (function(eventObj)
@@ -1399,14 +1403,55 @@ do
     end
 
     function smwMap.levelExitIsUnlocked(levelObj, directionName)
-        return true -- saveData.unlockedPaths[levelObj.settings.levelFilename .. "_" .. directionName] or false
+        return levelObj.settings["unlock_" .. directionName] == 1
+            or (saveData.beatenLevels[levelObj.settings.levelFilename] ~= nil and saveData.beatenLevels[levelObj.settings.levelFilename][directionName] ~= nil)
     end
 
     function smwMap.unlockLevelPath(levelObj, directionName)
-        print("unlocking ", levelObj.settings.levelFilename)
-        saveData.unlockedPaths[levelObj.settings.levelFilename .. "_" .. directionName] = true
+        saveData.beatenLevels[levelObj.settings.levelFilename] = saveData.beatenLevels[levelObj.settings.levelFilename] or {}
+        saveData.beatenLevels[levelObj.settings.levelFilename][directionName] = true
+        -- create an unlock event
+        local eventObj = {
+            --[[
+            type = EVENT_TYPE.UNLOCK_PATH,
+
+            pathObj = pathObj,
+
+            pathProgress = 0,
+            pathTimer = 0,
+            direction = (distanceToStart < distanceToEnd and 1) or -1,
+
+
+            -- Initialise showing/hiding sceneries
+            neededSceneryProgress = 0,
+            sceneryProgress = 0,
+            sceneryTimer = 0,
+
+            showSceneries = {},
+            hideSceneries = {},
+            ]]
+        }
+
+        --[[
+        for _,scenery in ipairs(smwMap.sceneries) do
+            if scenery.globalSettings.showPathName == name and (scenery.opacity == 0 or scenery.globalSettings.hidePathName == name) then
+                table.insert(eventObj.showSceneries,scenery)
+
+                eventObj.neededSceneryProgress = math.max(eventObj.neededSceneryProgress,scenery.globalSettings.showDelay)
+            end
+
+            if scenery.globalSettings.hidePathName == name and (scenery.opacity == 1 or scenery.globalSettings.showPathName == name) then
+                table.insert(eventObj.hideSceneries,scenery)
+
+                eventObj.neededSceneryProgress = math.max(eventObj.neededSceneryProgress,scenery.globalSettings.hideDelay)
+            end
+        end
+        ]]
+
+        -- table.insert(smwMap.activeEvents,eventObj)
     end
 
+    --[[
     function smwMap.unlockPath(name,fromPoint)
         if name == nil or name == "" or smwMap.pathIsUnlocked(name) then
             return
@@ -1476,7 +1521,7 @@ do
             unlockConnectedLevels(pathObj)
         end
     end
-
+    ]]
 
     local function setLevel(v,levelObj)
         v.levelObj = levelObj
@@ -1873,12 +1918,10 @@ do
             return
         end
 
-
-        if not saveData.beatenLevels[v.levelObj.settings.levelFilename] and isNormalLevel(v.levelObj.id) then -- hasn't already beaten the level
-
+        -- if the player hasn't already beaten the level
+        if not saveData.beatenLevels[v.levelObj.settings.levelFilename] and isNormalLevel(v.levelObj.id) then
             -- Releasing blocks from switch palace
             local config = smwMap.getObjectConfig(v.levelObj.id)
-
             if config.switchColorID ~= nil and smwMap.switchBlockEffectID ~= nil then
                 -- Create the event for blocks flying
                 local eventObj = {}
@@ -1908,14 +1951,12 @@ do
                 end
             end
 
-
-            saveData.beatenLevels[v.levelObj.settings.levelFilename] = true
+            SFX.play(smwMap.pathSettings.itemPanel)
+            -- saveData.beatenLevels[v.levelObj.settings.levelFilename] = true
         end
-
 
         -- Unlock any paths
         unlockLevelPaths(v.levelObj,gameData.winType)
-
 
         -- End the state
         gameData.winType = LEVEL_WIN_TYPE_NONE
@@ -2265,7 +2306,7 @@ do
     smwMap.objectConfig = {}
 
 
-    smwMap.pathsList = {}
+    -- smwMap.pathsList = {}
     smwMap.pathsMap = {}
 
     smwMap.instantWarpsList = {}
@@ -3470,7 +3511,7 @@ do
         return math.floor(a * scale) / scale
     end
 
-
+    --[[
     function smwMap.drawPath(pathObj)
         if pathObj.pointCount == 0 or (pathObj.hideIfLocked and not smwMap.pathIsUnlocked(pathObj.name)) then
             return
@@ -3592,8 +3633,7 @@ do
 
         basicGlDrawArgs.target = smwMap.mainBuffer
     end
-
-
+    ]]
 
     smwMap.walkCycles = {}
 
@@ -4021,11 +4061,11 @@ do
             smwMap.drawScenery(v)
         end
 
-
+        --[[
         for _,pathObj in ipairs(smwMap.pathsList) do
             smwMap.drawPath(pathObj)
         end
-
+        ]]
 
         for _,v in ipairs(smwMap.objects) do
             smwMap.drawObject(v)
@@ -4175,8 +4215,9 @@ end
 
 -- Cheats!
 do
-    Cheats.register("imtiredofallthiswalking",{
-        onActivate = (function()
+    Cheats.register("imtiredofallthiswalking", {
+        onActivate = function()
+            --[[
             for _,pathObj in ipairs(smwMap.pathsList) do
                 if smwMap.isOnCamera(pathObj.minX,pathObj.minY,pathObj.maxX - pathObj.minX,pathObj.maxY - pathObj.minY) then
                     smwMap.unlockPath(pathObj.name,vector(smwMap.mainPlayer.x,smwMap.mainPlayer.y))
@@ -4186,20 +4227,19 @@ do
             end
 
             return true
-        end),
+            ]]
+        end,
         activateSFX = 27,
     })
 
-    Cheats.register("illparkwhereiwant",{
+    Cheats.register("illparkwhereiwant", {
         onActivate = (function()
             if smwMap.mainPlayer.state == PLAYER_STATE.NORMAL then
                 smwMap.mainPlayer.state = PLAYER_STATE.PARKING_WHERE_I_WANT
                 smwMap.mainPlayer.timer = 0
                 smwMap.mainPlayer.timer2 = 0
-
                 SFX.play(13)
             end
-
             return true
         end),
         aliases = {"speenmerightround"},
@@ -4261,6 +4301,7 @@ smwMap.pathSettings = {
 
     unlockLoopSound = SFX.open(Misc.resolveSoundFile("smwMap/unlock_loop")),
     unlockFinishSound = SFX.open(Misc.resolveSoundFile("smwMap/unlock_finish")),
+    itemPanel = SFX.open(Misc.resolveSoundFile("smwMap/item-panel")),
 
 
     renderScale = 0.5,

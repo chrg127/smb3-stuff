@@ -3,13 +3,17 @@ local smwMap = require("smwMap")
 local npcID = NPC_ID
 
 smwMap.setObjSettings(npcID,{
-    framesY = 4,
+    framesY = 5,
     isLevel = true,
+    hasBeatenAnimation = true,
 
     onTickObj = function(v)
-        v.frameY = smwMap.doBasicAnimation(v, smwMap.getObjectConfig(v.id).framesY, 16)
+        if SaveData.smwMap.beatenLevels[v.settings.levelFilename] then
+            v.frameY = 4
+        else
+            v.frameY = smwMap.doBasicAnimation(v, 4, 16)
+        end
     end,
 })
-
 
 return {}
