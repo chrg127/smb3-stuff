@@ -689,7 +689,7 @@ do
         data.levelObj = levelObj
     end
 
-
+--[[
     local function isValidPath(pathObj,canWalkOn)
         if canWalkOn == CAN_WALK_ON.ANY then
             return true
@@ -705,7 +705,7 @@ do
 
         return false
     end
-
+    ]]
 
     local function choosePath(v,data,canRandomlyStop)
         if data.levelObj == nil then
@@ -1112,7 +1112,6 @@ do
             v.y = 0
 
             v.levelObj = nil
-            v.pathObj = nil
 
             v.walkingProgress = 0
             v.walkingDirection = 0
@@ -1121,12 +1120,12 @@ do
 
             v.isUnderwater = false
             v.isClimbing = false
+
         else
             v.x = smwMap.mainPlayer.x
             v.y = smwMap.mainPlayer.y
 
             v.levelObj = smwMap.mainPlayer.levelObj
-            v.pathObj = smwMap.mainPlayer.pathObj
 
             v.walkingProgress = smwMap.mainPlayer.walkingProgress
             v.walkingDirection = smwMap.mainPlayer.walkingDirection
@@ -1139,6 +1138,8 @@ do
 
 
         v.movementHistory = {}
+        -- different from the field above
+        v.lastMovement = ""
 
 
         v.followingDelay = FOLLOWING_DELAY * #smwMap.players
@@ -1164,6 +1165,8 @@ do
         return v
     end
 
+    smwMap.mainPlayer = smwMap.createPlayer()
+    smwMap.mainPlayer.isMainPlayer = true
 
 
     smwMap.startPointSelectOptions = {}
@@ -1299,13 +1302,6 @@ do
     end
 
 
-
-
-
-    smwMap.mainPlayer = smwMap.createPlayer()
-    smwMap.mainPlayer.isMainPlayer = true
-
-
     local function findEncounter(v)
         for _,obj in ipairs(smwMap.getIntersectingObjects(v.x - v.width*0.5,v.y - v.height*0.5,v.x + v.width*0.5,v.y + v.height*0.5)) do
             if smwMap.getObjectConfig(obj.id).isEncounter then
@@ -1393,18 +1389,36 @@ do
         v.state = PLAYER_STATE.WALKING
         v.timer = 0
         v.timer2 = 0
+        v.lastMovement = directionName
         v.movementHistory[1] = directionName
         return true
     end
 
-
+--[[
     function smwMap.pathIsUnlocked(name)
         return saveData.unlockedPaths[name] or false
     end
+    ]]
+
+    local function reverseDir(dir)
+        return ({
+            down = "up", up = "down",
+            left = "right", right = "left"
+        })[dir]
+    end
 
     function smwMap.levelExitIsUnlocked(levelObj, directionName)
-        return levelObj.settings["unlock_" .. directionName] == 1
-            or (saveData.beatenLevels[levelObj.settings.levelFilename] ~= nil and saveData.beatenLevels[levelObj.settings.levelFilename][directionName] ~= nil)
+        -- come-back rule: if the player came to a level from a direction,
+        -- then he can ALWAYS come back with the opposite direction
+        if saveData.lastMovement == reverseDir(directionName) then
+            return true
+        end
+        local dirtype = levelObj.settings["unlock_" .. directionName]
+        if dirtype == 0 then
+            return false
+        end
+        return dirtype == 1
+            or (saveData.beatenLevels[levelObj.settings.levelFilename] or {})[directionName] ~= nil
     end
 
     function smwMap.unlockLevelPath(levelObj, directionName)
@@ -1837,11 +1851,20 @@ do
 
         -- if the player has finished walking the path (i.e. is resting on a level)
         local levelObj = findLevel(v,v.x,v.y)
-        if levelObj ~= nil and levelObj.x == v.x and levelObj.y == v.y then
+
+        local function isWithin(movement, x, y, lx, ly)
+            return movement == "down"  and (y >= ly and x == lx)
+                or movement == "up"    and (y <= ly and x == lx)
+                or movement == "right" and (x >= lx and y == ly)
+                or movement == "left"  and (x <= lx and y == ly)
+        end
+
+        if levelObj ~= nil and v.levelObj ~= levelObj and isWithin(v.lastMovement, v.x, v.y, levelObj.x, levelObj.y) then
+            v.x = levelObj.x
+            v.y = levelObj.y
             v.state = PLAYER_STATE.NORMAL
             v.timer = 0
             v.timer2 = 0
-
             v.warpCooldown = 0
 
             setLevel(v,levelObj)
@@ -1854,6 +1877,12 @@ do
                 else
                     SFX.play(26)
                 end
+            end
+
+            -- save the last movement here so that the player doesn't remain stuck on a level
+            -- if he quits there
+            if v.isMainPlayer then
+                saveData.lastMovement = v.lastMovement
             end
         end
     end)
@@ -2221,6 +2250,7 @@ do
                 if v.isMainPlayer and #smwMap.players > 0 then
                     -- Record this player's movement history
                     table.insert(v.movementHistory,1,"")
+                    print(v.movementHistory)
 
                     for i = ((#smwMap.players-1) * FOLLOWING_DELAY)+1, #v.movementHistory do
                         v.movementHistory[i] = nil
@@ -4269,7 +4299,7 @@ smwMap.playerSettings = {
     canEnterDestroyedBonusLevels = false,
 
 
-    walkSpeed = 4,
+    walkSpeed = 3,
     climbSpeed = 0.75, -- should be unused
 
 
