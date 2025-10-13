@@ -34,7 +34,26 @@
 			"name": "music",
 			"title": "Music",
 			"tooltip": "The music played whilst in this section.",
-			"elements": ["Don't change","None","Custom","SMW Yoshi's Island","SMW Donut Plains","SMW Vanilla Dome","SMW Forest of Illusion","SMW Valley of Bowser","SMW Star Road","SMW Special World","SMB3 Grass Land","SMB3 Desert Land","SMB3 Water Land","SMB3 Giant Land","SMB3 Sky Land","SMB3 Ice Land","SMB3 Pipe Land","SMB3 Dark Land"],
+			"elements": [
+                "Don't change",
+                "None",
+                "Custom",
+                "SMW Yoshi's Island",
+                "SMW Donut Plains",
+                "SMW Vanilla Dome",
+                "SMW Forest of Illusion",
+                "SMW Valley of Bowser",
+                "SMW Star Road",
+                "SMW Special World",
+                "SMB3 Grass Land",
+                "SMB3 Desert Land",
+                "SMB3 Water Land",
+                "SMB3 Giant Land",
+                "SMB3 Sky Land",
+                "SMB3 Ice Land",
+                "SMB3 Pipe Land",
+                "SMB3 Dark Land"
+            ],
 			"value-default": 0
 		},
 		{
