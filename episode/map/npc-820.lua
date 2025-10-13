@@ -1,16 +1,21 @@
 local smwMap = require("smwMap")
 
 local npcID = NPC_ID
+local baseLevelFrames = 1
 
 smwMap.setObjSettings(npcID, {
-    framesY = 1,
+    framesY = 9,
     isLevel = true,
-    hasDestroyedAnimation = true,
-    isBonusLevel = true,
+    hasBeatenAnimation = true,
 
-    onTickObj = function (v)
-        local totalFrames = smwMap.getObjectConfig(v.id).framesY
-        v.frameY = smwMap.doBasicAnimation(v, totalFrames - 1, 8)
+    onTickObj = function(v)
+        if SaveData.smwMap.beatenLevels[v.settings.levelFilename] then
+            v.frameY = baseLevelFrames
+                     + (smwMap.isLevelCompletelyBeaten(v) and 0 or smwMap.playerSettings.numSupported)
+                     + SaveData.smwMap.beatenLevels[v.settings.levelFilename].character - 1
+        else
+            v.frameY = smwMap.doBasicAnimation(v, baseLevelFrames, 16)
+        end
     end,
 })
 

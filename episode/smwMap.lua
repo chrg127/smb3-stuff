@@ -1362,7 +1362,6 @@ do
         end
 
         -- Is it unlocked?
-        print("checking unlocked")
         if not smwMap.pathIsUnlocked(pathObj.name) then
             return
         end
@@ -1421,9 +1420,20 @@ do
             or (saveData.beatenLevels[levelObj.settings.levelFilename] or {})[directionName] ~= nil
     end
 
+    function smwMap.isLevelCompletelyBeaten(level)
+        local data = saveData.beatenLevels[level.settings.levelFilename]
+        for _, dir in ipairs({"up", "down", "left", "right"}) do
+            if level.settings["unlock_" .. dir] >= 2 and not data[dir] then
+                return false
+            end
+        end
+        return true
+    end
+
     function smwMap.unlockLevelPath(levelObj, directionName)
         saveData.beatenLevels[levelObj.settings.levelFilename] = saveData.beatenLevels[levelObj.settings.levelFilename] or {}
         saveData.beatenLevels[levelObj.settings.levelFilename][directionName] = true
+        saveData.beatenLevels[levelObj.settings.levelFilename].character = smwMap.mainPlayer.basePlayer.character
         -- create an unlock event
         local eventObj = {
             --[[
@@ -1596,7 +1606,6 @@ do
 
 
     local function unlockLevelPaths(levelObj,winType)
-        print("unlocking paths")
         for _,directionName in ipairs{"up","right","down","left"} do
             local unlockType = (levelObj.settings["unlock_".. directionName])
             if (type(unlockType) == "number" and (unlockType == 2 or unlockType-2 == winType)) or unlockType == true or winType < 0 then
@@ -1980,8 +1989,9 @@ do
                 end
             end
 
-            SFX.play(smwMap.pathSettings.itemPanel)
-            -- saveData.beatenLevels[v.levelObj.settings.levelFilename] = true
+            if not v.levelObj.settings.destroyAfterWin then
+                SFX.play(smwMap.pathSettings.itemPanel)
+            end
         end
 
         -- Unlock any paths
@@ -2250,7 +2260,6 @@ do
                 if v.isMainPlayer and #smwMap.players > 0 then
                     -- Record this player's movement history
                     table.insert(v.movementHistory,1,"")
-                    print(v.movementHistory)
 
                     for i = ((#smwMap.players-1) * FOLLOWING_DELAY)+1, #v.movementHistory do
                         v.movementHistory[i] = nil
@@ -4320,6 +4329,8 @@ smwMap.playerSettings = {
         [MOUNT_CLOWNCAR] = -32,
         [MOUNT_YOSHI]    = -8,
     },
+
+    numSupported = 4, -- mario, luigi, peach and toad
 }
 
 
