@@ -495,6 +495,16 @@ do
 
     -- when a normal level is beaten, substitute its icon with an icon corresponding to the player.
     updateFunctions[EVENT_TYPE.BEAT_LEVEL] = function (eventObj)
+        eventObj.timer = eventObj.timer + 1
+        if eventObj.timer == 1 then
+            SFX.play(smwMap.pathSettings.itemPanel)
+            local beatAnim = smwMap.createObject(797, eventObj.levelObj.x, eventObj.levelObj.y)
+            beatAnim.priority = -10
+        elseif eventObj.timer == 3 * 8 then
+            smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
+        elseif eventObj.timer >= 4 * 8 then
+            table.remove(smwMap.activeEvents, 1)
+        end
     end
 
     --[[
@@ -1605,8 +1615,8 @@ do
     end
 
 
-    local function unlockLevelPaths(levelObj,winType)
-        for _,directionName in ipairs{"up","right","down","left"} do
+    function smwMap.unlockLevelPaths(levelObj,winType)
+        for _, directionName in ipairs{"up", "right", "down", "left"} do
             local unlockType = (levelObj.settings["unlock_".. directionName])
             if (type(unlockType) == "number" and (unlockType == 2 or unlockType-2 == winType)) or unlockType == true or winType < 0 then
                 smwMap.unlockLevelPath(levelObj, directionName)
@@ -1700,7 +1710,7 @@ do
 
                 updateActiveAreas(v,64)
 
-                unlockLevelPaths(destinationLevel,-1)
+                smwMap.unlockLevelPaths(destinationLevel,-1)
             end)
 
             smwMap.startTransition(middleFunction,nil, smwMap.transitionSettings.warpToWarpSettings)
@@ -1962,40 +1972,44 @@ do
             local config = smwMap.getObjectConfig(v.levelObj.id)
             if config.switchColorID ~= nil and smwMap.switchBlockEffectID ~= nil then
                 -- Create the event for blocks flying
-                local eventObj = {}
-
-                eventObj.type = EVENT_TYPE.SWITCH_PALACE
-                eventObj.timer = 0
-
-                eventObj.levelObj = v.levelObj
-                eventObj.switchColorID = config.switchColorID
-
-                table.insert(smwMap.activeEvents,eventObj)
+                table.insert(smwMap.activeEvents, {
+                    type = EVENT_TYPE.SWITCH_PALACE,
+                    timer = 0,
+                    levelObj = v.levelObj,
+                    switchColorID = config.switchColorID,
+                })
             end
 
             -- Create the destruction event
             if not v.levelObj.levelDestroyed and v.levelObj.settings.destroyAfterWin then
                 if config.hasDestroyedAnimation then
-                    local eventObj = {}
-
-                    eventObj.type = EVENT_TYPE.LEVEL_DESTROYED
-                    eventObj.timer = 0
-
-                    eventObj.levelObj = v.levelObj
-
-                    table.insert(smwMap.activeEvents,eventObj)
+                    table.insert(smwMap.activeEvents, {
+                        type = EVENT_TYPE.LEVEL_DESTROYED,
+                        timer = 0,
+                        levelObj = v.levelObj,
+                        winType = gameData.winType,
+                    })
                 else
-                    setLevelDestroyed(v.levelObj.settings.levelFilename)
+                    v.levelObj.levelDestroyed = true
+                    smwMap.unlockLevelPaths(v.levelObj,gameData.winType)
                 end
             end
 
             if not v.levelObj.settings.destroyAfterWin then
-                SFX.play(smwMap.pathSettings.itemPanel)
+                if config.hasBeatenAnimation then
+                    table.insert(smwMap.activeEvents, {
+                        type = EVENT_TYPE.BEAT_LEVEL,
+                        timer = 0,
+                        levelObj = v.levelObj,
+                        winType = gameData.winType,
+                    })
+                else
+                    smwMap.unlockLevelPaths(v.levelObj,gameData.winType)
+                end
             end
+        else
+            smwMap.unlockLevelPaths(v.levelObj,gameData.winType)
         end
-
-        -- Unlock any paths
-        unlockLevelPaths(v.levelObj,gameData.winType)
 
         -- End the state
         gameData.winType = LEVEL_WIN_TYPE_NONE
@@ -2276,7 +2290,13 @@ do
                 -- Normal animation
                 v.animationTimer = v.animationTimer + 1
 
-                if v.basePlayer.mount == MOUNT_BOOT then
+                if #smwMap.activeEvents > 0 then
+                    if smwMap.activeEvents[1].type == EVENT_TYPE.BEAT_LEVEL then
+                        v.frame = 3
+                    else
+                        v.frame = 2
+                    end
+                elseif v.basePlayer.mount == MOUNT_BOOT then
                     v.mountFrame = math.floor(v.animationTimer / 8) % smwMap.playerSettings.bootFrames
 
                     if v.direction == 0 and (v.state == PLAYER_STATE.NORMAL or v.state == PLAYER_STATE.WON) and v.bounceOffset == 0 then
@@ -2413,7 +2433,7 @@ do
     end
 
 
-    function smwMap.createObject(id,x,y,npc)
+    function smwMap.createObject(id, x, y, npc)
         local config = smwMap.getObjectConfig(id)
 
         local v = {}
@@ -4317,7 +4337,7 @@ smwMap.playerSettings = {
 
 
     framesX = 1,
-    framesY = 2,
+    framesY = 4,
 
     bootFrames = 2,
     clownCarFrames = 2,

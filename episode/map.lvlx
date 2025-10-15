@@ -12,7 +12,6 @@ ID:801;X:-199776;Y:-200224;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"l
 ID:753;X:-200000;Y:-200608;D:-1;XTRA:"{\n    \"backgroundName\"\: \"water\"\,\n    \"height\"\: 600\,\n    \"music\"\: 15\,\n    \"restrictCamera\"\: true\,\n    \"width\"\: 800\n}\n";
 ID:811;X:-199744;Y:-200224;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 0\,\n    \"unlock_left\"\: 1\,\n    \"unlock_right\"\: 0\,\n    \"unlock_up\"\: 1\n}\n";
 ID:811;X:-199744;Y:-200288;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 1\,\n    \"unlock_left\"\: 1\,\n    \"unlock_right\"\: 1\,\n    \"unlock_up\"\: 0\n}\n";
-ID:802;X:-199744;Y:-200352;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelFilename\"\: \"fwefwef\"\,\n    \"levelTitle\"\: \"wefwef\"\,\n    \"unlock_down\"\: 0\,\n    \"unlock_left\"\: 2\,\n    \"unlock_right\"\: 2\,\n    \"unlock_up\"\: 2\n}\n";
 ID:814;X:-199776;Y:-200160;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelFilename\"\: \"\"\,\n    \"unlock_down\"\: 0\,\n    \"unlock_left\"\: 0\,\n    \"unlock_right\"\: 0\,\n    \"unlock_up\"\: 1\n}\n";
 ID:751;X:-199776;Y:-200160;D:-1;
 ID:811;X:-199808;Y:-200288;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 0\,\n    \"unlock_left\"\: 0\,\n    \"unlock_right\"\: 1\,\n    \"unlock_up\"\: 1\n}\n";
@@ -20,6 +19,7 @@ ID:811;X:-199680;Y:-200288;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"u
 ID:811;X:-199808;Y:-200352;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 1\,\n    \"unlock_left\"\: 0\,\n    \"unlock_right\"\: 1\,\n    \"unlock_up\"\: 0\n}\n";
 ID:811;X:-199680;Y:-200352;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 1\,\n    \"unlock_left\"\: 1\,\n    \"unlock_right\"\: 0\,\n    \"unlock_up\"\: 0\n}\n";
 ID:811;X:-199744;Y:-200416;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 1\,\n    \"unlock_left\"\: 0\,\n    \"unlock_right\"\: 0\,\n    \"unlock_up\"\: 0\n}\n";
+ID:820;X:-199744;Y:-200352;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 0\,\n    \"unlock_left\"\: 1\,\n    \"unlock_right\"\: 1\,\n    \"unlock_up\"\: 1\n}\n";
 NPC_END
 LAYERS
 LR:"Default";
