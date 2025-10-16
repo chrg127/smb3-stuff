@@ -9,7 +9,7 @@ smwMap.setObjSettings(npcID,{
 
     onTickObj = function(v)
         local totalFrames = smwMap.getObjectConfig(v.id).framesY
-        if v.levelDestroyed then
+        if smwMap.isLevelBeaten(v) then
             v.frameY = (totalFrames - 1)
         else
             v.frameY = smwMap.doBasicAnimation(v,totalFrames - 1,8)

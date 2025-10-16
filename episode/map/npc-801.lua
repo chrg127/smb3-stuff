@@ -9,7 +9,7 @@ smwMap.setObjSettings(npcID, {
     hasBeatenAnimation = true,
 
     onTickObj = function(v)
-        if SaveData.smwMap.beatenLevels[v.settings.levelFilename] then
+        if smwMap.isLevelBeaten(v) then
             v.frameY = baseLevelFrames
                      + (smwMap.isLevelCompletelyBeaten(v) and 0 or smwMap.playerSettings.numSupported)
                      + SaveData.smwMap.beatenLevels[v.settings.levelFilename].character - 1

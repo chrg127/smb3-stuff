@@ -260,15 +260,6 @@ local function isNormalLevel(id)
 end
 
 
-local function setLevelDestroyed(levelFilename)
-    for _,levelObj in ipairs(smwMap.objects) do
-        if isNormalLevel(levelObj.id) and levelObj.settings.levelFilename == levelFilename then
-            levelObj.levelDestroyed = true
-        end
-    end
-end
-
-
 local function getDistanceToSplineStartAndEnd(splineObj,x,y)
     local startPoint = splineObj.points[1]
     local endPoint = splineObj.points[#splineObj.points]
@@ -579,27 +570,15 @@ do
 
 
     -- Destroying a castle
-    local smokeDirections = {
-        vector(-1,-1),vector(1,-1),vector(-1,1),vector(1,1),
-    }
-
     updateFunctions[EVENT_TYPE.LEVEL_DESTROYED] = (function(eventObj)
         eventObj.timer = eventObj.timer + 1
-
         if eventObj.timer == 1 then
-            setLevelDestroyed(eventObj.levelObj.settings.levelFilename)
-
             SFX.play(smwMap.playerSettings.levelDestroyedSound)
-
-
             if smwMap.levelDestroyedSmokeEffectID ~= nil then
-                for index,direction in ipairs(smokeDirections) do
-                    local smoke = smwMap.createObject(smwMap.levelDestroyedSmokeEffectID, eventObj.levelObj.x,eventObj.levelObj.y)
-
-                    smoke.data.direction = direction
-                    smoke.frameX = index-1
-                end
+                smwMap.createObject(smwMap.levelDestroyedSmokeEffectID, eventObj.levelObj.x, eventObj.levelObj.y + 16)
             end
+        elseif eventObj.timer == 32 then
+            smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
         elseif eventObj.timer >= 64 then
             table.remove(smwMap.activeEvents,1)
         end
@@ -1434,6 +1413,11 @@ do
         end
     end
 
+    -- these two are used by some levels' lua files
+    function smwMap.isLevelBeaten(level)
+        return level.settings.levelFilename ~= nil and saveData.beatenLevels[level.settings.levelFilename]
+    end
+
     function smwMap.isLevelCompletelyBeaten(level)
         local data = saveData.beatenLevels[level.settings.levelFilename]
         for _, dir in ipairs({"up", "down", "left", "right"}) do
@@ -1582,7 +1566,7 @@ do
         end
 
 
-        if levelObj.levelDestroyed then
+        if levelObj.settings.destroyAfterWin then
             if smwMap.getObjectConfig(levelObj.id).isBonusLevel then
                 return smwMap.playerSettings.canEnterDestroyedBonusLevels
             else
@@ -1594,7 +1578,7 @@ do
     end
 
 
-    function smwMap.unlockLevelPaths(levelObj,winType)
+    function smwMap.unlockLevelPaths(levelObj, winType)
         if levelObj.settings.levelFilename == nil then
             return
         end
@@ -1987,8 +1971,8 @@ do
                 })
             end
 
-            -- Create the destruction event
-            if not v.levelObj.levelDestroyed and v.levelObj.settings.destroyAfterWin then
+            if v.levelObj.settings.destroyAfterWin then
+                -- Create the destruction event
                 if config.hasDestroyedAnimation then
                     table.insert(smwMap.activeEvents, {
                         type = EVENT_TYPE.LEVEL_DESTROYED,
@@ -1997,12 +1981,9 @@ do
                         winType = gameData.winType,
                     })
                 else
-                    v.levelObj.levelDestroyed = true
-                    smwMap.unlockLevelPaths(v.levelObj,gameData.winType)
+                    smwMap.unlockLevelPaths(v.levelObj, gameData.winType)
                 end
-            end
-
-            if not v.levelObj.settings.destroyAfterWin then
+            else
                 if config.hasBeatenAnimation then
                     table.insert(smwMap.activeEvents, {
                         type = EVENT_TYPE.BEAT_LEVEL,
@@ -2011,11 +1992,11 @@ do
                         winType = gameData.winType,
                     })
                 else
-                    smwMap.unlockLevelPaths(v.levelObj,gameData.winType)
+                    smwMap.unlockLevelPaths(v.levelObj, gameData.winType)
                 end
             end
         else
-            smwMap.unlockLevelPaths(v.levelObj,gameData.winType)
+            smwMap.unlockLevelPaths(v.levelObj, gameData.winType)
         end
 
         -- End the state
@@ -2501,13 +2482,9 @@ do
             v.hideIfLocked = false
         end
 
-
-        if isNormalLevel(v.id) and v.settings.levelFilename ~= "" and saveData.beatenLevels[v.settings.levelFilename] then
-            v.levelDestroyed = true
-        else
-            v.levelDestroyed = false
-        end
-
+        -- very interesting, maybe we should have a isLevelDestroyed function instead
+        -- v.levelDestroyed = isNormalLevel(v.id) and v.settings.levelFilename ~= ""
+                       -- and saveData.beatenLevels[v.settings.levelFilename]
 
         if config.isWarp then
             smwMap.warpsMap[v.settings.warpName] = v
