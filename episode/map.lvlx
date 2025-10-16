@@ -8,7 +8,7 @@ BGO
 ID:751;X:-199920;Y:-200592;
 BGO_END
 NPC
-ID:801;X:-199776;Y:-200224;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelFilename\"\: \"start.lvlx\"\,\n    \"levelTitle\"\: \"srgsdg\"\,\n    \"path_down\"\: \"\"\,\n    \"path_up\"\: \"\"\,\n    \"unlock_down\"\: 1\,\n    \"unlock_left\"\: 0\,\n    \"unlock_up\"\: 0\n}\n";
+ID:801;X:-199776;Y:-200224;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelFilename\"\: \"start.lvlx\"\,\n    \"levelTitle\"\: \"srgsdg\"\,\n    \"path_down\"\: \"\"\,\n    \"path_up\"\: \"\"\,\n    \"unlock_down\"\: 1\,\n    \"unlock_left\"\: 0\,\n    \"unlock_right\"\: 2\,\n    \"unlock_up\"\: 0\n}\n";
 ID:753;X:-200000;Y:-200608;D:-1;XTRA:"{\n    \"backgroundName\"\: \"water\"\,\n    \"height\"\: 600\,\n    \"music\"\: 15\,\n    \"restrictCamera\"\: true\,\n    \"width\"\: 800\n}\n";
 ID:811;X:-199744;Y:-200224;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 0\,\n    \"unlock_left\"\: 1\,\n    \"unlock_right\"\: 0\,\n    \"unlock_up\"\: 1\n}\n";
 ID:811;X:-199744;Y:-200288;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 1\,\n    \"unlock_left\"\: 1\,\n    \"unlock_right\"\: 1\,\n    \"unlock_up\"\: 0\n}\n";
@@ -16,10 +16,13 @@ ID:814;X:-199776;Y:-200160;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"l
 ID:751;X:-199776;Y:-200160;D:-1;
 ID:811;X:-199808;Y:-200288;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 0\,\n    \"unlock_left\"\: 0\,\n    \"unlock_right\"\: 1\,\n    \"unlock_up\"\: 1\n}\n";
 ID:811;X:-199680;Y:-200288;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 0\,\n    \"unlock_left\"\: 1\,\n    \"unlock_right\"\: 0\,\n    \"unlock_up\"\: 1\n}\n";
-ID:811;X:-199808;Y:-200352;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 1\,\n    \"unlock_left\"\: 0\,\n    \"unlock_right\"\: 1\,\n    \"unlock_up\"\: 0\n}\n";
+ID:811;X:-199808;Y:-200352;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 1\,\n    \"unlock_left\"\: 1\,\n    \"unlock_right\"\: 1\,\n    \"unlock_up\"\: 0\n}\n";
 ID:811;X:-199680;Y:-200352;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 1\,\n    \"unlock_left\"\: 1\,\n    \"unlock_right\"\: 0\,\n    \"unlock_up\"\: 0\n}\n";
 ID:811;X:-199744;Y:-200416;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 1\,\n    \"unlock_left\"\: 0\,\n    \"unlock_right\"\: 0\,\n    \"unlock_up\"\: 0\n}\n";
-ID:820;X:-199744;Y:-200352;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"unlock_down\"\: 0\,\n    \"unlock_left\"\: 1\,\n    \"unlock_right\"\: 1\,\n    \"unlock_up\"\: 1\n}\n";
+ID:821;X:-199872;Y:-200352;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"destinationWarpName\"\: \"B\"\,\n    \"levelTitle\"\: \"idk\"\,\n    \"unlock_down\"\: false\,\n    \"unlock_left\"\: false\,\n    \"unlock_up\"\: false\,\n    \"warpName\"\: \"A\"\n}\n";
+ID:821;X:-199520;Y:-200384;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"A\"\,\n    \"levelTitle\"\: \"idk2\"\,\n    \"unlock_down\"\: false\,\n    \"unlock_left\"\: false\,\n    \"unlock_up\"\: false\,\n    \"warpName\"\: \"B\"\n}\n";
+ID:820;X:-199456;Y:-200384;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelFilename\"\: \"dasfadf\"\,\n    \"unlock_down\"\: 0\,\n    \"unlock_left\"\: 1\,\n    \"unlock_right\"\: 0\,\n    \"unlock_up\"\: 0\n}\n";
+ID:802;X:-199744;Y:-200352;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelFilename\"\: \"asc\"\,\n    \"unlock_left\"\: 2\,\n    \"unlock_right\"\: 2\,\n    \"unlock_up\"\: 2\n}\n";
 NPC_END
 LAYERS
 LR:"Default";

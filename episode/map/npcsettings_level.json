@@ -31,7 +31,7 @@
 			"name": "alwaysVisible",
 			"title": "Always Visible",
 			"tooltip": "If checked, the level will always be visible, even when locked.",
-			"value-default": false
+			"value-default": true
 		},
 		{
 			"control": "checkBox",
@@ -52,7 +52,7 @@
 					"title": "Top Unlock",
 					"tooltip": "Type of victory needed to unlock the top.",
 					"elements": ["* - None","* - Always Unlocked","* - Any Win","1 - Card Roulette","2 - SMB3 Orb","3 - Offscreen","4 - Keyhole","5 - SMB2 Orb","6 - Warp","7 - SMB3 Star","8 - Goal Tape"],
-					"value-default": 2
+					"value-default": 0
 				},
 				{
 					"control": "comboBox",
@@ -60,7 +60,7 @@
 					"title": "Right Unlock",
 					"tooltip": "Type of victory needed to unlock the right.",
 					"elements": ["* - None","* - Always Unlocked","* - Any Win","1 - Card Roulette","2 - SMB3 Orb","3 - Offscreen","4 - Keyhole","5 - SMB2 Orb","6 - Warp","7 - SMB3 Star","8 - Goal Tape"],
-					"value-default": 2
+					"value-default": 0
 				},
 				{
 					"control": "comboBox",
@@ -68,7 +68,7 @@
 					"title": "Bottom Unlock",
 					"tooltip": "Type of victory needed to unlock the bottom.",
 					"elements": ["* - None","* - Always Unlocked","* - Any Win","1 - Card Roulette","2 - SMB3 Orb","3 - Offscreen","4 - Keyhole","5 - SMB2 Orb","6 - Warp","7 - SMB3 Star","8 - Goal Tape"],
-					"value-default": 2
+					"value-default": 0
 				},
 				{
 					"control": "comboBox",
@@ -76,36 +76,7 @@
 					"title": "Left Unlock",
 					"tooltip": "Type of victory needed to unlock the left.",
 					"elements": ["* - None","* - Always Unlocked","* - Any Win","1 - Card Roulette","2 - SMB3 Orb","3 - Offscreen","4 - Keyhole","5 - SMB2 Orb","6 - Warp","7 - SMB3 Star","8 - Goal Tape"],
-					"value-default": 2
-				},
-		
-				{
-					"control": "lineEdit",
-					"name": "path_up",
-					"title": "Top Path",
-					"tooltip": "Name of the path that is on the level's top.",
-					"value-default": ""
-				},
-				{
-					"control": "lineEdit",
-					"name": "path_right",
-					"title": "Right Path",
-					"tooltip": "Name of the path that is on the level's right.",
-					"value-default": ""
-				},
-				{
-					"control": "lineEdit",
-					"name": "path_down",
-					"title": "Bottom Path",
-					"tooltip": "Name of the path that is on the level's bottom.",
-					"value-default": ""
-				},
-				{
-					"control": "lineEdit",
-					"name": "path_left",
-					"title": "Left Path",
-					"tooltip": "Name of the path that is on the level's left.",
-					"value-default": ""
+					"value-default": 0
 				}
 			]
 		}

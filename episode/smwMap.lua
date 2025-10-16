@@ -502,7 +502,7 @@ do
             beatAnim.priority = -10
         elseif eventObj.timer == 3 * 8 then
             smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
-        elseif eventObj.timer >= 4 * 8 then
+        elseif eventObj.timer >= 5 * 8 then
             table.remove(smwMap.activeEvents, 1)
         end
     end
@@ -1422,12 +1422,16 @@ do
         if saveData.lastMovement == reverseDir(directionName) then
             return true
         end
-        local dirtype = levelObj.settings["unlock_" .. directionName]
-        if dirtype == 0 then
-            return false
+        if isNormalLevel(levelObj.id) then
+            local dirtype = levelObj.settings["unlock_" .. directionName]
+            if dirtype == 0 then
+                return false
+            end
+            return dirtype == 1
+                or (saveData.beatenLevels[levelObj.settings.levelFilename] or {})[directionName] ~= nil
+        else
+            return levelObj.settings["unlock_" .. directionName]
         end
-        return dirtype == 1
-            or (saveData.beatenLevels[levelObj.settings.levelFilename] or {})[directionName] ~= nil
     end
 
     function smwMap.isLevelCompletelyBeaten(level)
@@ -1441,31 +1445,6 @@ do
     end
 
     function smwMap.unlockLevelPath(levelObj, directionName)
-        saveData.beatenLevels[levelObj.settings.levelFilename] = saveData.beatenLevels[levelObj.settings.levelFilename] or {}
-        saveData.beatenLevels[levelObj.settings.levelFilename][directionName] = true
-        saveData.beatenLevels[levelObj.settings.levelFilename].character = smwMap.mainPlayer.basePlayer.character
-        -- create an unlock event
-        local eventObj = {
-            --[[
-            type = EVENT_TYPE.UNLOCK_PATH,
-
-            pathObj = pathObj,
-
-            pathProgress = 0,
-            pathTimer = 0,
-            direction = (distanceToStart < distanceToEnd and 1) or -1,
-
-
-            -- Initialise showing/hiding sceneries
-            neededSceneryProgress = 0,
-            sceneryProgress = 0,
-            sceneryTimer = 0,
-
-            showSceneries = {},
-            hideSceneries = {},
-            ]]
-        }
-
         --[[
         for _,scenery in ipairs(smwMap.sceneries) do
             if scenery.globalSettings.showPathName == name and (scenery.opacity == 0 or scenery.globalSettings.hidePathName == name) then
@@ -1557,7 +1536,7 @@ do
     end
     ]]
 
-    local function setLevel(v,levelObj)
+    local function setPlayerLevel(v,levelObj)
         v.levelObj = levelObj
 
         if levelObj ~= nil then
@@ -1616,10 +1595,38 @@ do
 
 
     function smwMap.unlockLevelPaths(levelObj,winType)
+        if levelObj.settings.levelFilename == nil then
+            return
+        end
+        saveData.beatenLevels[levelObj.settings.levelFilename] = saveData.beatenLevels[levelObj.settings.levelFilename] or {}
+        saveData.beatenLevels[levelObj.settings.levelFilename].character = smwMap.mainPlayer.basePlayer.character
         for _, directionName in ipairs{"up", "right", "down", "left"} do
             local unlockType = (levelObj.settings["unlock_".. directionName])
-            if (type(unlockType) == "number" and (unlockType == 2 or unlockType-2 == winType)) or unlockType == true or winType < 0 then
-                smwMap.unlockLevelPath(levelObj, directionName)
+            if (type(unlockType) == "number" and (unlockType == 2 or unlockType-2 == winType)) or unlockType == true then
+                if not saveData.beatenLevels[levelObj.settings.levelFilename][directionName] then
+                    saveData.beatenLevels[levelObj.settings.levelFilename][directionName] = true
+                    -- create an unlock event
+                    local eventObj = {
+                        --[[
+                        type = EVENT_TYPE.UNLOCK_PATH,
+
+                        pathObj = pathObj,
+
+                        pathProgress = 0,
+                        pathTimer = 0,
+                        direction = (distanceToStart < distanceToEnd and 1) or -1,
+
+
+                        -- Initialise showing/hiding sceneries
+                        neededSceneryProgress = 0,
+                        sceneryProgress = 0,
+                        sceneryTimer = 0,
+
+                        showSceneries = {},
+                        hideSceneries = {},
+                        ]]
+                    }
+                end
             end
         end
     end
@@ -1690,30 +1697,29 @@ do
 
     function smwMap.doPlayerWarp(v,warpObj)
         local destinationLevel = smwMap.warpsMap[warpObj.settings.destinationWarpName]
-        local destinationPath = smwMap.pathsMap[warpObj.settings.destinationPathName]
+        -- local destinationPath  = smwMap.pathsMap[warpObj.settings.destinationPathName]
 
         if destinationLevel ~= nil then
             local middleFunction = (function()
                 for _,p in ipairs(smwMap.players) do
                     p.state = PLAYER_STATE.NORMAL
                     p.timer = 0
-                    v.timer2 = 0
-
+                    -- bug?
+                    -- v.timer2 = 0
+                    p.timer2 = 0
                     p.zOffset = 0
-
-                    setLevel(p,destinationLevel)
+                    setPlayerLevel(p,destinationLevel)
                 end
 
                 v.movementHistory = {}
-
                 v.direction = 0
-
                 updateActiveAreas(v,64)
-
-                smwMap.unlockLevelPaths(destinationLevel,-1)
             end)
 
             smwMap.startTransition(middleFunction,nil, smwMap.transitionSettings.warpToWarpSettings)
+        end
+
+        --[[
         elseif destinationPath ~= nil then
             local middleFunction = (function()
                 for _,p in ipairs(smwMap.players) do
@@ -1749,6 +1755,7 @@ do
 
             smwMap.startTransition(middleFunction,nil, smwMap.transitionSettings.warpToPathSettings)
         end
+        ]]
     end
 
 
@@ -1807,7 +1814,7 @@ do
                 v.timer = 1000
                 v.timer2 = 0
 
-                gameData.winType = -1
+                gameData.winType = 2
             elseif player.keys.altRun == KEYS_PRESSED and Misc.inEditor() then
                 v.state = PLAYER_STATE.PARKING_WHERE_I_WANT
                 v.timer = 0
@@ -1833,7 +1840,7 @@ do
                     v.x = v.levelObj.x
                     v.y = v.levelObj.y
                 else
-                    setLevel(v,smwMap.mainPlayer.levelObj)
+                    setPlayerLevel(v,smwMap.mainPlayer.levelObj)
                 end
 
                 smwMap.tryPlayerMove(v,movement)
@@ -1886,7 +1893,7 @@ do
             v.timer2 = 0
             v.warpCooldown = 0
 
-            setLevel(v,levelObj)
+            setPlayerLevel(v,levelObj)
 
             if v.isMainPlayer then
                 local encounterObj = findEncounter(v)
@@ -2084,7 +2091,7 @@ do
                 p.direction = 0
                 p.zOffset = 0
 
-                setLevel(p,v.levelObj)
+                setPlayerLevel(p,v.levelObj)
             end
 
             SFX.play(26)
@@ -2340,7 +2347,7 @@ do
 
         levelObj = levelObj or findLevel(smwMap.mainPlayer,smwMap.mainPlayer.x,smwMap.mainPlayer.y)
 
-        setLevel(smwMap.mainPlayer,levelObj)
+        setPlayerLevel(smwMap.mainPlayer,levelObj)
 
 
 
