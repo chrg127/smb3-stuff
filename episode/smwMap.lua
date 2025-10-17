@@ -1,42 +1,30 @@
 --[[
-
-    smwMap.lua v1.1
-    by MrDoubleA
-
+    smb3Map.lua v1.0
+    by chrg
+    forked from smwMap.lua v1.1 by MrDoubleA
 
     Default Graphics Credit:
 
-    - Giant mushroom sceneries by Pikerchu13 (https://www.smwcentral.net/?p=section&a=details&id=2899)
-    - Luigi by KingKoopshi64 (https://www.smwcentral.net/?p=section&a=details&id=17020)
     - Peach by AwesomeZack (https://mfgg.net/index.php?act=resdb&param=02&c=1&id=31182)
     - Toad by GlacialSiren484 (https://mfgg.net/index.php?act=resdb&param=02&c=1&id=37667)
-    - Some levels made by Vito and Murphmario.
-
 ]]
 
 local smwMap = {}
-
 
 
 -- Name of the level file that the map is on.
 smwMap.levelFilename = "map.lvlx"
 
 
-
 SaveData.smwMap = SaveData.smwMap or {}
 local saveData = SaveData.smwMap
-
-GameData.smwMap = GameData.smwMap or {}
-local gameData = GameData.smwMap
-
-
-saveData.unlockedPaths       = saveData.unlockedPaths       or {}
 saveData.beatenLevels        = saveData.beatenLevels        or {}
 saveData.encounterData       = saveData.encounterData       or {}
 saveData.unlockedCheckpoints = saveData.unlockedCheckpoints or {}
 
+GameData.smwMap = GameData.smwMap or {}
+local gameData = GameData.smwMap
 gameData.winType = gameData.winType or 0
-
 
 
 -- Stuff to handle when not actually on the map
@@ -78,14 +66,11 @@ smwMap.freeCamera = false
 smwMap.fullBufferView = false
 
 
-
 local warpTransition
 pcall(function() warpTransition = require("warpTransition") end)
 
 local rooms
 pcall(function() rooms = require("rooms") end)
-
-
 if rooms ~= nil then
     rooms.dontPlayMusicThroughLua = true
 end
@@ -95,6 +80,160 @@ local configFileReader = require("configFileReader")
 local starcoin = require("npcs/ai/starcoin")
 local textplus = require("textplus")
 
+
+smwMap.playerSettings = {
+    images = {
+        [CHARACTER_MARIO] = Graphics.loadImageResolved("smwMap/player-mario.png"),
+        [CHARACTER_LUIGI] = Graphics.loadImageResolved("smwMap/player-luigi.png"),
+        [CHARACTER_PEACH] = Graphics.loadImageResolved("smwMap/player-peach.png"),
+        [CHARACTER_TOAD ] = Graphics.loadImageResolved("smwMap/player-toad.png"),
+    },
+
+    shadowImage = Graphics.loadImageResolved("smwMap/shadow.png"),
+    waterImage = Graphics.loadImageResolved("smwMap/water.png"),
+
+    levelSelectedSound = SFX.open(Misc.resolveSoundFile("smwMap/levelSelected")),
+    levelDestroyedSound = SFX.open(Misc.resolveSoundFile("smwMap/levelDestroyed")),
+    switchBlockReleasedSound = SFX.open(Misc.resolveSoundFile("smwMap/switchBlockReleased")),
+
+
+    canEnterDestroyedLevels = true,
+    canEnterDestroyedBonusLevels = false,
+
+
+    walkSpeed = 3,
+    climbSpeed = 0.75, -- should be unused
+
+
+    lookAroundArrowImage = Graphics.loadImageResolved("smwMap/lookAroundArrow.png"),
+    lookAroundMoveSpeed = 4,
+
+
+    framesX = 1,
+    framesY = 4,
+
+    bootFrames = 2,
+    clownCarFrames = 2,
+    yoshiFrames = 2,
+
+    gfxYOffset = 0,
+    mountOffsets = {
+        [MOUNT_BOOT]     = -12,
+        [MOUNT_CLOWNCAR] = -32,
+        [MOUNT_YOSHI]    = -8,
+    },
+
+    numSupported = 4, -- mario, luigi, peach and toad
+}
+
+
+smwMap.pathSettings = {
+    lockedColor = Color.fromHexRGBA(0x0000004E),
+
+    unlockAnimationFrequency = 12,
+    unlockAnimationDistance = 32,
+
+    unlockLoopSound = SFX.open(Misc.resolveSoundFile("smwMap/unlock_loop")),
+    unlockFinishSound = SFX.open(Misc.resolveSoundFile("smwMap/unlock_finish")),
+    itemPanel = SFX.open(Misc.resolveSoundFile("smwMap/item-panel")),
+
+
+    renderScale = 0.5,
+
+
+    cullingPadding = 8,
+}
+
+
+smwMap.encounterSettings = {
+    idleWanderDistance = 12,
+
+    walkSpeed = 4,
+
+    maxMovements = 6,
+    keepWalkingChance = 3,
+
+    movingSound = Misc.resolveSoundFile("smwMap/encountersMoving.wav"),
+    enterSound = nil,
+}
+
+
+smwMap.hudSettings = {
+    borderImage = Graphics.loadImageResolved("smwMap/hud_border.png"),
+
+    borderLeftWidth = 66,
+    borderRightWidth = 66,
+    borderTopHeight = 130,
+    borderBottomHeight = 66,
+
+    borderEnabled = true,
+
+
+
+    playerOffsetX = 40,
+    playerOffsetY = -16,
+
+    playerGap = 64,
+
+    playerEnabled = true,
+
+
+    counterFont = textplus.loadFont("smwMap/counterFont.ini"),
+    counterColor = Color.white,
+    counterOffsetX = 64,
+    counterOffsetY = -16,
+    counterText = "x %s",
+    counterScale = 2,
+    counterGap = 4,
+
+    countersEnabled = true,
+
+
+    levelTitleFont = textplus.loadFont("smwMap/levelTitleFont.ini"),
+    levelTitleColor = Color.black,
+    levelTitleOffsetX = 64,
+    levelTitleOffsetY = -16,
+    levelTitleScale = 2,
+
+    levelTitleEnabled = true,
+
+
+    starcoinUncollectedImage = Graphics.loadImageResolved("hardcoded-51-0.png"),
+    starcoinCollectedImage = Graphics.loadImageResolved("hardcoded-51-1.png"),
+    starcoinsXOffset = 16,
+    starcoinsYOffset = -16,
+    starcoinsMaxPerLine = 5,
+    starcoinsAtBottom = false,
+
+    starcoinsEnabled = true,
+
+
+    priority = 5,
+}
+
+
+smwMap.selectStartPointSettings = {
+    -- If true, enables a small menu that allows you to select the checkpoint to start from when choosing a level
+    enabled = false,
+
+    beginningText = "Beginning",
+    checkpointSingleText = "Checkpoint",
+    checkpointMultipleText = "Checkpoint %d",
+
+    textFont = textplus.loadFont("smwMap/levelTitleFont.ini"),
+    textScale = 2,
+    textColorSelected = Color(1,1,0.25),
+    textColorUnselected = Color.white,
+
+    backColor = Color.black.. 0.9,
+
+    optionGap = 8,
+    borderSize = 16,
+
+    distanceFromPlayer = 32,
+
+    priority = -5.15,
+}
 
 
 -- Find star coin counts
@@ -144,16 +283,10 @@ local function countStarCoinsInFile(filePath)
     end
 end
 
-local function getStarCoinCounts(giveStats)
-    local beforeTime = Misc.clock()
-
-
+local function getStarCoinCounts()
     local episodePath = Misc.episodePath()
-
     local starcoinCounts = {}
-
     local levelCount = 0
-
 
     for _,filename in ipairs(Misc.listFiles(episodePath)) do
         if filename:sub(-5) == ".lvlx" then
@@ -163,23 +296,10 @@ local function getStarCoinCounts(giveStats)
         end
     end
 
-
-    if giveStats then
-        local afterTime = Misc.clock()
-        local totalTime = (afterTime - beforeTime)
-
-        Misc.dialog("AUTO STAR COIN COUNTER RESULTS:",starcoinCounts,"Levels: ".. levelCount,"Time: ".. totalTime,"Average time per level: ".. totalTime/levelCount)
-    end
-
     return starcoinCounts
 end
 
-if Misc.GetKeyState(VK_S) and Misc.GetKeyState(VK_SHIFT) and Misc.inEditor() then
-    gameData.starcoinCounts = getStarCoinCounts(true)
-elseif gameData.starcoinCounts == nil then
-    gameData.starcoinCounts = getStarCoinCounts(false)
-end
-
+gameData.starcoinCounts = getStarCoinCounts()
 
 
 smwMap.camera = {
@@ -192,10 +312,6 @@ smwMap.camera = {
     offsetX = 0,
     offsetY = 0,
 }
-
-
-smwMap.activeEvents = {}
-
 
 
 local function getUsualCameraPos()
@@ -228,11 +344,11 @@ local function getUsualCameraPos()
 end
 
 
+--[[
 local function levelConnectsToPath(pathName,levelObj,directionName)
     return (levelObj.settings["path_".. directionName] == pathName)
 end
 
---[[
 local function unlockConnectedLevels(pathObj)
     for _,levelObj in ipairs(smwMap.objects) do
         if smwMap.getObjectConfig(levelObj.id).isLevel and levelObj.lockedFade > 0 and (
@@ -259,7 +375,7 @@ local function isNormalLevel(id)
     return (config.isLevel and not config.isWarp)
 end
 
-
+--[[
 local function getDistanceToSplineStartAndEnd(splineObj,x,y)
     local startPoint = splineObj.points[1]
     local endPoint = splineObj.points[#splineObj.points]
@@ -269,7 +385,7 @@ local function getDistanceToSplineStartAndEnd(splineObj,x,y)
 
     return distanceToStart,distanceToEnd
 end
-
+]]
 
 local function findLevel(v,x,y)
     for _,obj in ipairs(smwMap.getIntersectingObjects(x - v.width*0.5,y - v.height*0.5,x + v.width*0.5,y + v.height*0.5)) do
@@ -466,6 +582,42 @@ do
 end
 
 
+smwMap.transitionSettings = {
+    selectedLevelSettings = {
+        drawFunction = smwMap.TRANSITION_MOSAIC,
+        progressTime = 28,
+        priority = 6,
+    },
+
+    enterEncounterSettings = {
+        drawFunction = smwMap.TRANSITION_MOSAIC,
+        progressTime = 28,
+        priority = 6,
+    },
+
+    enterMapSettings = {
+        drawFunction = smwMap.TRANSITION_MOSAIC,
+        progressTime = 28,
+        priority = 6,
+
+        waitTime = 0,startTime = 0, -- these are important! you probably shouldn't touch them
+    },
+
+    warpToWarpSettings = {
+        drawFunction = smwMap.TRANSITION_FADE,
+        progressTime = 20,
+        waitTime = 8,
+        priority = -4,
+    },
+    warpToPathSettings = {
+        drawFunction = smwMap.TRANSITION_WINDOW,
+        progressTime = 20,
+        waitTime = 8,
+        priority = -6,
+        pauses = false,
+    },
+}
+
 
 -- Events system
 -- Handles stuff like paths opening, castle destruction, etc.
@@ -481,10 +633,12 @@ local EVENT_TYPE = {
 local updateEvent
 local unlockLoopObj
 
+smwMap.activeEvents = {}
+
 do
     local updateFunctions = {}
 
-    -- when a normal level is beaten, substitute its icon with an icon corresponding to the player.
+    -- handles flipping icon animation, the player icon showing is handled by the level objects themselves
     updateFunctions[EVENT_TYPE.BEAT_LEVEL] = function (eventObj)
         eventObj.timer = eventObj.timer + 1
         if eventObj.timer == 1 then
@@ -1382,7 +1536,7 @@ do
         return true
     end
 
---[[
+    --[[
     function smwMap.pathIsUnlocked(name)
         return saveData.unlockedPaths[name] or false
     end
@@ -4288,200 +4442,6 @@ do
         aliases = {"speenmerightround"},
     })
 end
-
-
-
-
-smwMap.playerSettings = {
-    images = {
-        [CHARACTER_MARIO] = Graphics.loadImageResolved("smwMap/player-mario.png"),
-        [CHARACTER_LUIGI] = Graphics.loadImageResolved("smwMap/player-luigi.png"),
-        [CHARACTER_PEACH] = Graphics.loadImageResolved("smwMap/player-peach.png"),
-        [CHARACTER_TOAD ] = Graphics.loadImageResolved("smwMap/player-toad.png"),
-    },
-
-    shadowImage = Graphics.loadImageResolved("smwMap/shadow.png"),
-    waterImage = Graphics.loadImageResolved("smwMap/water.png"),
-
-    levelSelectedSound = SFX.open(Misc.resolveSoundFile("smwMap/levelSelected")),
-    levelDestroyedSound = SFX.open(Misc.resolveSoundFile("smwMap/levelDestroyed")),
-    switchBlockReleasedSound = SFX.open(Misc.resolveSoundFile("smwMap/switchBlockReleased")),
-
-
-    canEnterDestroyedLevels = true,
-    canEnterDestroyedBonusLevels = false,
-
-
-    walkSpeed = 3,
-    climbSpeed = 0.75, -- should be unused
-
-
-    lookAroundArrowImage = Graphics.loadImageResolved("smwMap/lookAroundArrow.png"),
-    lookAroundMoveSpeed = 4,
-
-
-    framesX = 1,
-    framesY = 4,
-
-    bootFrames = 2,
-    clownCarFrames = 2,
-    yoshiFrames = 2,
-
-    gfxYOffset = 0,
-    mountOffsets = {
-        [MOUNT_BOOT]     = -12,
-        [MOUNT_CLOWNCAR] = -32,
-        [MOUNT_YOSHI]    = -8,
-    },
-
-    numSupported = 4, -- mario, luigi, peach and toad
-}
-
-
-smwMap.pathSettings = {
-    lockedColor = Color.fromHexRGBA(0x0000004E),
-
-    unlockAnimationFrequency = 12,
-    unlockAnimationDistance = 32,
-
-    unlockLoopSound = SFX.open(Misc.resolveSoundFile("smwMap/unlock_loop")),
-    unlockFinishSound = SFX.open(Misc.resolveSoundFile("smwMap/unlock_finish")),
-    itemPanel = SFX.open(Misc.resolveSoundFile("smwMap/item-panel")),
-
-
-    renderScale = 0.5,
-
-
-    cullingPadding = 8,
-}
-
-
-smwMap.encounterSettings = {
-    idleWanderDistance = 12,
-
-    walkSpeed = 4,
-
-    maxMovements = 6,
-    keepWalkingChance = 3,
-
-    movingSound = Misc.resolveSoundFile("smwMap/encountersMoving.wav"),
-    enterSound = nil,
-}
-
-
-smwMap.hudSettings = {
-    borderImage = Graphics.loadImageResolved("smwMap/hud_border.png"),
-
-    borderLeftWidth = 66,
-    borderRightWidth = 66,
-    borderTopHeight = 130,
-    borderBottomHeight = 66,
-
-    borderEnabled = true,
-
-
-
-    playerOffsetX = 40,
-    playerOffsetY = -16,
-
-    playerGap = 64,
-
-    playerEnabled = true,
-
-
-    counterFont = textplus.loadFont("smwMap/counterFont.ini"),
-    counterColor = Color.white,
-    counterOffsetX = 64,
-    counterOffsetY = -16,
-    counterText = "x %s",
-    counterScale = 2,
-    counterGap = 4,
-
-    countersEnabled = true,
-
-
-    levelTitleFont = textplus.loadFont("smwMap/levelTitleFont.ini"),
-    levelTitleColor = Color.black,
-    levelTitleOffsetX = 64,
-    levelTitleOffsetY = -16,
-    levelTitleScale = 2,
-
-    levelTitleEnabled = true,
-
-
-    starcoinUncollectedImage = Graphics.loadImageResolved("hardcoded-51-0.png"),
-    starcoinCollectedImage = Graphics.loadImageResolved("hardcoded-51-1.png"),
-    starcoinsXOffset = 16,
-    starcoinsYOffset = -16,
-    starcoinsMaxPerLine = 5,
-    starcoinsAtBottom = false,
-
-    starcoinsEnabled = true,
-
-
-    priority = 5,
-}
-
-
-smwMap.selectStartPointSettings = {
-    -- If true, enables a small menu that allows you to select the checkpoint to start from when choosing a level
-    enabled = false,
-
-    beginningText = "Beginning",
-    checkpointSingleText = "Checkpoint",
-    checkpointMultipleText = "Checkpoint %d",
-
-    textFont = textplus.loadFont("smwMap/levelTitleFont.ini"),
-    textScale = 2,
-    textColorSelected = Color(1,1,0.25),
-    textColorUnselected = Color.white,
-
-    backColor = Color.black.. 0.9,
-
-    optionGap = 8,
-    borderSize = 16,
-
-    distanceFromPlayer = 32,
-
-    priority = -5.15,
-}
-
-
-smwMap.transitionSettings = {
-    selectedLevelSettings = {
-        drawFunction = smwMap.TRANSITION_MOSAIC,
-        progressTime = 28,
-        priority = 6,
-    },
-
-    enterEncounterSettings = {
-        drawFunction = smwMap.TRANSITION_MOSAIC,
-        progressTime = 28,
-        priority = 6,
-    },
-
-    enterMapSettings = {
-        drawFunction = smwMap.TRANSITION_MOSAIC,
-        progressTime = 28,
-        priority = 6,
-
-        waitTime = 0,startTime = 0, -- these are important! you probably shouldn't touch them
-    },
-
-    warpToWarpSettings = {
-        drawFunction = smwMap.TRANSITION_FADE,
-        progressTime = 20,
-        waitTime = 8,
-        priority = -4,
-    },
-    warpToPathSettings = {
-        drawFunction = smwMap.TRANSITION_WINDOW,
-        progressTime = 20,
-        waitTime = 8,
-        priority = -6,
-        pauses = false,
-    },
-}
 
 
 return smwMap
