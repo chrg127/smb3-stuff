@@ -1,0 +1,29 @@
+{
+    "activeFile": "map.tmx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "fileStates": {
+        "extra.tsx": {
+            "scaleInDock": 2
+        },
+        "main.tsx": {
+            "scaleInDock": 2
+        },
+        "map.tmx": {
+            "scale": 2.2479220779220777,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 63.83673233577906,
+                "y": 4.448552776012463
+            }
+        }
+    },
+    "openFiles": [
+        "map.tmx"
+    ],
+    "project": "smb3-maps.tiled-project",
+    "recentFiles": [
+        "map.tmx"
+    ]
+}
