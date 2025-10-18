@@ -4,41 +4,48 @@
 	"layout": [
 		{
 			"control": "lineEdit",
-			"name": "showPathName",
-			"title": "Show Path Name",
-			"tooltip": "The name of the path that, when it is unlocked, shows this scenery.",
+			"name": "showLevelName",
+			"title": "Show level name",
+			"tooltip": "The name of the level that, when it is beaten, shows this scenery.",
 			"value-default": ""
 		},
 		{
 			"control": "spinBox",
 			"name": "showDelay",
 			"title": "Show Delay",
-			"tooltip": "Controls when the path appears. For example, if it's 1, it'll appear instantly when the path is unlocked, if it's 2 it'll happen a bit later, etc.",
+			"tooltip": "Controls when the scenery appears. For example, if it's 1, it'll appear instantly when the level is beaten, if it's 2 it'll happen a bit later, etc.",
 			"type": "int",
-			"value-default": 1,
-			"value-min": 1,
+			"value-default": 0,
+			"value-min": 0,
 			"value-max": 2048
 		},
 		{
 			"control": "lineEdit",
-			"name": "hidePathName",
-			"title": "Hide Path Name",
-			"tooltip": "The name of the path that, when it is unlocked, hides this scenery.",
+			"name": "hideLevelName",
+			"title": "Hide level name",
+			"tooltip": "The name of the level that, when it is beaten, hides this scenery.",
 			"value-default": ""
 		},
 		{
 			"control": "spinBox",
 			"name": "hideDelay",
 			"title": "Hide Delay",
-			"tooltip": "Controls when the path disappears. For example, if it's 1, it'll disappear instantly when the path is unlocked, if it's 2 it'll happen a bit later, etc.",
+			"tooltip": "Controls when the scenery disappears. For example, if it's 1, it'll disappear instantly when the level is beaten, if it's 2 it'll happen a bit later, etc.",
 			"type": "int",
-			"value-default": 1,
-			"value-min": 1,
+			"value-default": 0,
+			"value-min": 0,
 			"value-max": 2048
 		},
+        {
+            "control": "checkBox",
+            "name": "useSmoke",
+            "title": "Use smoke effect",
+            "tooltip": "Use the smoke effect instead of the default vanishing effect",
+            "valueDefault": false
+        },
 		{
 			"control": "description",
-			"text": "\n<b>What are these?</b>\nThese control when this scenery appears or disappears. For example, if you put 'myCoolPath' into the show path name, the path will be invisible until a path with the name of 'myCoolPath' is unlocked. The higher the delay, the later it actually happens. The hide options are similar, except they hide it instead of showing it."
+			"text": "\n<b>What are these?</b>\nThese control when this scenery appears or disappears. For example, if you put 'myCoolLevel' into the show level name, the scenery will be invisible until a level with the name of 'myCoolLevel' is beaten. The higher the delay, the later it actually happens. The hide options are similar, except they hide it instead of showing it."
 		}
 	]
 }

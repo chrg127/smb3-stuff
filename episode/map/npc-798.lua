@@ -17,3 +17,4 @@ smwMap.setObjSettings(npcID, {
 })
 
 return {}
+

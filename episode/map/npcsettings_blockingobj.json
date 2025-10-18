@@ -1,0 +1,15 @@
+{
+	"style" : "groupbox",
+	"title" : "Blocking object settings",
+	"layout": [
+		{
+			"control": "levelFile",
+			"name": "levelFilename",
+			"title": "Level Filename",
+			"tooltip": "Filename of the level that, when is beaten, hides this object.",
+			"value-default": ""
+		}
+	]
+}
+
+

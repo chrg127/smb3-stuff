@@ -396,6 +396,14 @@ local function findLevel(v,x,y)
     return nil
 end
 
+local function findBlockingObj(v, x, y)
+    for _,obj in ipairs(smwMap.getIntersectingObjects(x - v.width*0.5,y - v.height*0.5,x + v.width*0.5,y + v.height*0.5)) do
+        if obj.id == 754 then
+            return obj
+        end
+    end
+    return nil
+end
 
 -- Transitions
 do
@@ -622,12 +630,12 @@ smwMap.transitionSettings = {
 -- Events system
 -- Handles stuff like paths opening, castle destruction, etc.
 local EVENT_TYPE = {
-    -- UNLOCK_PATH        = 0,
     BEAT_LEVEL         = 0,
     LEVEL_DESTROYED    = 1,
     SWITCH_PALACE      = 2,
     FORCE_WALK         = 3,
     ENCOUNTER_DEFEATED = 4,
+    SHOW_HIDE_SCENERIES= 5,
 }
 
 local updateEvent
@@ -652,60 +660,38 @@ do
         end
     end
 
-    --[[
-    updateFunctions[EVENT_TYPE.UNLOCK_PATH] = (function(eventObj)
-        if eventObj.sceneryProgress < eventObj.neededSceneryProgress then -- We have sceneries to reveal!
-            eventObj.sceneryTimer = eventObj.sceneryTimer + 1
-
-            eventObj.sceneryProgress = (eventObj.sceneryTimer/smwMap.pathSettings.unlockAnimationFrequency)
+    updateFunctions[EVENT_TYPE.SHOW_HIDE_SCENERIES] = function(eventObj)
+        if eventObj.sceneryProgress < eventObj.neededSceneryProgress+1 then
+            eventObj.timer = eventObj.timer + 1
+            eventObj.sceneryProgress = (eventObj.timer/smwMap.pathSettings.unlockAnimationFrequency)
 
             -- Update each scenery
             for _,scenery in ipairs(eventObj.showSceneries) do
-                if scenery.globalSettings.showDelay <= math.floor(eventObj.sceneryProgress)+1 then
-                    scenery.opacity = math.clamp((eventObj.sceneryProgress+1 - scenery.globalSettings.showDelay))
+                if scenery.globalSettings.useSmoke then
+                    if scenery.globalSettings.showDelay == math.floor(eventObj.sceneryProgress) and scenery.opacity == 0 then
+                        scenery.opacity = 1
+                        local smoke = smwMap.createObject(798, scenery.x, scenery.y)
+                        smoke.priority = -10
+                    end
+                else
+                    scenery.opacity = math.clamp(eventObj.sceneryProgress - scenery.globalSettings.showDelay)
                 end
             end
 
             for _,scenery in ipairs(eventObj.hideSceneries) do
-                if scenery.globalSettings.hideDelay <= math.floor(eventObj.sceneryProgress)+1 then
-                    scenery.opacity = math.clamp(1 - (eventObj.sceneryProgress+1 - scenery.globalSettings.hideDelay))
+                if scenery.globalSettings.useSmoke then
+                    if scenery.globalSettings.hideDelay == math.floor(eventObj.sceneryProgress) and scenery.opacity == 1 then
+                        scenery.opacity = 0
+                        smwMap.createObject(798, scenery.x, scenery.y)
+                    end
+                else
+                    scenery.opacity = math.clamp(1 - (eventObj.sceneryProgress - scenery.globalSettings.hideDelay))
                 end
             end
-        else -- sceneries are all done!
-            eventObj.pathTimer = eventObj.pathTimer + 1
-
-            eventObj.pathProgress = (eventObj.pathTimer/smwMap.pathSettings.unlockAnimationFrequency)
-
-            if eventObj.pathProgress >= math.ceil(eventObj.pathObj.splineLength/smwMap.pathSettings.unlockAnimationDistance) then
-                -- Finish the sound effects, but only if this is the last one in the queue
-                if unlockLoopObj ~= nil and unlockLoopObj:isPlaying() then
-                    unlockLoopObj:stop()
-                    unlockLoopObj = nil
-                end
-
-                SFX.play(smwMap.pathSettings.unlockFinishSound)
-
-
-                -- Find any levels that should be unlocked and unlock them
-                unlockConnectedLevels(eventObj.pathObj)
-
-
-                eventObj.pathObj.unlockingEventObj = nil
-
-                table.remove(smwMap.activeEvents,1)
-
-                return
-            end
+        else
+            table.remove(smwMap.activeEvents,1)
         end
-
-
-        if unlockLoopObj == nil or not unlockLoopObj:isPlaying() then
-            unlockLoopObj = SFX.play{sound = smwMap.pathSettings.unlockLoopSound,loops = 0}
-        elseif unlockLoopObj ~= nil and unlockLoopObj:isPaused() then
-            unlockLoopObj:resume()
-        end
-    end)
-    ]]
+    end
 
     -- Force player move
     updateFunctions[EVENT_TYPE.FORCE_WALK] = (function(eventObj)
@@ -1282,7 +1268,7 @@ do
 
         v.movementHistory = {}
         -- different from the field above
-        v.lastMovement = ""
+        v.lastMovement = saveData.lastMovement or ""
 
 
         v.followingDelay = FOLLOWING_DELAY * #smwMap.players
@@ -1476,17 +1462,13 @@ do
 
 
 
-    function smwMap.tryPlayerMove(v,directionName)
+    function smwMap.tryPlayerMove(v, directionName)
         if v.state ~= PLAYER_STATE.NORMAL then
             return
         end
 
-        -- Failsafe: does the level actually exist?
-        if v.levelObj == nil then
-            return
-        end
-
-        if not smwMap.levelExitIsUnlocked(v.levelObj, directionName) then
+        if not smwMap.levelExitIsUnlocked(v.levelObj, directionName, v.lastMovement) then
+            SFX.play(3)
             return
         end
 
@@ -1549,11 +1531,14 @@ do
         })[dir]
     end
 
-    function smwMap.levelExitIsUnlocked(levelObj, directionName)
+    function smwMap.levelExitIsUnlocked(levelObj, directionName, lastMovement)
         -- come-back rule: if the player came to a level from a direction,
         -- then he can ALWAYS come back with the opposite direction
-        if saveData.lastMovement == reverseDir(directionName) then
+        if lastMovement == reverseDir(directionName) then
             return true
+        end
+        if levelObj == nil then
+            return false
         end
         if isNormalLevel(levelObj.id) then
             local dirtype = levelObj.settings["unlock_" .. directionName]
@@ -1567,11 +1552,15 @@ do
         end
     end
 
-    -- these two are used by some levels' lua files
+    -- checks if any exit has been unlocked on a level. takes either a level object or a name
     function smwMap.isLevelBeaten(level)
-        return level.settings.levelFilename ~= nil and saveData.beatenLevels[level.settings.levelFilename]
+        if type(level) == "string" then
+            return saveData.beatenLevels[level]
+        end
+        return (level.settings.levelFilename ~= nil and saveData.beatenLevels[level.settings.levelFilename])
     end
 
+    -- checks if all exits have been unlocked on a level.
     function smwMap.isLevelCompletelyBeaten(level)
         local data = saveData.beatenLevels[level.settings.levelFilename]
         for _, dir in ipairs({"up", "down", "left", "right"}) do
@@ -1583,22 +1572,6 @@ do
     end
 
     function smwMap.unlockLevelPath(levelObj, directionName)
-        --[[
-        for _,scenery in ipairs(smwMap.sceneries) do
-            if scenery.globalSettings.showPathName == name and (scenery.opacity == 0 or scenery.globalSettings.hidePathName == name) then
-                table.insert(eventObj.showSceneries,scenery)
-
-                eventObj.neededSceneryProgress = math.max(eventObj.neededSceneryProgress,scenery.globalSettings.showDelay)
-            end
-
-            if scenery.globalSettings.hidePathName == name and (scenery.opacity == 1 or scenery.globalSettings.showPathName == name) then
-                table.insert(eventObj.hideSceneries,scenery)
-
-                eventObj.neededSceneryProgress = math.max(eventObj.neededSceneryProgress,scenery.globalSettings.hideDelay)
-            end
-        end
-        ]]
-
         -- table.insert(smwMap.activeEvents,eventObj)
     end
 
@@ -1622,7 +1595,7 @@ do
 
             local eventObj = {}
 
-            eventObj.type = EVENT_TYPE.UNLOCK_PATH
+            eventObj.type = EVENT_TYPE.SHOW_HIDE_SCENERIES
 
             eventObj.pathObj = pathObj
 
@@ -1731,6 +1704,27 @@ do
         end
     end
 
+    local function arrayMax(t, f)
+        local res = -math.huge
+        for _, e in ipairs(t) do
+            res = math.max(res, f(e))
+        end
+        return res
+    end
+
+    local function getSceneryEventData(name)
+        local show = {}
+        local hide = {}
+        for _, scenery in ipairs(smwMap.sceneries) do
+            if scenery.globalSettings.showLevelName == name and (scenery.opacity == 0 or scenery.globalSettings.hideLevelName == name) then
+                table.insert(show, scenery)
+            end
+            if scenery.globalSettings.hideLevelName == name and (scenery.opacity == 1 or scenery.globalSettings.showLevelName == name) then
+                table.insert(hide, scenery)
+            end
+        end
+        return show, hide
+    end
 
     function smwMap.unlockLevelPaths(levelObj, winType)
         if levelObj.settings.levelFilename == nil then
@@ -1738,32 +1732,31 @@ do
         end
         saveData.beatenLevels[levelObj.settings.levelFilename] = saveData.beatenLevels[levelObj.settings.levelFilename] or {}
         saveData.beatenLevels[levelObj.settings.levelFilename].character = smwMap.mainPlayer.basePlayer.character
+
         for _, directionName in ipairs{"up", "right", "down", "left"} do
             local unlockType = (levelObj.settings["unlock_".. directionName])
             if (type(unlockType) == "number" and (unlockType == 2 or unlockType-2 == winType)) or unlockType == true then
                 if not saveData.beatenLevels[levelObj.settings.levelFilename][directionName] then
                     saveData.beatenLevels[levelObj.settings.levelFilename][directionName] = true
-                    -- create an unlock event
-                    local eventObj = {
-                        --[[
-                        type = EVENT_TYPE.UNLOCK_PATH,
 
-                        pathObj = pathObj,
+                    -- finds each blocking obj belonging to the level and remove them
+                    for _, o in ipairs(smwMap.objects) do
+                        if o.id == 754 and o.settings.levelFilename == levelObj.settings.levelFilename then
+                            o:remove()
+                        end
+                    end
 
-                        pathProgress = 0,
-                        pathTimer = 0,
-                        direction = (distanceToStart < distanceToEnd and 1) or -1,
-
-
-                        -- Initialise showing/hiding sceneries
-                        neededSceneryProgress = 0,
+                    -- Initialise showing/hiding sceneries
+                    local showSceneries, hideSceneries = getSceneryEventData(levelObj.settings.levelFilename)
+                    table.insert(smwMap.activeEvents, {
+                        type = EVENT_TYPE.SHOW_HIDE_SCENERIES,
+                        neededSceneryProgress = math.max(arrayMax(showSceneries, function (e) return e.globalSettings.showDelay end),
+                                                         arrayMax(hideSceneries, function (e) return e.globalSettings.hideDelay end)),
                         sceneryProgress = 0,
-                        sceneryTimer = 0,
-
-                        showSceneries = {},
-                        hideSceneries = {},
-                        ]]
-                    }
+                        timer = 0,
+                        showSceneries = showSceneries,
+                        hideSceneries = hideSceneries,
+                    })
                 end
             end
         end
@@ -2013,7 +2006,7 @@ do
 
         v.warpCooldown = math.max(0, v.warpCooldown - 1)
 
-        -- if the player has finished walking the path (i.e. is resting on a level)
+        -- has the player has finished walking the path (i.e. is resting on a level)?
         local levelObj = findLevel(v,v.x,v.y)
 
         local function isWithin(movement, x, y, lx, ly)
@@ -2041,12 +2034,32 @@ do
                 else
                     SFX.play(26)
                 end
-            end
 
-            -- save the last movement here so that the player doesn't remain stuck on a level
-            -- if he quits there
-            if v.isMainPlayer then
+                -- save the last movement here so that the player doesn't remain stuck on a level
+                -- if he quits there
                 saveData.lastMovement = v.lastMovement
+            end
+        else
+            local obj = findBlockingObj(v, v.x, v.y)
+            if obj ~= nil then
+                v.x = obj.x + ({ left = 32, right = -32, up =   0, down =  0 })[v.lastMovement]
+                v.y = obj.y + ({ left =  0, right =   0, up = 32, down = -32 })[v.lastMovement]
+                v.state = PLAYER_STATE.NORMAL
+                v.timer = 0
+                v.timer2 = 0
+                v.warpCooldown = 0
+                if v.levelObj ~= nil and (v.x ~= v.levelObj.x or v.y ~= v.levelObj.y) then
+                    v.levelObj = nil
+                    if v.isMainPlayer then
+                        SFX.play(26)
+                    end
+                else
+                    -- we haven't actually moved, so restore previous lastMovement
+                    v.lastMovement = saveData.lastMovement
+                    if v.isMainPlayer then
+                        SFX.play(3)
+                    end
+                end
             end
         end
     end)
@@ -2578,6 +2591,10 @@ do
     function smwMap.createObject(id, x, y, npc)
         local config = smwMap.getObjectConfig(id)
 
+        if id == 754 and smwMap.isLevelBeaten(npc.data._settings.levelFilename) then
+            return
+        end
+
         local v = {}
 
         v.id = id
@@ -2647,7 +2664,6 @@ do
                 table.insert(smwMap.instantWarpsList,v)
             end
         end
-
 
         setmetatable(v,objectMT)
 
@@ -2835,16 +2851,15 @@ do
 
         v.globalSettings = v.settings._global
 
-
-        if (v.globalSettings.showPathName == "" or smwMap.pathIsUnlocked(v.globalSettings.showPathName)) and (v.globalSettings.hidePathName == "" or not smwMap.pathIsUnlocked(v.globalSettings.hidePathName)) then
+        if (v.globalSettings.showLevelName ~= "" and smwMap.isLevelBeaten(v.globalSettings.showLevelName))
+        or (v.globalSettings.hideLevelName ~= "" and not smwMap.isLevelBeaten(v.globalSettings.hideLevelName))
+        or (v.globalSettings.showLevelName == "" and v.globalSettings.hideLevelName == "") then
             v.opacity = 1
         else
             v.opacity = 0
         end
 
-
-        table.insert(smwMap.sceneries,v)
-
+        table.insert(smwMap.sceneries, v)
         return v
     end
 
