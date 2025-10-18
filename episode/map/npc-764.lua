@@ -14,7 +14,7 @@ local npcID = NPC_ID
 local obj = {}
 
 
-smwMap.setObjSettings(npcID,{
+smwMap.setObjConfig(npcID,{
     framesY = 6,
 
     gfxoffsety = -8,

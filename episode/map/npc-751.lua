@@ -14,7 +14,7 @@ local npcID = NPC_ID
 local obj = {}
 
 
-smwMap.setObjSettings(npcID,{
+smwMap.setObjConfig(npcID,{
     hidden = true,
 
     onInitObj = (function(v)

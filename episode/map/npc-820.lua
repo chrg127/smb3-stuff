@@ -3,7 +3,7 @@ local smwMap = require("smwMap")
 local npcID = NPC_ID
 local baseLevelFrames = 1
 
-smwMap.setObjSettings(npcID, {
+smwMap.setObjConfig(npcID, {
     framesY = 9,
     isLevel = true,
     hasBeatenAnimation = true,

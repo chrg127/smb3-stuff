@@ -5,7 +5,7 @@ smwMap.levelDestroyedSmokeEffectID = npcID
 
 local frameLength = 8
 
-smwMap.setObjSettings(npcID,{
+smwMap.setObjConfig(npcID,{
     framesX = 1,
     framesY = 6,
 

@@ -318,8 +318,6 @@ local function getUsualCameraPos()
     local x = smwMap.mainPlayer.x - smwMap.camera.width *0.5
     local y = smwMap.mainPlayer.y - smwMap.camera.height*0.5
 
-
-
     if smwMap.freeCamera then
         y = y + smwMap.mainPlayer.zOffset -- if using free camera, apply the Z offset, 'cause why not
     end
@@ -344,51 +342,13 @@ local function getUsualCameraPos()
 end
 
 
---[[
-local function levelConnectsToPath(pathName,levelObj,directionName)
-    return (levelObj.settings["path_".. directionName] == pathName)
-end
-
-local function unlockConnectedLevels(pathObj)
-    for _,levelObj in ipairs(smwMap.objects) do
-        if smwMap.getObjectConfig(levelObj.id).isLevel and levelObj.lockedFade > 0 and (
-            levelConnectsToPath(pathObj.name,levelObj,"up")
-            or levelConnectsToPath(pathObj.name,levelObj,"right")
-            or levelConnectsToPath(pathObj.name,levelObj,"down")
-            or levelConnectsToPath(pathObj.name,levelObj,"left")
-        ) then
-            -- Spawn level appear effect
-            if smwMap.unlockLevelEffectID ~= nil then
-                local sparkle = smwMap.createObject(smwMap.unlockLevelEffectID,levelObj.x,levelObj.y)
-
-                sparkle.data.affectingLevel = levelObj
-            else
-                levelObj.lockedFade = 0
-            end
-        end
-    end
-end
-]]
-
 local function isNormalLevel(id)
     local config = smwMap.getObjectConfig(id)
     return (config.isLevel and not config.isWarp)
 end
 
---[[
-local function getDistanceToSplineStartAndEnd(splineObj,x,y)
-    local startPoint = splineObj.points[1]
-    local endPoint = splineObj.points[#splineObj.points]
-
-    local distanceToStart = vector((splineObj.x + startPoint.x) - x,(splineObj.y + startPoint.y) - y).length
-    local distanceToEnd   = vector((splineObj.x + endPoint.x  ) - x,(splineObj.y + endPoint.y  ) - y).length
-
-    return distanceToStart,distanceToEnd
-end
-]]
-
-local function findLevel(v,x,y)
-    for _,obj in ipairs(smwMap.getIntersectingObjects(x - v.width*0.5,y - v.height*0.5,x + v.width*0.5,y + v.height*0.5)) do
+local function findLevel(v, x, y)
+    for _,obj in ipairs(smwMap.getIntersectingObjects(x - v.width*0.5, y - v.height*0.5, x + v.width*0.5, y + v.height*0.5)) do
         if smwMap.getObjectConfig(obj.id).isLevel then
             return obj
         end
@@ -397,8 +357,8 @@ local function findLevel(v,x,y)
 end
 
 local function findBlockingObj(v, x, y)
-    for _,obj in ipairs(smwMap.getIntersectingObjects(x - v.width*0.5,y - v.height*0.5,x + v.width*0.5,y + v.height*0.5)) do
-        if obj.id == 754 then
+    for _,obj in ipairs(smwMap.getIntersectingObjects(x - v.width*0.5, y - v.height*0.5, x + v.width*0.5, y + v.height*0.5)) do
+        if obj.id == smwMap.blockingObjID then
             return obj
         end
     end
@@ -633,9 +593,8 @@ local EVENT_TYPE = {
     BEAT_LEVEL         = 0,
     LEVEL_DESTROYED    = 1,
     SWITCH_PALACE      = 2,
-    FORCE_WALK         = 3,
-    ENCOUNTER_DEFEATED = 4,
-    SHOW_HIDE_SCENERIES= 5,
+    ENCOUNTER_DEFEATED = 3,
+    SHOW_HIDE_SCENERIES= 4,
 }
 
 local updateEvent
@@ -693,22 +652,6 @@ do
         end
     end
 
-    -- Force player move
-    updateFunctions[EVENT_TYPE.FORCE_WALK] = (function(eventObj)
-        if smwMap.movingEncountersCount > 0 then
-            return
-        end
-
-
-        eventObj.timer = eventObj.timer + 1
-
-        if eventObj.timer >= 8 then
-            smwMap.tryPlayerMove(smwMap.mainPlayer, eventObj.direction)
-            table.remove(smwMap.activeEvents,1)
-        end
-    end)
-
-
     -- Destroying a castle
     updateFunctions[EVENT_TYPE.LEVEL_DESTROYED] = (function(eventObj)
         eventObj.timer = eventObj.timer + 1
@@ -756,6 +699,7 @@ do
 
                 switchBlockReleasedSound = SFX.play(smwMap.playerSettings.switchBlockReleasedSound)
             elseif interval > 12 then
+                smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
                 table.remove(smwMap.activeEvents,1)
             end
         end
@@ -818,7 +762,7 @@ do
         data.levelObj = levelObj
     end
 
---[[
+    --[[
     local function isValidPath(pathObj,canWalkOn)
         if canWalkOn == CAN_WALK_ON.ANY then
             return true
@@ -1068,7 +1012,7 @@ do
     local movingSound
 
     function smwMap.updateEncounters()
-        if smwMap.mainPlayer.state == smwMap.PLAYER_STATE.WON or (#smwMap.activeEvents > 0 and smwMap.activeEvents[1].type ~= EVENT_TYPE.FORCE_WALK) then
+        if smwMap.mainPlayer.state == smwMap.PLAYER_STATE.WON then
             return
         end
 
@@ -1197,20 +1141,13 @@ smwMap.PLAYER_STATE = PLAYER_STATE
 smwMap.LOOK_AROUND_STATE = LOOK_AROUND_STATE
 
 do
-    local stateFunctions = {}
-
-
     smwMap.players = {}
-
-
     smwMap.activeAreas = {}
     smwMap.currentBackgroundArea = nil
     smwMap.currentMusicArea = nil
     smwMap.currentCameraArea = nil
 
-
     local FOLLOWING_DELAY = 16
-
 
     function smwMap.createPlayer(basePlayerIdx)
         local v = {}
@@ -1296,7 +1233,6 @@ do
 
     smwMap.mainPlayer = smwMap.createPlayer()
     smwMap.mainPlayer.isMainPlayer = true
-
 
     smwMap.startPointSelectOptions = {}
     smwMap.startPointSelectedOption = 1
@@ -1461,7 +1397,6 @@ do
     end
 
 
-
     function smwMap.tryPlayerMove(v, directionName)
         if v.state ~= PLAYER_STATE.NORMAL then
             return
@@ -1471,42 +1406,6 @@ do
             SFX.play(3)
             return
         end
-
-        -- Does a path exist here?
-        --[[
-        local pathName = v.levelObj.settings["path_".. directionName]
-        -- maybe we should try trimming the pathName first. otherwise it's difficult
-        -- to detect spaces in the editor
-        if pathName == nil or pathName == "" then
-            return
-        end
-
-        local pathObj = smwMap.pathsMap[pathName]
-        if pathObj == nil then
-            return false
-        end
-
-        -- Is it unlocked?
-        if not smwMap.pathIsUnlocked(pathObj.name) then
-            return
-        end
-
-
-        v.pathObj = pathObj
-
-        -- Figure out whether we're walking from the start or end
-        -- local distanceToStart,distanceToEnd = getDistanceToSplineStartAndEnd(pathObj.splineObj,v.x,v.y)
-        -- if distanceToStart < distanceToEnd then
-            -- v.walkingDirection = 1
-            -- v.walkingProgress = 0
-        -- else
-            -- v.walkingDirection = -1
-            -- v.walkingProgress = 1
-        -- end
-
-        -- v.walkingDirection = 1
-        -- v.walkingProgress = 1
-        ]]
 
         v.walkingDirection = ({ down = vector(0, 1), up = vector(0, -1),
                                 left = vector(-1, 0), right = vector(1, 0) })[directionName]
@@ -1518,20 +1417,11 @@ do
         return true
     end
 
-    --[[
-    function smwMap.pathIsUnlocked(name)
-        return saveData.unlockedPaths[name] or false
-    end
-    ]]
-
-    local function reverseDir(dir)
-        return ({
-            down = "up", up = "down",
-            left = "right", right = "left"
-        })[dir]
-    end
-
     function smwMap.levelExitIsUnlocked(levelObj, directionName, lastMovement)
+        local function reverseDir(dir)
+            return ({ down = "up", up = "down", left = "right", right = "left" })[dir]
+        end
+
         -- come-back rule: if the player came to a level from a direction,
         -- then he can ALWAYS come back with the opposite direction
         if lastMovement == reverseDir(directionName) then
@@ -1571,82 +1461,6 @@ do
         return true
     end
 
-    function smwMap.unlockLevelPath(levelObj, directionName)
-        -- table.insert(smwMap.activeEvents,eventObj)
-    end
-
-    --[[
-    function smwMap.unlockPath(name,fromPoint)
-        if name == nil or name == "" or smwMap.pathIsUnlocked(name) then
-            return
-        end
-
-        saveData.unlockedPaths[name] = true
-
-        local pathObj = smwMap.pathsMap[name]
-
-        if pathObj == nil then
-            return
-        end
-
-
-        if fromPoint ~= nil then
-            local distanceToStart,distanceToEnd = getDistanceToSplineStartAndEnd(pathObj.splineObj,fromPoint.x,fromPoint.y)
-
-            local eventObj = {}
-
-            eventObj.type = EVENT_TYPE.SHOW_HIDE_SCENERIES
-
-            eventObj.pathObj = pathObj
-
-            eventObj.pathProgress = 0
-            eventObj.pathTimer = 0
-            eventObj.direction = (distanceToStart < distanceToEnd and 1) or -1
-
-
-            -- Initialise showing/hiding sceneries
-            eventObj.neededSceneryProgress = 0
-            eventObj.sceneryProgress = 0
-            eventObj.sceneryTimer = 0
-
-            eventObj.showSceneries = {}
-            eventObj.hideSceneries = {}
-
-            for _,scenery in ipairs(smwMap.sceneries) do
-                if scenery.globalSettings.showPathName == name and (scenery.opacity == 0 or scenery.globalSettings.hidePathName == name) then
-                    table.insert(eventObj.showSceneries,scenery)
-
-                    eventObj.neededSceneryProgress = math.max(eventObj.neededSceneryProgress,scenery.globalSettings.showDelay)
-                end
-
-                if scenery.globalSettings.hidePathName == name and (scenery.opacity == 1 or scenery.globalSettings.showPathName == name) then
-                    table.insert(eventObj.hideSceneries,scenery)
-
-                    eventObj.neededSceneryProgress = math.max(eventObj.neededSceneryProgress,scenery.globalSettings.hideDelay)
-                end
-            end
-
-
-            pathObj.unlockingEventObj = eventObj
-
-            table.insert(smwMap.activeEvents,eventObj)
-
-            return eventObj
-        else
-            -- Instant, show/hide sceneries
-            for _,scenery in ipairs(smwMap.sceneries) do
-                if scenery.globalSettings.showPathName == name then
-                    scenery.opacity = 1
-                elseif scenery.globalSettings.hidePathName == name then
-                    scenery.opacity = 0
-                end
-            end
-
-            unlockConnectedLevels(pathObj)
-        end
-    end
-    ]]
-
     local function setPlayerLevel(v,levelObj)
         v.levelObj = levelObj
 
@@ -1670,17 +1484,14 @@ do
 
 
     local function canEnterLevel(levelObj)
+        print("canEnterLevel")
         if levelObj == nil then
             return false
         end
 
+        -- Handle warps
         if smwMap.getObjectConfig(levelObj.id).isWarp then
-            -- Handle warps
-            if smwMap.warpsMap[levelObj.settings.destinationWarpName] == nil and smwMap.pathsMap[levelObj.settings.destinationPathName] == nil then
-                return false
-            end
-
-            return true
+            return smwMap.warpsMap[levelObj.settings.destinationWarpName] ~= nil
         end
 
         -- Does the level file actually exist?
@@ -1691,7 +1502,6 @@ do
         if not io.exists(Misc.episodePath().. levelObj.settings.levelFilename) then
             return false
         end
-
 
         if levelObj.settings.destroyAfterWin then
             if smwMap.getObjectConfig(levelObj.id).isBonusLevel then
@@ -1704,29 +1514,29 @@ do
         end
     end
 
-    local function arrayMax(t, f)
-        local res = -math.huge
-        for _, e in ipairs(t) do
-            res = math.max(res, f(e))
-        end
-        return res
-    end
-
-    local function getSceneryEventData(name)
-        local show = {}
-        local hide = {}
-        for _, scenery in ipairs(smwMap.sceneries) do
-            if scenery.globalSettings.showLevelName == name and (scenery.opacity == 0 or scenery.globalSettings.hideLevelName == name) then
-                table.insert(show, scenery)
-            end
-            if scenery.globalSettings.hideLevelName == name and (scenery.opacity == 1 or scenery.globalSettings.showLevelName == name) then
-                table.insert(hide, scenery)
-            end
-        end
-        return show, hide
-    end
-
     function smwMap.unlockLevelPaths(levelObj, winType)
+        local function arrayMax(t, f)
+            local res = -math.huge
+            for _, e in ipairs(t) do
+                res = math.max(res, f(e))
+            end
+            return res
+        end
+
+        local function getSceneryEventData(name)
+            local show = {}
+            local hide = {}
+            for _, scenery in ipairs(smwMap.sceneries) do
+                if scenery.globalSettings.showLevelName == name and (scenery.opacity == 0 or scenery.globalSettings.hideLevelName == name) then
+                    table.insert(show, scenery)
+                end
+                if scenery.globalSettings.hideLevelName == name and (scenery.opacity == 1 or scenery.globalSettings.showLevelName == name) then
+                    table.insert(hide, scenery)
+                end
+            end
+            return show, hide
+        end
+
         if levelObj.settings.levelFilename == nil then
             return
         end
@@ -1777,7 +1587,7 @@ do
     end
 
 
-    local function updateWalkingPosition(v,walkSpeed)
+    local function updateWalkingPosition(v, walkSpeed)
         local walkSpeed = walkSpeed or (v.isClimbing and smwMap.playerSettings.climbSpeed) or smwMap.playerSettings.walkSpeed
         local newProgress, newPosition = 0.5, vector(v.x, v.y) + v.walkingDirection * walkSpeed
         v.direction = 0
@@ -1828,7 +1638,6 @@ do
 
     function smwMap.doPlayerWarp(v,warpObj)
         local destinationLevel = smwMap.warpsMap[warpObj.settings.destinationWarpName]
-        -- local destinationPath  = smwMap.pathsMap[warpObj.settings.destinationPathName]
 
         if destinationLevel ~= nil then
             local middleFunction = (function()
@@ -1889,6 +1698,8 @@ do
         ]]
     end
 
+
+    local stateFunctions = {}
 
     -- just standing there
     stateFunctions[PLAYER_STATE.NORMAL] = (function(v)
@@ -1990,9 +1801,7 @@ do
             return
         end
 
-
         updateWalkingPosition(v)
-
 
         -- Look for instant warps
         if v.isMainPlayer and v.warpCooldown == 0 then
@@ -2135,6 +1944,7 @@ do
                     timer = 0,
                     levelObj = v.levelObj,
                     switchColorID = config.switchColorID,
+                    winType = gameData.winType,
                 })
             end
 
@@ -2207,13 +2017,6 @@ do
     end)
 
     -- "illparkwhereiwant" cheat
-    local spinDirections = {0,2,1,3}
-
-    local selectLevelText = {
-        [false] = {"MOVE AROUND TO FIND A LEVEL,","PRESS JUMP TO SELECT IT"},
-        [true] = {"MOVE AROUND TO FIND A LEVEL,","PRESS JUMP TO SELECT IT","","YOU CAN ALSO PRESS BACKSPACE","TO ERASE MAP-RELATED SAVE DATA"}
-    }
-
     stateFunctions[PLAYER_STATE.PARKING_WHERE_I_WANT] = (function(v)
         if player.keys.left then
             v.x = v.x - 4
@@ -2258,6 +2061,7 @@ do
             return
         end
 
+        local spinDirections = {0,2,1,3}
 
         v.timer = v.timer + 1
         v.direction = spinDirections[(math.floor(v.timer / 2) % #spinDirections) + 1]
@@ -2269,6 +2073,11 @@ do
 
         local x = SCREEN_WIDTH*0.5
         local y = SCREEN_HEIGHT - smwMap.hudSettings.borderBottomHeight - 16
+
+        local selectLevelText = {
+            [false] = {"MOVE AROUND TO FIND A LEVEL,","PRESS JUMP TO SELECT IT"},
+            [true] = {"MOVE AROUND TO FIND A LEVEL,","PRESS JUMP TO SELECT IT","","YOU CAN ALSO PRESS BACKSPACE","TO ERASE MAP-RELATED SAVE DATA"}
+        }
 
         local messages = selectLevelText[Misc.inEditor()]
 
@@ -2323,7 +2132,6 @@ do
             SFX.play(smwMap.playerSettings.levelSelectedSound)
         end
     end)
-
 
 
     -- Handling looking around (done by pressing altJump)
@@ -2519,29 +2327,10 @@ do
 
     smwMap.objectConfig = {}
 
-
-    -- smwMap.pathsList = {}
-    smwMap.pathsMap = {}
-
     smwMap.instantWarpsList = {}
     smwMap.warpsMap = {}
 
-
     smwMap.areas = {}
-
-
-    local objectInstanceFunctions = {}
-
-
-    function objectInstanceFunctions.remove(v)
-        v.toRemove = true
-    end
-
-
-    local objectMT = {
-        __index = objectInstanceFunctions,
-    }
-
 
     function smwMap.getObjectConfig(id)
         if smwMap.objectConfig[id] == nil then
@@ -2577,13 +2366,11 @@ do
     end
 
 
-    function smwMap.setObjSettings(id,settings)
+    function smwMap.setObjConfig(id,settings)
         local config = smwMap.getObjectConfig(id)
-
         for k,v in pairs(settings) do
             config[k] = v
         end
-
         return config
     end
 
@@ -2665,7 +2452,13 @@ do
             end
         end
 
-        setmetatable(v,objectMT)
+        setmetatable(v,{
+            __index = {
+                remove = function (v)
+                    v.toRemove = true
+                end
+            },
+        })
 
 
         if config.onInitObj ~= nil then
@@ -2696,7 +2489,6 @@ do
 
         return ret
     end
-
 
 
     function smwMap.initObjects()
@@ -2905,7 +2697,6 @@ end
 -- Rendering
 do
     --[[
-
         USUAL PRIORITY:
 
         -90          Tiles default
@@ -2915,7 +2706,6 @@ do
         -50          Objects default
         -25 to -20   Players and sceneries default (dependent on Y position relative to camera)
         -10          Some higher priority objects
-
     ]]
 
 

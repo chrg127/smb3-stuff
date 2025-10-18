@@ -54,7 +54,7 @@ local function doLevelPathChecks(pathObj,levelObj,directionName)
 end
 
 
-smwMap.setObjSettings(npcID,{
+smwMap.setObjConfig(npcID,{
     hidden = true,
 
     onInitObj = (function(v)

@@ -2,7 +2,7 @@ local smwMap = require("smwMap")
 
 local npcID = NPC_ID
 
-smwMap.setObjSettings(npcID,{
+smwMap.setObjConfig(npcID,{
     framesY = 4,
     isLevel = true,
 

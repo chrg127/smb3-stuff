@@ -17,7 +17,7 @@ local obj = {}
 local lifetime = 32
 
 
-smwMap.setObjSettings(npcID,{
+smwMap.setObjConfig(npcID,{
     framesY = 4,
 
     onTickObj = (function(v)
