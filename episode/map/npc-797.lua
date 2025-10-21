@@ -4,8 +4,8 @@ local npcID = NPC_ID
 local frameLength = 8
 
 smwMap.setObjConfig(npcID, {
-    framesX = 1,
     framesY = 3,
+    priority = -10,
 
     onTickObj = function (v)
         v.data.timer = (v.data.timer or 0) + 1

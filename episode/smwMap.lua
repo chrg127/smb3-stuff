@@ -101,7 +101,7 @@ smwMap.playerSettings = {
     canEnterDestroyedBonusLevels = false,
 
 
-    walkSpeed = 3,
+    walkSpeed = 4,
     climbSpeed = 0.75, -- should be unused
 
 
@@ -148,7 +148,7 @@ smwMap.pathSettings = {
 smwMap.encounterSettings = {
     idleWanderDistance = 12,
 
-    walkSpeed = 4,
+    walkSpeed = 1,
 
     maxMovements = 6,
     keepWalkingChance = 3,
@@ -595,6 +595,7 @@ local EVENT_TYPE = {
     SWITCH_PALACE      = 2,
     ENCOUNTER_DEFEATED = 3,
     SHOW_HIDE_SCENERIES= 4,
+    MOVE_ENCOUNTERS    = 5,
 }
 
 local updateEvent
@@ -610,8 +611,7 @@ do
         eventObj.timer = eventObj.timer + 1
         if eventObj.timer == 1 then
             SFX.play(smwMap.pathSettings.itemPanel)
-            local beatAnim = smwMap.createObject(797, eventObj.levelObj.x, eventObj.levelObj.y)
-            beatAnim.priority = -10
+            smwMap.createObject(797, eventObj.levelObj.x, eventObj.levelObj.y)
         elseif eventObj.timer == 3 * 8 then
             smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
         elseif eventObj.timer >= 5 * 8 then
@@ -629,8 +629,7 @@ do
                 if scenery.globalSettings.useSmoke then
                     if scenery.globalSettings.showDelay == math.floor(eventObj.sceneryProgress) and scenery.opacity == 0 then
                         scenery.opacity = 1
-                        local smoke = smwMap.createObject(798, scenery.x, scenery.y)
-                        smoke.priority = -10
+                        smwMap.createObject(798, scenery.x, scenery.y)
                     end
                 else
                     scenery.opacity = math.clamp(eventObj.sceneryProgress - scenery.globalSettings.showDelay)
@@ -667,19 +666,16 @@ do
         end
     end)
 
-
     -- Switch palacing releasing the blocks
-    local blockSpeeds = {
-        vector(0,0),
-        vector(0,-12),
-        vector(5,-9),vector(-5,-9),
-        vector(7,-3.25),vector(-7,-3.25),
-        vector(5,-0.2),vector(-5,-0.2),
-    }
-
-    local switchBlockSoundObj
-
     updateFunctions[EVENT_TYPE.SWITCH_PALACE] = (function(eventObj)
+        local blockSpeeds = {
+            vector(0,0),
+            vector(0,-12),
+            vector(5,-9),vector(-5,-9),
+            vector(7,-3.25),vector(-7,-3.25),
+            vector(5,-0.2),vector(-5,-0.2),
+        }
+
         local interval = (eventObj.timer/16)
 
         if math.floor(interval) == interval then
@@ -691,7 +687,6 @@ do
                     block.data.speedY = speed.y
                     block.frameY = eventObj.switchColorID-1
                 end
-
 
                 if switchBlockReleasedSound ~= nil and switchBlockReleasedSound:isPlaying() then
                     switchBlockReleasedSound:stop()
@@ -707,13 +702,29 @@ do
         eventObj.timer = eventObj.timer + 1
     end)
 
-
     updateFunctions[EVENT_TYPE.ENCOUNTER_DEFEATED] = (function(eventObj)
         if not eventObj.encounterObj.isValid then
             table.remove(smwMap.activeEvents,1)
         end
     end)
 
+    updateFunctions[EVENT_TYPE.MOVE_ENCOUNTERS] = function (eventObj)
+        eventObj.timer = (eventObj.timer or 0) + 1
+        if eventObj.timer == 1 then
+            smwMap.beginMovingEncounters()
+            if smwMap.encounterSettings.movingSound ~= nil then
+                eventObj.movingSound = SFX.play{sound = smwMap.encounterSettings.movingSound, loops = 0}
+            end
+        end
+
+        if smwMap.getMovingEncountersCount() == 0 then
+            if eventObj.movingSound ~= nil then
+                eventObj.movingSound:stop()
+                eventObj.movingSound = nil
+            end
+            table.remove(smwMap.activeEvents, 1)
+        end
+    end
 
     function updateEvent(eventObj)
         updateFunctions[eventObj.type](eventObj)
@@ -732,7 +743,6 @@ do
         DEFEATED = 3,
     }
 
-
     local CAN_WALK_ON = {
         NON_HIDDEN = 0,
         ANY        = 1,
@@ -740,15 +750,13 @@ do
         NONE       = 3,
     }
 
-
-    smwMap.movingEncountersCount = 0
     smwMap.encountersWaitingTimer = 0
     smwMap.encountersWaitingToMove = {}
 
     smwMap.encountersCount = 0
 
 
-    local function setLevel(v,data,levelObj)
+    local function setEncounterLevel(v,data,levelObj)
         local config = smwMap.getObjectConfig(levelObj.id)
 
         v.x = levelObj.x
@@ -762,89 +770,37 @@ do
         data.levelObj = levelObj
     end
 
-    --[[
-    local function isValidPath(pathObj,canWalkOn)
-        if canWalkOn == CAN_WALK_ON.ANY then
-            return true
-        end
-
-        if smwMap.pathIsUnlocked(pathObj.name) then
-            return true
-        else
-            if canWalkOn == CAN_WALK_ON.NON_HIDDEN and not pathObj.hideIfLocked then
-                return true
-            end
-        end
-
-        return false
-    end
-    ]]
-
-    local function choosePath(v,data,canRandomlyStop)
-        if data.levelObj == nil then
-            return false
-        end
-
-
+    local function choosePath(v, data, level)
         local canWalkOn = v.settings.canWalkOn
-
         if canWalkOn == CAN_WALK_ON.NONE then
             return false
         end
 
-
-        local onPlayersLevel = (data.levelObj == smwMap.mainPlayer.levelObj) -- certain rules will be ignored if on the player's level
-
-
-        if not onPlayersLevel then
-            if data.walkedOnPathCount >= smwMap.encounterSettings.maxMovements then
-                return false
-            end
-
-            if canRandomlyStop and RNG.randomInt(1,smwMap.encounterSettings.keepWalkingChance) > 1 then
-                return false
-            end
+        -- should be updated to check a list of ids instead
+        if level.id == 811 and level ~= v.data.levelObj and level ~= smwMap.mainPlayer.levelObj then
+            return false
         end
-
 
         -- Find any paths that are available
         local validPaths = {}
-
-        for _,directionName in ipairs{"up","right","down","left"} do
-            local pathObj = smwMap.pathsMap[data.levelObj.settings["path_".. directionName]]
-
-            if pathObj ~= nil and (not data.alreadyWalkedOnPaths[pathObj.name] or onPlayersLevel) and isValidPath(pathObj,canWalkOn) then
-                table.insert(validPaths,pathObj)
+        for _, dir in ipairs{"up","right","down","left"} do
+            if level.settings["unlock_" .. dir] ~= 0 then
+                table.insert(validPaths, dir)
             end
         end
-
 
         if #validPaths == 0 then
             return false
         end
 
-
         -- Walk down one
         local chosenPath = RNG.irandomEntry(validPaths)
-
-        local distanceToStart,distanceToEnd = getDistanceToSplineStartAndEnd(chosenPath.splineObj,v.x,v.y)
-
-        if distanceToStart < distanceToEnd then
-            data.walkingDirection = 1
-            data.walkingProgress = 0
-        else
-            data.walkingDirection = -1
-            data.walkingProgress = 1
-        end
-
-        data.pathObj = chosenPath
-
+        v.walkingDirection = ({ down = vector( 0, 1), up    = vector(0, -1),
+                                left = vector(-1, 0), right = vector(1,  0) })[chosenPath]
+        data.direction = v.walkingDirection.x == 0 and DIR_LEFT or v.walkingDirection.x
+        v.lastMovement = chosenPath
         data.state = smwMap.ENCOUNTER_STATE.WALKING
         data.timer = 0
-
-        data.alreadyWalkedOnPaths[chosenPath.name] = true
-        data.walkedOnPathCount = data.walkedOnPathCount + 1
-
         return true
     end
 
@@ -853,7 +809,6 @@ do
         local data = v.data
 
         if data.state == nil then
-            -- Handle data that gets stuff
             smwMap.encountersCount = smwMap.encountersCount + 1
             data.index = smwMap.encountersCount
 
@@ -882,96 +837,58 @@ do
 
             data.animationSpeed = 1
 
-
             data.defeatedSpeedY = 0
 
-
-            data.alreadyWalkedOnPaths = {}
-            data.walkedOnPathCount = 0
-
-
             local levelObj = findLevel(v,v.x,v.y)
-
             if levelObj ~= nil then
-                setLevel(v,data,levelObj)
+                setEncounterLevel(v,data,levelObj)
             else
                 data.levelObj = nil
-            end
-
-
-            -- If on camera, add to the list that'll move around
-            local cameraX,cameraY = getUsualCameraPos()
-
-            if  (cameraX + smwMap.camera.width ) > v.x-v.width *0.5
-            and (cameraY + smwMap.camera.height) > v.y-v.height*0.5
-            and (cameraX                       ) < v.x+v.width *0.5
-            and (cameraY                       ) < v.y+v.height*0.5
-            then
-                smwMap.movingEncountersCount = smwMap.movingEncountersCount + 1
-                smwMap.encountersWaitingTimer = math.max(32, smwMap.encountersWaitingTimer)
-
-                table.insert(smwMap.encountersWaitingToMove,v)
             end
         end
 
 
         if data.state == smwMap.ENCOUNTER_STATE.NORMAL then
-            v.graphicsOffsetX = v.graphicsOffsetX + data.direction*0.5
-            v.graphicsOffsetY = 0
-
-            data.animationSpeed = 1
-
+            if #smwMap.activeEvents > 0 then
+                v.graphicsOffsetX = 0
+            else
+                v.graphicsOffsetX = v.graphicsOffsetX + data.direction*0.5
+            end
             if v.graphicsOffsetX*data.direction >= smwMap.encounterSettings.idleWanderDistance then
                 data.direction = -data.direction
             end
+            v.graphicsOffsetY = 0
+            data.animationSpeed = 1
         elseif data.state == smwMap.ENCOUNTER_STATE.WALKING then
-            local newProgress,newPosition = data.pathObj.splineObj:step(smwMap.encounterSettings.walkSpeed*data.walkingDirection,data.walkingProgress)
-
-
-            -- Figure out path type
-            local pathType = data.pathObj.types[math.floor(newPosition.z)]
-
-            if pathType ~= nil then
-                local config = smwMap.getPathConfig(pathType)
-
-                v.isUnderwater = config.isWater
-            end
-
-            -- Figure out direction
-            if newPosition.x > v.x then
-                data.direction = DIR_RIGHT
-            elseif newPosition.x < v.x then
-                data.direction = DIR_LEFT
-            end
-
-
-            data.walkingProgress = newProgress
+            local walkSpeed = walkSpeed or (v.isClimbing and smwMap.playerSettings.climbSpeed) or smwMap.encounterSettings.walkSpeed
+            local newPosition = vector(v.x, v.y) + v.walkingDirection * walkSpeed
             v.x = newPosition.x
             v.y = newPosition.y
-
 
             v.graphicsOffsetX = 0
             v.graphicsOffsetY = 0
 
             data.animationSpeed = 4
 
+            local levelObj = findLevel(v,v.x,v.y)
 
-            if (data.walkingDirection == 1 and data.walkingProgress >= 1) or (data.walkingDirection == -1 and data.walkingProgress <= 0) then
-                local levelObj = findLevel(v,v.x,v.y)
+            local function isWithin(movement, x, y, lx, ly)
+                return movement == "down"  and (y >= ly and x == lx)
+                    or movement == "up"    and (y <= ly and x == lx)
+                    or movement == "right" and (x >= lx and y == ly)
+                    or movement == "left"  and (x <= lx and y == ly)
+            end
 
-                if levelObj ~= nil then
-                    setLevel(v,data,levelObj)
-
-                    local startedWalking = choosePath(v,data,true)
-
-                    if not startedWalking then
-                        data.state = smwMap.ENCOUNTER_STATE.NORMAL
-                        data.timer = 0
-
-                        smwMap.movingEncountersCount = smwMap.movingEncountersCount - 1
-                    end
+            if levelObj ~= nil and levelObj ~= data.levelObj and isWithin(v.lastMovement, v.x, v.y, levelObj.x, levelObj.y) then
+                local keepWalking = choosePath(v, data, levelObj)
+                if not keepWalking then
+                    setEncounterLevel(v,data,levelObj)
+                    data.state = smwMap.ENCOUNTER_STATE.NORMAL
+                    data.timer = 0
                 else
-                    data.walkingDirection = -data.walkingDirection
+                    v.x = levelObj.x
+                    v.y = levelObj.y
+                    data.levelObj = levelObj
                 end
             end
         elseif data.state == smwMap.ENCOUNTER_STATE.SLEEPING then
@@ -1008,42 +925,31 @@ do
     end
 
 
-
-    local movingSound
-
-    function smwMap.updateEncounters()
-        if smwMap.mainPlayer.state == smwMap.PLAYER_STATE.WON then
-            return
+    function smwMap.getMovingEncountersCount()
+        local res = 0
+        for _, v in ipairs(smwMap.objects) do
+            if smwMap.getObjectConfig(v.id).isEncounter and v.data.state == smwMap.ENCOUNTER_STATE.WALKING then
+                res = res + 1
+            end
         end
+        return res
+    end
 
 
-        if smwMap.encountersWaitingTimer > 0 then
-            smwMap.encountersWaitingTimer = math.max(0, smwMap.encountersWaitingTimer - 1)
+    function smwMap.beginMovingEncounters()
+        for _, v in ipairs(smwMap.objects) do
+            local cameraX, cameraY = getUsualCameraPos()
 
-            if smwMap.encountersWaitingTimer == 0 then
-                for i = 1, #smwMap.encountersWaitingToMove do
-                    local v = smwMap.encountersWaitingToMove[i]
-
-                    local startedWalking = false
-
-                    if v.isValid then
-                        startedWalking = choosePath(v,v.data,false)
-                    end
-
-                    if not startedWalking then
-                        smwMap.movingEncountersCount = smwMap.movingEncountersCount - 1
-                    end
-
-                    smwMap.encountersWaitingToMove[i] = nil
-                end
+            if  smwMap.getObjectConfig(v.id).isEncounter
+            and v.isValid
+            -- If on camera, add to the list that'll move around
+            and (cameraX + smwMap.camera.width ) > v.x-v.width *0.5
+            and (cameraY + smwMap.camera.height) > v.y-v.height*0.5
+            and (cameraX                       ) < v.x+v.width *0.5
+            and (cameraY                       ) < v.y+v.height*0.5
+            then
+                choosePath(v, v.data, v.data.levelObj)
             end
-        elseif smwMap.movingEncountersCount > 0 then
-            if smwMap.encounterSettings.movingSound ~= nil and (movingSound == nil or not movingSound:isPlaying()) then
-                movingSound = SFX.play{sound = smwMap.encounterSettings.movingSound,loops = 0}
-            end
-        elseif movingSound ~= nil and movingSound:isPlaying() then
-            movingSound:stop()
-            movingSound = nil
         end
     end
 end
@@ -1068,7 +974,7 @@ function smwMap.onInitAPI()
     registerEvent(smwMap,"onTick","onTickTransition")
     registerEvent(smwMap,"onDraw","onDrawTransition")
 
-    registerEvent(smwMap,"onTick","updateEncounters")
+    -- registerEvent(smwMap,"onTick","updateEncounters")
 
     registerEvent(smwMap,"onTickEnd")
 end
@@ -1179,9 +1085,6 @@ do
 
             v.levelObj = nil
 
-            v.walkingProgress = 0
-            v.walkingDirection = 0
-
             v.warpCooldown = 0
 
             v.isUnderwater = false
@@ -1192,9 +1095,6 @@ do
             v.y = smwMap.mainPlayer.y
 
             v.levelObj = smwMap.mainPlayer.levelObj
-
-            v.walkingProgress = smwMap.mainPlayer.walkingProgress
-            v.walkingDirection = smwMap.mainPlayer.walkingDirection
 
             v.warpCooldown = smwMap.mainPlayer.warpCooldown
 
@@ -1371,7 +1271,6 @@ do
         for _,obj in ipairs(smwMap.getIntersectingObjects(v.x - v.width*0.5,v.y - v.height*0.5,v.x + v.width*0.5,v.y + v.height*0.5)) do
             if smwMap.getObjectConfig(obj.id).isEncounter then
                 local levelFilename = obj.settings.levelFilename
-
                 if levelFilename ~= "" and io.exists(Misc.episodePath().. levelFilename) and obj.data.state == smwMap.ENCOUNTER_STATE.NORMAL then
                     return obj
                 end
@@ -1407,8 +1306,8 @@ do
             return
         end
 
-        v.walkingDirection = ({ down = vector(0, 1), up = vector(0, -1),
-                                left = vector(-1, 0), right = vector(1, 0) })[directionName]
+        v.walkingDirection = ({ down = vector( 0, 1), up    = vector(0, -1),
+                                left = vector(-1, 0), right = vector(1,  0) })[directionName]
         v.state = PLAYER_STATE.WALKING
         v.timer = 0
         v.timer2 = 0
@@ -1484,7 +1383,6 @@ do
 
 
     local function canEnterLevel(levelObj)
-        print("canEnterLevel")
         if levelObj == nil then
             return false
         end
@@ -1589,11 +1487,10 @@ do
 
     local function updateWalkingPosition(v, walkSpeed)
         local walkSpeed = walkSpeed or (v.isClimbing and smwMap.playerSettings.climbSpeed) or smwMap.playerSettings.walkSpeed
-        local newProgress, newPosition = 0.5, vector(v.x, v.y) + v.walkingDirection * walkSpeed
+        local newPosition = vector(v.x, v.y) + v.walkingDirection * walkSpeed
         v.direction = 0
         v.x = newPosition.x
         v.y = newPosition.y
-        v.walkingProgress = newProgress
     end
 
 
@@ -1710,7 +1607,7 @@ do
         end
 
 
-        if #smwMap.activeEvents == 0 and smwMap.movingEncountersCount == 0 and v.isMainPlayer then
+        if #smwMap.activeEvents == 0 and v.isMainPlayer then
             local encounterObj = findEncounter(v)
 
             if encounterObj ~= nil then -- on top of encounter
@@ -1976,6 +1873,11 @@ do
             smwMap.unlockLevelPaths(v.levelObj, gameData.winType)
         end
 
+        -- in any case, trigger the encounters
+        table.insert(smwMap.activeEvents, {
+            type = EVENT_TYPE.MOVE_ENCOUNTERS,
+        })
+
         -- End the state
         gameData.winType = LEVEL_WIN_TYPE_NONE
 
@@ -2061,18 +1963,10 @@ do
             return
         end
 
-        local spinDirections = {0,2,1,3}
-
         v.timer = v.timer + 1
-        v.direction = spinDirections[(math.floor(v.timer / 2) % #spinDirections) + 1]
-
+        v.direction = 0
         v.zOffset = math.sin(v.timer / 8) * 6
-
         v.animationTimer = 0
-
-
-        local x = SCREEN_WIDTH*0.5
-        local y = SCREEN_HEIGHT - smwMap.hudSettings.borderBottomHeight - 16
 
         local selectLevelText = {
             [false] = {"MOVE AROUND TO FIND A LEVEL,","PRESS JUMP TO SELECT IT"},
@@ -2080,14 +1974,12 @@ do
         }
 
         local messages = selectLevelText[Misc.inEditor()]
-
+        local y = SCREEN_HEIGHT - smwMap.hudSettings.borderBottomHeight - 16
         for i = #messages, 1, -1 do
             local text = messages[i]
             local width,height = Text.getSize(text)
-
             y = y - height
-
-            Text.printWP(text,x - width*0.5,y,6)
+            Text.printWP(text, SCREEN_WIDTH*0.5 - width*0.5,y,6)
         end
     end)
 
@@ -2141,7 +2033,8 @@ do
     local cantEnterLookAroundStates = table.map{PLAYER_STATE.SELECTED,PLAYER_STATE.WON,PLAYER_STATE.CUSTOM_WARPING,PLAYER_STATE.SELECT_START}
 
     lookAroundStateFunctions[LOOK_AROUND_STATE.INACTIVE] = (function(v)
-        if v.isMainPlayer and player.keys.altJump == KEYS_PRESSED and #smwMap.activeEvents == 0 and smwMap.movingEncountersCount == 0 and smwMap.transitionDrawFunction == nil and not cantEnterLookAroundStates[v.state] then -- attempt to look around
+        -- attempt to look around
+        if v.isMainPlayer and player.keys.altJump == KEYS_PRESSED and #smwMap.activeEvents == 0 and smwMap.transitionDrawFunction == nil and not cantEnterLookAroundStates[v.state] then
             -- Is the area big enough?
             local areaObj = smwMap.currentCameraArea
 
