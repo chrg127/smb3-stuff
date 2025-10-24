@@ -159,54 +159,34 @@ smwMap.encounterSettings = {
 
 
 smwMap.hudSettings = {
-    borderImage = Graphics.loadImageResolved("smwMap/hud_border.png"),
-
-    borderLeftWidth = 66,
-    borderRightWidth = 66,
-    borderTopHeight = 130,
-    borderBottomHeight = 66,
-
     borderEnabled = true,
+    borderImage = Graphics.loadImageResolved("smwMap/hud_border.png"),
+    borderRightWidth = 66,
+    borderLeftWidth = 66,
+    borderTopHeight = 96,
+    borderBottomHeight = 96,
 
+    boxImage = Graphics.loadImageResolved("smwMap/hud.png"),
+    boxX = 48,
+    boxY = 528,
 
-
-    playerOffsetX = 40,
-    playerOffsetY = -16,
-
-    playerGap = 64,
-
-    playerEnabled = true,
-
-
-    counterFont = textplus.loadFont("smwMap/counterFont.ini"),
-    counterColor = Color.white,
-    counterOffsetX = 64,
-    counterOffsetY = -16,
-    counterText = "x %s",
-    counterScale = 2,
-    counterGap = 4,
-
-    countersEnabled = true,
-
-
-    levelTitleFont = textplus.loadFont("smwMap/levelTitleFont.ini"),
-    levelTitleColor = Color.black,
-    levelTitleOffsetX = 64,
-    levelTitleOffsetY = -16,
-    levelTitleScale = 2,
+    countersFont = textplus.loadFont("smwMap/smb3-font.ini"),
 
     levelTitleEnabled = true,
-
-
-    starcoinUncollectedImage = Graphics.loadImageResolved("hardcoded-51-0.png"),
-    starcoinCollectedImage = Graphics.loadImageResolved("hardcoded-51-1.png"),
-    starcoinsXOffset = 16,
-    starcoinsYOffset = -16,
-    starcoinsMaxPerLine = 5,
-    starcoinsAtBottom = false,
+    levelTitleFont = textplus.loadFont("smwMap/levelTitleFont.ini"),
+    levelTitleColor = Color.white,
+    levelTitleX = 104,
+    levelTitleY = 26,
 
     starcoinsEnabled = true,
+    starcoinUncollectedImage = Graphics.loadImageResolved("hardcoded-51-0.png"),
+    starcoinCollectedImage = Graphics.loadImageResolved("hardcoded-51-1.png"),
+    starcoinX = 456,
+    starcoinY = 30,
 
+    playerIconsImage = Graphics.loadImageResolved("smwMap/player-icons.png"),
+    playerIconsX = 8,
+    playerIconsY = 30,
 
     priority = 5,
 }
@@ -3559,29 +3539,29 @@ do
 
 
     smwMap.hudCounters = {
-        -- Lives
+        -- lives
         {
-            icon = Graphics.loadImageResolved("smwMap/hud_lives.png"),
             getValue = (function()
                 return mem(0x00B2C5AC,FIELD_FLOAT)
             end),
+            x = 56, y = 28,
+            formatString = "%2d",
         },
         -- Coins
         {
-            icon = Graphics.sprites.hardcoded["33-2"],
             getValue = (function()
                 return mem(0x00B2C5A8,FIELD_WORD)
             end),
+            x = 408, y = 12,
+            formatString = "%2d",
         },
         -- Stars
         {
-            icon = Graphics.sprites.hardcoded["33-5"],
-            isEnabled = (function()
-                return mem(0x00B251E0,FIELD_WORD) > 0
-            end),
             getValue = (function()
                 return mem(0x00B251E0,FIELD_WORD)
             end),
+            x = 488, y = 12,
+            formatString = "%3d",
         }
     }
 
@@ -3593,9 +3573,6 @@ do
             return image
         end
     end
-
-
-    smwMap.levelTitleLayout = nil
 
 
     local yoshiAnimationFrames = {
@@ -3611,210 +3588,75 @@ do
     function smwMap.drawHUD()
         local hudSettings = smwMap.hudSettings
 
-        local priority = hudSettings.priority
-
-
         if hudSettings.borderEnabled and hudSettings.borderImage ~= nil then
-            Graphics.drawImageWP(hudSettings.borderImage,0,0,priority)
+            Graphics.drawImageWP(hudSettings.borderImage, 0, 0, hudSettings.priority)
         end
 
+        -- hud
+        Graphics.drawImageWP(hudSettings.boxImage, hudSettings.boxX, hudSettings.boxY, hudSettings.priority);
 
-        local xPosition = hudSettings.borderLeftWidth
-
-
-        if hudSettings.playerEnabled then
-            xPosition = xPosition + hudSettings.playerOffsetX
-
-            for idx,p in ipairs(Player.get()) do
-                local animation = smwMap.walkCycles[p:getCostume()] or smwMap.walkCycles[p.character]
-
-                if animation ~= nil then
-                    local frame
-
-                    local x = xPosition
-                    local y = hudSettings.borderTopHeight - p.height + hudSettings.playerOffsetY
-
-                    if p.mount == MOUNT_BOOT then -- bouncing along in a boot
-                        bootBounceData[idx] = bootBounceData[idx] or {speed = 0,offset = 0}
-                        local bounceData = bootBounceData[idx]
-
-                        if not Misc.isPaused() then
-                            bounceData.speed = bounceData.speed + Defines.player_grav
-                            bounceData.offset = bounceData.offset + bounceData.speed
-
-                            if bounceData.offset >= 0 then
-                                bounceData.speed = -3.4
-                                bounceData.offset = 0
-                            end
-                        end
-
-                        y = y + bounceData.offset
-
-                        frame = 1
-                    elseif p.mount == MOUNT_CLOWNCAR then -- don't think this is even possible? but eh it's here
-                        frame = 1
-                    elseif p.mount == MOUNT_YOSHI then -- riding yoshi, yoshi's animation is a complete mess
-                        frame = 30
-
-                        local yoshiAnimationData = yoshiAnimationFrames[(math.floor(lunatime.tick() / 8) % #yoshiAnimationFrames) + 1]
-
-                        local xOffset = 4
-                        local yOffset = (72 - p.height)
-
-                        p:mem(0x72,FIELD_WORD,yoshiAnimationData.headFrame + 5)
-                        p:mem(0x7A,FIELD_WORD,yoshiAnimationData.bodyFrame + 7)
-
-                        p:mem(0x6E,FIELD_WORD,20 - xOffset + yoshiAnimationData.headOffsetX)
-                        p:mem(0x70,FIELD_WORD,10 - yOffset + yoshiAnimationData.headOffsetY)
-
-                        p:mem(0x76,FIELD_WORD,0  - xOffset + yoshiAnimationData.bodyOffsetX)
-                        p:mem(0x78,FIELD_WORD,42 - yOffset + yoshiAnimationData.bodyOffsetY)
-
-                        p:mem(0x10E,FIELD_WORD,yoshiAnimationData.playerOffset - yOffset)
-                    else -- just good ol' walking
-                        local walkCycle = animation[p.powerup] or animation[PLAYER_BIG]
-
-                        frame = walkCycle[(math.floor(lunatime.tick() / walkCycle.framespeed) % #walkCycle) + 1]
-                    end
-
-                    p.direction = DIR_LEFT
-
-                    p:render{
-                        x = x,y = y,
-                        ignorestate = true,sceneCoords = false,priority = priority,color = (Defines.cheat_shadowmario and Color.black) or Color.white,
-                        frame = frame,
-                    }
-
-
-                    if idx < Player.count() then
-                        xPosition = xPosition + hudSettings.playerGap
-                    end
-                end
-            end
-        end
-
-
-        -- Draw counters
-        if hudSettings.countersEnabled then
-            xPosition = xPosition + hudSettings.counterOffsetX
-
-            local widestIconWidth = 0
-
-            for _,counter in ipairs(smwMap.hudCounters) do
-                local icon = getImage(counter.icon)
-
-                if (counter.isEnabled == nil or counter.isEnabled()) and icon ~= nil then
-                    widestIconWidth = math.max(widestIconWidth,icon.width)
-                end
-            end
-
-
-            local counterY = hudSettings.borderTopHeight + hudSettings.counterOffsetY
-
-            local widestCounterWidth = 0
-
-            for _,counter in ipairs(smwMap.hudCounters) do
-                if (counter.isEnabled == nil or counter.isEnabled()) then
-                    local totalWidth = 0
-                    local tallestElementHeight = 0
-
-                    local icon = getImage(counter.icon)
-
-                    if icon ~= nil then
-                        --Graphics.drawBox{texture = icon,priority = priority,x = xPosition,y = counterY - icon.height}
-                        Graphics.drawImageWP(icon,xPosition,counterY - icon.height,priority)
-                        totalWidth = totalWidth + icon.width
-                        tallestElementHeight = math.max(tallestElementHeight,icon.height)
-                    end
-
-
-                    local currentText = string.format(smwMap.hudSettings.counterText,tostring(counter.getValue()))
-
-                    if counter.textLayout == nil or counter.oldText ~= currentText then
-                        counter.textLayout = textplus.layout(currentText,nil,{font = hudSettings.counterFont,xscale = hudSettings.counterScale,yscale = hudSettings.counterScale})
-                        counter.oldText = currentText
-                    end
-
-                    textplus.render{layout = counter.textLayout,priority = priority,x = xPosition + widestIconWidth,y = counterY - counter.textLayout.height}
-                    totalWidth = totalWidth + counter.textLayout.width
-                    tallestElementHeight = math.max(tallestElementHeight,counter.textLayout.height)
-
-
-                    widestCounterWidth = math.max(widestCounterWidth,totalWidth)
-                    counterY = counterY - tallestElementHeight - hudSettings.counterGap
-                end
-            end
-
-            xPosition = xPosition + widestCounterWidth
-        end
-
-
-
-        if hudSettings.levelTitleEnabled then
-            xPosition = xPosition + hudSettings.levelTitleOffsetX
-        end
-
-
-        local levelTitleMaxWidth = (SCREEN_WIDTH - hudSettings.borderRightWidth - xPosition)
         local levelObj = smwMap.mainPlayer.levelObj
 
-        -- Star coin counter
-        if hudSettings.starcoinsEnabled and levelObj ~= nil then
-            local starcoinCount = gameData.starcoinCounts[levelObj.settings.levelFilename]
-
-            if starcoinCount ~= nil and starcoinCount > 0 then
-                local starcoinData = starcoin.getLevelList(levelObj.settings.levelFilename) or {}
-
-                local uncollectedImage = hudSettings.starcoinUncollectedImage
-                local collectedImage = hudSettings.starcoinCollectedImage
-
-                local width  = math.max(collectedImage.width ,uncollectedImage.width )
-                local height = math.max(collectedImage.height,uncollectedImage.height)
-
-                local totalWidth = math.min(hudSettings.starcoinsMaxPerLine,starcoinCount)*width
-                local totalHeight = math.ceil(starcoinCount / hudSettings.starcoinsMaxPerLine)*height
-
-                local startX = (SCREEN_WIDTH - hudSettings.borderRightWidth - hudSettings.starcoinsXOffset - totalWidth)
-                local startY = (hudSettings.borderTopHeight + hudSettings.starcoinsYOffset - totalHeight)
-
-                if hudSettings.starcoinsAtBottom then
-                    startY = (SCREEN_HEIGHT - hudSettings.borderBottomHeight - hudSettings.starcoinsYOffset)
-                else
-                    levelTitleMaxWidth = (startX - xPosition)
-                end
-
-
-                for i = 1, starcoinCount do
-                    local image
-                    if starcoinData[i] == 1 then
-                        image = collectedImage
-                    else
-                        image = uncollectedImage
-                    end
-
-                    local x = startX + ((i - 1) % hudSettings.starcoinsMaxPerLine)*width
-                    local y = startY + math.floor((i - 1) / hudSettings.starcoinsMaxPerLine)*height
-
-                    Graphics.drawImageWP(image,x,y,priority)
-                end
-            end
-        end
-
-        --Graphics.drawBox{x = xPosition + levelTitleMaxWidth,y = 0,width = 4,height = 600,priority = 6,color = Color.red.. 0.75}
-
-
         -- Level title
+        local levelTitleMaxWidth = 592
+
         if hudSettings.levelTitleEnabled then
             local levelTitle = ""
             if levelObj ~= nil then
                 levelTitle = levelObj.settings.levelTitle or ""
             end
 
-
-            smwMap.levelTitleLayout = textplus.layout(levelTitle, levelTitleMaxWidth, {font = hudSettings.levelTitleFont,xscale = hudSettings.levelTitleScale,yscale = hudSettings.levelTitleScale})
-
-            textplus.render{layout = smwMap.levelTitleLayout,color = smwMap.hudSettings.levelTitleColor,priority = priority,x = xPosition,y = hudSettings.borderTopHeight + hudSettings.levelTitleOffsetY - smwMap.levelTitleLayout.height}
+            textplus.render{
+                layout = textplus.layout(levelTitle, levelTitleMaxWidth, {
+                    font = hudSettings.levelTitleFont,
+                    xscale = 2,
+                    yscale = 2,
+                }),
+                color = smwMap.hudSettings.levelTitleColor,
+                priority = 6,
+                x = hudSettings.levelTitleX,
+                y = hudSettings.levelTitleY,
+            }
         end
+
+        -- counters
+        for _, c in ipairs(smwMap.hudCounters) do
+            local text = string.format(c.formatString, c.getValue())
+            textplus.render{
+                layout = textplus.layout(text, 48, {
+                    font = hudSettings.countersFont,
+                    xscale = 2,
+                    yscale = 2,
+                }),
+                priority = hudSettings.priority,
+                x = hudSettings.boxX + c.x,
+                y = hudSettings.boxY + c.y,
+            }
+        end
+
+        -- starcoins
+        if levelObj ~= nil then
+            local starcoinCount = gameData.starcoinCounts[levelObj.settings.levelFilename]
+            if starcoinCount ~= nil and starcoinCount > 0 then
+                local starcoinData = starcoin.getLevelList(levelObj.settings.levelFilename) or {}
+                for i = 1, starcoinCount do
+                    local image = starcoinData[i] == 1 and hudSettings.starcoinCollectedImage
+                                                        or hudSettings.starcoinUncollectedImage
+                    local x = hudSettings.boxX + hudSettings.starcoinX + 16 * (i - 1) + 2
+                    local y = hudSettings.boxY + hudSettings.starcoinY
+                    Graphics.drawImageWP(image, x, y, hudSettings.priority)
+                end
+            end
+        end
+
+        -- player icon
+        Graphics.drawImageWP(
+            hudSettings.playerIconsImage,
+            hudSettings.boxX + hudSettings.playerIconsX, hudSettings.boxY + hudSettings.playerIconsY,
+            0, (smwMap.mainPlayer.basePlayer.character - 1) * 14,
+            32, 14,
+            hudSettings.priority
+        )
     end
 
 
@@ -4006,7 +3848,8 @@ do
             Graphics.drawBox{
                 texture = smwMap.mainBuffer,priority = -5.01,
 
-                x = smwMap.camera.renderX,y = smwMap.camera.renderY,
+                x = smwMap.camera.renderX,
+                y = smwMap.camera.renderY,
                 sourceX = 0,sourceY = 0,
 
                 width = smwMap.camera.width,height = smwMap.camera.height,

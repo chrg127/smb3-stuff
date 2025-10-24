@@ -24,7 +24,7 @@ ID:811;X:-199744;Y:-200416;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"u
 ID:821;X:-199872;Y:-200352;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"destinationWarpName\"\: \"B\"\,\n    \"levelTitle\"\: \"idk\"\,\n    \"unlock_down\"\: false\,\n    \"unlock_left\"\: false\,\n    \"unlock_up\"\: false\,\n    \"warpName\"\: \"A\"\n}\n";
 ID:821;X:-199520;Y:-200384;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"A\"\,\n    \"levelTitle\"\: \"idk2\"\,\n    \"unlock_down\"\: false\,\n    \"unlock_left\"\: false\,\n    \"unlock_up\"\: false\,\n    \"warpName\"\: \"B\"\n}\n";
 ID:802;X:-199744;Y:-200352;D:-1;XTRA:"{\n    \"alwaysVisible\"\: true\,\n    \"levelFilename\"\: \"asc\"\,\n    \"unlock_down\"\: 2\,\n    \"unlock_left\"\: 2\,\n    \"unlock_right\"\: 2\,\n    \"unlock_up\"\: 2\n}\n";
-ID:813;X:-199456;Y:-200480;D:-1;XTRA:"{\n    \"destroyAfterWin\"\: true\,\n    \"levelFilename\"\: \"castle\"\,\n    \"unlock_down\"\: 1\,\n    \"unlock_left\"\: 2\n}\n";
+ID:813;X:-199456;Y:-200480;D:-1;XTRA:"{\n    \"destroyAfterWin\"\: true\,\n    \"levelFilename\"\: \"castle\"\,\n    \"levelTitle\"\: \"castle\"\,\n    \"unlock_down\"\: 1\,\n    \"unlock_left\"\: 2\n}\n";
 ID:811;X:-199456;Y:-200384;D:-1;XTRA:"{\n    \"unlock_left\"\: 1\,\n    \"unlock_up\"\: 1\n}\n";
 ID:821;X:-199584;Y:-200480;D:-1;XTRA:"{\n    \"unlock_down\"\: false\,\n    \"unlock_left\"\: false\,\n    \"unlock_right\"\: true\,\n    \"unlock_up\"\: false\,\n    \"warpName\"\: \"C\"\n}\n";
 ID:751;X:-199776;Y:-200160;D:-1;
