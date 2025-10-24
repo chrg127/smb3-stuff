@@ -1,48 +1,33 @@
---[[
-
-    smwMap.lua
-    by MrDoubleA
-
-    See main file for more
-
-]]
-
 local smwMap = require("smwMap")
 
-
 local npcID = NPC_ID
-local obj = {}
 
+local function getMusic(settings)
+    if settings.music == 0 then -- don't change
+        return nil
+    elseif settings.music == 1 then -- none
+        return 0
+    elseif settings.music == 2 then -- custom
+        return settings.customMusicPath
+    else -- some other songs
+        return settings.music - 2
+    end
+end
 
 smwMap.setObjConfig(npcID,{
     hidden = true,
 
-    onInitObj = (function(v)
-        local areaObj = {}
-
-        areaObj.collider = Colliders.Box(v.x - v.width*0.5,v.y - v.height*0.5,v.settings.width,v.settings.height)
-        areaObj.restrictCamera = v.settings.restrictCamera
-
-        if v.settings.music == 0 then -- don't change
-            areaObj.music = nil
-        elseif v.settings.music == 1 then -- none
-            areaObj.music = 0
-        elseif v.settings.music == 2 then -- custom
-            areaObj.music = v.settings.customMusicPath
-        else -- some other songs
-            areaObj.music = v.settings.music - 2
-        end
-
-        areaObj.backgroundName  = v.settings.backgroundName
-        areaObj.backgroundColor = v.settings.backgroundColor
-
-
-        table.insert(smwMap.areas,areaObj)
-
-
+    onInitObj = function(v)
+        table.insert(smwMap.areas, {
+            name = v.settings.name,
+            collider = Colliders.Box(v.x - v.width*0.5,v.y - v.height*0.5,v.settings.width,v.settings.height),
+            restrictCamera = v.settings.restrictCamera,
+            backgroundName  = v.settings.backgroundName,
+            backgroundColor = v.settings.backgroundColor,
+            music = getMusic(v.settings),
+        })
         v:remove()
-    end),
+    end,
 })
 
-
-return obj
+return {}

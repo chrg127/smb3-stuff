@@ -159,34 +159,48 @@ smwMap.encounterSettings = {
 
 
 smwMap.hudSettings = {
-    borderEnabled = true,
-    borderImage = Graphics.loadImageResolved("smwMap/hud_border.png"),
-    borderRightWidth = 66,
-    borderLeftWidth = 66,
-    borderTopHeight = 96,
-    borderBottomHeight = 96,
+    border = {
+        enabled = true,
+        image = Graphics.loadImageResolved("smwMap/hud_border.png"),
+        rightWidth = 66,
+        leftWidth = 66,
+        topHeight = 96,
+        bottomHeight = 96,
+    },
 
-    boxImage = Graphics.loadImageResolved("smwMap/hud.png"),
-    boxX = 48,
-    boxY = 528,
+    box = {
+        image = Graphics.loadImageResolved("smwMap/hud.png"),
+        x = 48,
+        y = 528,
+    },
 
     countersFont = textplus.loadFont("smwMap/smb3-font.ini"),
 
-    levelTitleEnabled = true,
-    levelTitleFont = textplus.loadFont("smwMap/levelTitleFont.ini"),
-    levelTitleColor = Color.white,
-    levelTitleX = 104,
-    levelTitleY = 26,
+    levelTitle = {
+        enabled = true,
+        font = textplus.loadFont("smwMap/levelTitleFont.ini"),
+        x = 104,
+        y = 26,
+    },
 
-    starcoinsEnabled = true,
-    starcoinUncollectedImage = Graphics.loadImageResolved("hardcoded-51-0.png"),
-    starcoinCollectedImage = Graphics.loadImageResolved("hardcoded-51-1.png"),
-    starcoinX = 456,
-    starcoinY = 30,
+    starcoin = {
+        enabled = true,
+        uncollectedImage = Graphics.loadImageResolved("hardcoded-51-0.png"),
+        collectedImage = Graphics.loadImageResolved("hardcoded-51-1.png"),
+        x = 456,
+        y = 30,
+    },
 
-    playerIconsImage = Graphics.loadImageResolved("smwMap/player-icons.png"),
-    playerIconsX = 8,
-    playerIconsY = 30,
+    playerIcon = {
+        image = Graphics.loadImageResolved("smwMap/player-icons.png"),
+        x = 8,
+        y = 30,
+    },
+
+    worldName = {
+        x = 8,
+        y = 12
+    },
 
     priority = 5,
 }
@@ -966,10 +980,10 @@ function smwMap.onStart()
         p.forcedTimer = 0
     end
 
-    smwMap.camera.width  = SCREEN_WIDTH  - smwMap.hudSettings.borderLeftWidth - smwMap.hudSettings.borderRightWidth
-    smwMap.camera.height = SCREEN_HEIGHT - smwMap.hudSettings.borderTopHeight - smwMap.hudSettings.borderBottomHeight
-    smwMap.camera.renderX = smwMap.hudSettings.borderLeftWidth
-    smwMap.camera.renderY = smwMap.hudSettings.borderTopHeight
+    smwMap.camera.width  = SCREEN_WIDTH  - smwMap.hudSettings.border.leftWidth - smwMap.hudSettings.border.rightWidth
+    smwMap.camera.height = SCREEN_HEIGHT - smwMap.hudSettings.border.topHeight - smwMap.hudSettings.border.bottomHeight
+    smwMap.camera.renderX = smwMap.hudSettings.border.leftWidth
+    smwMap.camera.renderY = smwMap.hudSettings.border.topHeight
 
     if warpTransition ~= nil then
         if warpTransition.currentTransitionType ~= nil then
@@ -3588,19 +3602,16 @@ do
     function smwMap.drawHUD()
         local hudSettings = smwMap.hudSettings
 
-        if hudSettings.borderEnabled and hudSettings.borderImage ~= nil then
-            Graphics.drawImageWP(hudSettings.borderImage, 0, 0, hudSettings.priority)
+        if hudSettings.border.enabled and hudSettings.border.image ~= nil then
+            Graphics.drawImageWP(hudSettings.border.image, 0, 0, hudSettings.priority)
         end
-
-        -- hud
-        Graphics.drawImageWP(hudSettings.boxImage, hudSettings.boxX, hudSettings.boxY, hudSettings.priority);
 
         local levelObj = smwMap.mainPlayer.levelObj
 
         -- Level title
         local levelTitleMaxWidth = 592
 
-        if hudSettings.levelTitleEnabled then
+        if hudSettings.levelTitle.enabled then
             local levelTitle = ""
             if levelObj ~= nil then
                 levelTitle = levelObj.settings.levelTitle or ""
@@ -3608,16 +3619,19 @@ do
 
             textplus.render{
                 layout = textplus.layout(levelTitle, levelTitleMaxWidth, {
-                    font = hudSettings.levelTitleFont,
+                    font = hudSettings.levelTitle.font,
                     xscale = 2,
                     yscale = 2,
                 }),
-                color = smwMap.hudSettings.levelTitleColor,
+                color = Color.white,
                 priority = 6,
-                x = hudSettings.levelTitleX,
-                y = hudSettings.levelTitleY,
+                x = hudSettings.levelTitle.x,
+                y = hudSettings.levelTitle.y,
             }
         end
+
+        -- box
+        Graphics.drawImageWP(hudSettings.box.image, hudSettings.box.x, hudSettings.box.y, hudSettings.priority);
 
         -- counters
         for _, c in ipairs(smwMap.hudCounters) do
@@ -3629,8 +3643,8 @@ do
                     yscale = 2,
                 }),
                 priority = hudSettings.priority,
-                x = hudSettings.boxX + c.x,
-                y = hudSettings.boxY + c.y,
+                x = hudSettings.box.x + c.x,
+                y = hudSettings.box.y + c.y,
             }
         end
 
@@ -3640,10 +3654,10 @@ do
             if starcoinCount ~= nil and starcoinCount > 0 then
                 local starcoinData = starcoin.getLevelList(levelObj.settings.levelFilename) or {}
                 for i = 1, starcoinCount do
-                    local image = starcoinData[i] == 1 and hudSettings.starcoinCollectedImage
-                                                        or hudSettings.starcoinUncollectedImage
-                    local x = hudSettings.boxX + hudSettings.starcoinX + 16 * (i - 1) + 2
-                    local y = hudSettings.boxY + hudSettings.starcoinY
+                    local image = starcoinData[i] == 1 and hudSettings.starcoin.collectedImage
+                                                        or hudSettings.starcoin.uncollectedImage
+                    local x = hudSettings.box.x + hudSettings.starcoin.x + 16 * (i - 1) + 2
+                    local y = hudSettings.box.y + hudSettings.starcoin.y
                     Graphics.drawImageWP(image, x, y, hudSettings.priority)
                 end
             end
@@ -3651,14 +3665,26 @@ do
 
         -- player icon
         Graphics.drawImageWP(
-            hudSettings.playerIconsImage,
-            hudSettings.boxX + hudSettings.playerIconsX, hudSettings.boxY + hudSettings.playerIconsY,
+            hudSettings.playerIcon.image,
+            hudSettings.box.x + hudSettings.playerIcon.x,
+            hudSettings.box.y + hudSettings.playerIcon.y,
             0, (smwMap.mainPlayer.basePlayer.character - 1) * 14,
             32, 14,
             hudSettings.priority
         )
-    end
 
+        -- area name
+        textplus.render{
+            layout = textplus.layout(smwMap.currentCameraArea.name, #smwMap.currentCameraArea.name * 32, {
+                font = hudSettings.levelTitle.font,
+                xscale = 2,
+                yscale = 2,
+            }),
+            priority = hudSettings.priority,
+            x = hudSettings.box.x + hudSettings.worldName.x,
+            y = hudSettings.box.y + hudSettings.worldName.y,
+        }
+    end
 
 
     local function drawLookAroundArrows()

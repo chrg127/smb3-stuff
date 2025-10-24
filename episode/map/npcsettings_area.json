@@ -2,6 +2,13 @@
 	"style" : "groupbox",
 	"title" : "Area Settings",
 	"layout": [
+        {
+            "control": "lineEdit",
+            "name": "name",
+            "title": "Name",
+            "tooltip": "Name of the area, displayed in the HUD and during the world-enter animation.",
+            "value-default": ""
+        },
 		{
 			"control": "spinBox",
 			"name": "width",
