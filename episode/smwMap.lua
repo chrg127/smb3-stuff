@@ -203,6 +203,16 @@ smwMap.hudSettings = {
     },
 
     priority = 5,
+
+    worldCard = {
+        cardImage = Graphics.loadImageResolved("smwMap/world-card.png"),
+        starImage = Graphics.loadImageResolved("smwMap/stars.png"),
+        starSound = Misc.resolveSoundFile("smwMap/switch-timeout.wav"),
+        showCardNumFrames = 100,
+        expandSpeed = 9,
+        starSpeed = 6,
+        starFrameSpeed = 4,
+    }
 }
 
 
@@ -589,15 +599,12 @@ WORLD_CARD_STATE = {
     CLOSING_STARS = 3,
 }
 
-smwMap.worldCard = {
+local worldCard = {
     state = WORLD_CARD_STATE.NOT_SHOWN,
     center = vector(0, 0),
     radius = 0,
     starFrame = 0,
     starOffset = 0,
-
-    cardImage = Graphics.loadImageResolved("smwMap/world-card.png"),
-    starImage = Graphics.loadImageResolved("smwMap/stars.png"),
 }
 
 
@@ -742,40 +749,45 @@ do
     end
 
     updateFunctions[EVENT_TYPE.SHOW_WORLD_CARD] = function (eventObj)
-        local center = vector(
-            smwMap.camera.renderX + smwMap.camera.width  / 2,
-            smwMap.camera.renderY + smwMap.camera.height / 2
-        )
-        local minDist = math.min(center.x, center.y) / 2
-        local expandThresh  = minDist / 4 + 100
-        local closingThresh = expandThresh + minDist / 4
-        local playerPos = vector(
-            smwMap.mainPlayer.x - smwMap.camera.x,
-            smwMap.mainPlayer.y - smwMap.camera.y
-        )
-
         eventObj.timer = (eventObj.timer or 0) + 1
+
+        local settings = smwMap.hudSettings.worldCard
+
         if eventObj.timer == 1 then
-            smwMap.worldCard.state = WORLD_CARD_STATE.ON_CARD
-        elseif eventObj.timer == 100 then
-            smwMap.worldCard.state = WORLD_CARD_STATE.EXPANDING_STARS
-            smwMap.worldCard.center = vector(
+            worldCard.state = WORLD_CARD_STATE.ON_CARD
+            local center = vector(
                 smwMap.camera.renderX + smwMap.camera.width  / 2,
                 smwMap.camera.renderY + smwMap.camera.height / 2
             )
-            local dist = playerPos - smwMap.worldCard.center
-            smwMap.worldCard.speed = dist / (closingThresh - expandThresh)
-        elseif eventObj.timer >  100 and eventObj.timer < expandThresh then
-            smwMap.worldCard.radius = smwMap.worldCard.radius + 4
-            smwMap.worldCard.starFrame = math.floor((eventObj.timer - 100) / 4) % 2
-            smwMap.worldCard.starOffset = smwMap.worldCard.starOffset + 4
-        elseif eventObj.timer >= expandThresh and eventObj.timer < closingThresh then
-            smwMap.worldCard.radius = smwMap.worldCard.radius - 4
-            smwMap.worldCard.starFrame = math.floor((eventObj.timer - 100) / 4) % 2
-            smwMap.worldCard.starOffset = smwMap.worldCard.starOffset + 4
-            smwMap.worldCard.center = smwMap.worldCard.center + smwMap.worldCard.speed 
-        elseif eventObj.timer == closingThresh then
-            smwMap.worldCard.state = WORLD_CARD_STATE.NOT_SHOWN
+            local minDist = math.min(center.x, center.y)
+            eventObj.expandThresh  = math.floor(minDist / settings.expandSpeed) + settings.showCardNumFrames
+            eventObj.closingThresh = math.floor(minDist / settings.expandSpeed) + eventObj.expandThresh
+        elseif eventObj.timer == settings.showCardNumFrames then
+            worldCard.state = WORLD_CARD_STATE.EXPANDING_STARS
+            worldCard.radius = 0
+            worldCard.starFrame = 0
+            worldCard.starOffset = 0
+            worldCard.center = vector(
+                smwMap.camera.renderX + smwMap.camera.width  / 2,
+                smwMap.camera.renderY + smwMap.camera.height / 2
+            )
+            local target = vector(
+                smwMap.camera.renderX + smwMap.mainPlayer.x - smwMap.camera.x - 16,
+                smwMap.camera.renderY + smwMap.mainPlayer.y - smwMap.camera.y - 16
+            )
+            local dist = target - worldCard.center
+            worldCard.speed = dist / (eventObj.closingThresh - eventObj.expandThresh)
+            SFX.play(settings.starSound)
+        elseif eventObj.timer >  settings.showCardNumFrames and eventObj.timer < eventObj.closingThresh then
+            local dir = eventObj.timer < eventObj.expandThresh and 1 or -1
+            worldCard.radius = math.max(0, worldCard.radius + settings.expandSpeed * dir)
+            worldCard.starFrame = math.floor((eventObj.timer - settings.showCardNumFrames) / settings.starFrameSpeed) % 2
+            worldCard.starOffset = worldCard.starOffset + settings.starSpeed
+            if eventObj.timer >= eventObj.expandThresh then
+                worldCard.center = worldCard.center + worldCard.speed
+            end
+        elseif eventObj.timer > eventObj.closingThresh then
+            worldCard.state = WORLD_CARD_STATE.NOT_SHOWN
             table.remove(smwMap.activeEvents, 1)
         end
     end
@@ -3755,67 +3767,55 @@ do
     end
 
     function smwMap.drawWorldCard()
-        if smwMap.worldCard.state == WORLD_CARD_STATE.ON_CARD then
-            local x = smwMap.camera.renderX + (smwMap.camera.width  - smwMap.worldCard.cardImage.width ) / 2
-            local y = smwMap.camera.renderY + (smwMap.camera.height - smwMap.worldCard.cardImage.height) / 2
-            Graphics.drawImageWP(smwMap.worldCard.cardImage, x, y, smwMap.hudSettings.priority)
-
-            local areaNameWidth = #gameData.areaName * 16
-            local areaNameX = (smwMap.worldCard.cardImage.width - areaNameWidth) / 2
+        local function drawHudText(text, pos, font)
             textplus.render{
-                layout = textplus.layout(gameData.areaName, areaNameWidth, {
+                layout = textplus.layout(text, #text * 16, {
                     font = smwMap.hudSettings.levelTitle.font,
                     xscale = 2,
                     yscale = 2,
                 }),
                 priority = smwMap.hudSettings.priority,
-                x = x + areaNameX,
-                y = y + 24,
+                x = pos.x,
+                y = pos.y
             }
+        end
+
+        if worldCard.state == WORLD_CARD_STATE.ON_CARD then
+            local cardPos = vector(
+                smwMap.camera.renderX + (smwMap.camera.width  - smwMap.hudSettings.worldCard.cardImage.width ) / 2,
+                smwMap.camera.renderY + (smwMap.camera.height - smwMap.hudSettings.worldCard.cardImage.height) / 2
+            )
+            Graphics.drawImageWP(smwMap.hudSettings.worldCard.cardImage, cardPos.x, cardPos.y, smwMap.hudSettings.priority)
+
+            local areaNameX = (smwMap.hudSettings.worldCard.cardImage.width - #gameData.areaName * 16) / 2
+            drawHudText(gameData.areaName, cardPos + vector(areaNameX, 24), smwMap.hudSettings.levelTitle.font)
 
             local characterNames = { "MARIO", "LUIGI", "PEACH", "TOAD " }
-            textplus.render{
-                layout = textplus.layout(characterNames[smwMap.mainPlayer.basePlayer.character], 5 * 16, {
-                    font = smwMap.hudSettings.levelTitle.font,
-                    xscale = 2,
-                    yscale = 2,
-                }),
-                priority = smwMap.hudSettings.priority,
-                x = x + 24,
-                y = y + 70,
-            }
+            drawHudText(characterNames[smwMap.mainPlayer.basePlayer.character], cardPos + vector(24, 70), smwMap.hudSettings.levelTitle.font)
 
             local lives = smwMap.hudCounters[1].getValue()
-            textplus.render{
-                layout = textplus.layout(string.format("×%2d", lives), 1000, {
-                    font = smwMap.hudSettings.levelTitle.font,
-                    xscale = 2,
-                    yscale = 2,
-                }),
-                priority = smwMap.hudSettings.priority,
-                x = x + 168,
-                y = y + 72,
-            }
+            drawHudText(string.format("×%2d", lives), cardPos + vector(168, 72), smwMap.hudSettings.levelTitle.font)
 
             Graphics.drawImageWP(
                 smwMap.playerSettings.images[player.character],
-                x + 128, y + 58,
+                cardPos.x + 128, cardPos.y + 58,
                 0, 0, 32, 32,
                 smwMap.hudSettings.priority
             )
-        elseif smwMap.worldCard.state == WORLD_CARD_STATE.EXPANDING_STARS
-            or smwMap.worldCard.state == WORLD_CARD_STATE.CLOSING_STARS then
+        elseif worldCard.state == WORLD_CARD_STATE.EXPANDING_STARS
+            or worldCard.state == WORLD_CARD_STATE.CLOSING_STARS then
+            print("radius =", worldCard.radius)
+            print("center =", worldCard.center.x, worldCard.center.y)
             for i = 1, 8 do
-                local angle = 360 / 8 * (i - 1) + smwMap.worldCard.starOffset
-                local pos = smwMap.worldCard.center + vector(
-                    math.sin(math.rad(angle)) * smwMap.worldCard.radius,
-                    math.cos(math.rad(angle)) * smwMap.worldCard.radius
+                local angle = 360 / 8 * (i - 1) + worldCard.starOffset
+                local pos = worldCard.center + vector(
+                    math.sin(math.rad(angle)) * worldCard.radius,
+                    math.cos(math.rad(angle)) * worldCard.radius
                 )
-                print("i = ", i, "pos = ", pos.x, pos.y)
                 Graphics.drawImageWP(
-                    smwMap.worldCard.starImage,
+                    smwMap.hudSettings.worldCard.starImage,
                     pos.x, pos.y,
-                    0, smwMap.worldCard.starFrame * 32, 32, 32,
+                    0, worldCard.starFrame * 32, 32, 32,
                     smwMap.hudSettings.priority
                 )
             end
