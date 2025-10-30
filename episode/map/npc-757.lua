@@ -2,7 +2,7 @@ local smwMap = require("smwMap")
 
 local npcID = NPC_ID
 local frameLength = 8
-smwMap.smokeCloudEffectID = npcID
+smwMap.encounterBeatenSmokeID = npcID
 
 smwMap.setObjConfig(npcID, {
     framesY = 4,
