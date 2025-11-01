@@ -110,13 +110,13 @@ smwMap.playerSettings = {
 
 
     framesX = 1,
-    framesY = 20,
+    framesY = 16,
 
     bootFrames = 2,
     clownCarFrames = 2,
     yoshiFrames = 2,
 
-    gfxYOffset = -16,
+    gfxYOffset = -24,
     mountOffsets = {
         [MOUNT_BOOT]     = -12,
         [MOUNT_CLOWNCAR] = -32,
@@ -224,12 +224,11 @@ smwMap.selectStartPointSettings = {
     checkpointSingleText = "Checkpoint",
     checkpointMultipleText = "Checkpoint %d",
 
-    textFont = textplus.loadFont("smwMap/levelTitleFont.ini"),
-    textScale = 2,
+    textFont = textplus.loadFont("smwMap/titleFont.ini"),
     textColorSelected = Color(1,1,0.25),
     textColorUnselected = Color.white,
 
-    backColor = Color.black.. 0.9,
+    backColor = Color.black .. 0.9,
 
     optionGap = 8,
     borderSize = 16,
@@ -1259,7 +1258,11 @@ do
         smwMap.startSelectLayouts = {}
 
         for _,option in ipairs(smwMap.startPointSelectOptions) do
-            local layout = textplus.layout(option[1],nil,{font = settings.textFont,xscale = settings.textScale,yscale = settings.textScale})
+            local layout = textplus.layout(option[1],nil, {
+                font = settings.textFont,
+                xscale = 2,
+                yscale = 2,
+            })
 
             table.insert(smwMap.startSelectLayouts,layout)
         end
@@ -3171,6 +3174,19 @@ do
 
     local bootBounceData = {}
 
+    local function drawHudText(text, pos, font, width)
+        textplus.render{
+            layout = textplus.layout(text, width ~= nil and width or #text * 16, {
+                font = font,
+                xscale = 2,
+                yscale = 2,
+            }),
+            priority = smwMap.hudSettings.priority,
+            x = pos.x,
+            y = pos.y
+        }
+    end
+
 
     function smwMap.drawHUD()
         local hudSettings = smwMap.hudSettings
@@ -3190,17 +3206,7 @@ do
                 levelTitle = levelObj.settings.levelTitle or ""
             end
 
-            textplus.render{
-                layout = textplus.layout(levelTitle, levelTitleMaxWidth, {
-                    font = hudSettings.levelTitle.font,
-                    xscale = 2,
-                    yscale = 2,
-                }),
-                color = Color.white,
-                priority = 6,
-                x = hudSettings.levelTitle.x,
-                y = hudSettings.levelTitle.y,
-            }
+            drawHudText(levelTitle, vector(hudSettings.levelTitle.x, hudSettings.levelTitle.y), hudSettings.levelTitle.font, levelTitleMaxWidth)
         end
 
         -- box
@@ -3209,16 +3215,7 @@ do
         -- counters
         for _, c in ipairs(smwMap.hudCounters) do
             local text = string.format(c.formatString, c.getValue())
-            textplus.render{
-                layout = textplus.layout(text, 48, {
-                    font = hudSettings.countersFont,
-                    xscale = 2,
-                    yscale = 2,
-                }),
-                priority = hudSettings.priority,
-                x = hudSettings.box.x + c.x,
-                y = hudSettings.box.y + c.y,
-            }
+            drawHudText(text, vector(hudSettings.box.x + c.x, hudSettings.box.y + c.y), hudSettings.countersFont)
         end
 
         -- starcoins
@@ -3247,32 +3244,10 @@ do
         )
 
         -- area name
-        textplus.render{
-            layout = textplus.layout(smwMap.currentCameraArea.name, #smwMap.currentCameraArea.name * 16, {
-                font = hudSettings.levelTitle.font,
-                xscale = 2,
-                yscale = 2,
-            }),
-            priority = hudSettings.priority,
-            x = hudSettings.box.x + hudSettings.worldName.x,
-            y = hudSettings.box.y + hudSettings.worldName.y,
-        }
+        drawHudText(smwMap.currentCameraArea.name, vector(hudSettings.box.x + hudSettings.worldName.x, hudSettings.box.y + hudSettings.worldName.y), hudSettings.levelTitle.font)
     end
 
     function smwMap.drawWorldCard()
-        local function drawHudText(text, pos, font)
-            textplus.render{
-                layout = textplus.layout(text, #text * 16, {
-                    font = smwMap.hudSettings.levelTitle.font,
-                    xscale = 2,
-                    yscale = 2,
-                }),
-                priority = smwMap.hudSettings.priority,
-                x = pos.x,
-                y = pos.y
-            }
-        end
-
         if worldCard.state == WORLD_CARD_STATE.ON_CARD then
             local cardPos = vector(
                 smwMap.camera.renderX + (smwMap.camera.width  - smwMap.hudSettings.worldCard.cardImage.width ) / 2,
