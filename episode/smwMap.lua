@@ -218,7 +218,7 @@ smwMap.hudSettings = {
 
 smwMap.selectStartPointSettings = {
     -- If true, enables a small menu that allows you to select the checkpoint to start from when choosing a level
-    enabled = false,
+    enabled = true,
 
     beginningText = "Beginning",
     checkpointSingleText = "Checkpoint",
@@ -628,12 +628,14 @@ smwMap.activeEvents = {}
 do
     local updateFunctions = {}
 
+    local levelFlipAnimID = 755
+
     -- handles flipping icon animation, the player icon showing is handled by the level objects themselves
     updateFunctions[EVENT_TYPE.BEAT_LEVEL] = function (eventObj)
         eventObj.timer = eventObj.timer + 1
         if eventObj.timer == 1 then
             SFX.play(smwMap.pathSettings.itemPanel)
-            smwMap.createObject(797, eventObj.levelObj.x, eventObj.levelObj.y)
+            smwMap.createObject(levelFlipAnimID, eventObj.levelObj.x, eventObj.levelObj.y)
         elseif eventObj.timer == 3 * 8 then
             smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
         elseif eventObj.timer >= 5 * 8 then
@@ -646,12 +648,14 @@ do
             eventObj.timer = eventObj.timer + 1
             eventObj.sceneryProgress = (eventObj.timer/smwMap.pathSettings.unlockAnimationFrequency)
 
+            local scenerySmokeID = 758
+
             -- Update each scenery
             for _,scenery in ipairs(eventObj.showSceneries) do
                 if scenery.globalSettings.useSmoke then
                     if scenery.globalSettings.showDelay == math.floor(eventObj.sceneryProgress) and scenery.opacity == 0 then
                         scenery.opacity = 1
-                        smwMap.createObject(798, scenery.x, scenery.y)
+                        smwMap.createObject(scenerySmokeID, scenery.x, scenery.y)
                     end
                 else
                     scenery.opacity = math.clamp(eventObj.sceneryProgress - scenery.globalSettings.showDelay)
@@ -662,7 +666,7 @@ do
                 if scenery.globalSettings.useSmoke then
                     if scenery.globalSettings.hideDelay == math.floor(eventObj.sceneryProgress) and scenery.opacity == 1 then
                         scenery.opacity = 0
-                        smwMap.createObject(798, scenery.x, scenery.y)
+                        smwMap.createObject(scenerySmokeID, scenery.x, scenery.y)
                     end
                 else
                     scenery.opacity = math.clamp(1 - (eventObj.sceneryProgress - scenery.globalSettings.hideDelay))
@@ -974,8 +978,8 @@ do
 
                 SFX.play(9)
             elseif data.timer > 32 then
-                if smwMap.smokeCloudEffectID ~= nil then
-                    smwMap.createObject(smwMap.smokeCloudEffectID,v.x + v.graphicsOffsetX,v.y + v.graphicsOffsetY)
+                if smwMap.encounterBeatenSmokeID ~= nil then
+                    smwMap.createObject(smwMap.encounterBeatenSmokeID,v.x + v.graphicsOffsetX,v.y + v.graphicsOffsetY)
                 end
 
                 v:remove()
@@ -1129,7 +1133,6 @@ do
 
         v.state = PLAYER_STATE.NORMAL
         v.timer = 0
-        v.timer2 = 0
 
         v.direction = 0
         v.frame = 0
@@ -1376,7 +1379,6 @@ do
                                 left = vector(-1, 0), right = vector(1,  0) })[directionName]
         v.state = PLAYER_STATE.WALKING
         v.timer = 0
-        v.timer2 = 0
         v.lastMovement = directionName
         v.movementHistory[1] = directionName
         return true
@@ -1614,9 +1616,6 @@ do
                 for _,p in ipairs(smwMap.players) do
                     p.state = PLAYER_STATE.NORMAL
                     p.timer = 0
-                    -- bug?
-                    -- v.timer2 = 0
-                    p.timer2 = 0
                     p.zOffset = 0
                     setPlayerLevel(p,destinationLevel)
                 end
@@ -1635,7 +1634,6 @@ do
                 for _,p in ipairs(smwMap.players) do
                     p.state = PLAYER_STATE.WALKING
                     p.timer = p.followingDelay
-                    p.timer2 = 0
 
                     p.zOffset = 0
 
@@ -1696,7 +1694,6 @@ do
                         -- Make all players do the custom warping
                         v.state = PLAYER_STATE.CUSTOM_WARPING
                         v.timer = 0
-                        v.timer2 = 0
                     end
                 else
                     -- Normal levels
@@ -1705,13 +1702,11 @@ do
                     if #smwMap.startPointSelectOptions <= 1 or not smwMap.selectStartPointSettings.enabled then
                         v.state = PLAYER_STATE.SELECTED
                         v.timer = 0
-                        v.timer2 = 0
 
                         v.direction = 0
                     else
                         v.state = PLAYER_STATE.SELECT_START
                         v.timer = 0
-                        v.timer2 = 0
 
                         v.direction = 0
 
@@ -1724,13 +1719,11 @@ do
             elseif player.keys.dropItem == KEYS_PRESSED and v.levelObj ~= nil and Misc.inEditor() then -- unlock ALL the things (only works from in editor)
                 v.state = PLAYER_STATE.WON
                 v.timer = 1000
-                v.timer2 = 0
 
                 gameData.winType = 2
             elseif player.keys.altRun == KEYS_PRESSED and Misc.inEditor() then
                 v.state = PLAYER_STATE.PARKING_WHERE_I_WANT
                 v.timer = 0
-                v.timer2 = 0
             else
                 -- moving
                 for _, dir in ipairs{"up", "down", "left", "right"} do
@@ -1746,7 +1739,6 @@ do
             if smwMap.mainPlayer.state == PLAYER_STATE.CUSTOM_WARPING and v.levelObj == smwMap.mainPlayer.levelObj then
                 v.state = PLAYER_STATE.CUSTOM_WARPING
                 v.timer = -v.followingDelay
-                v.timer2 = 0
             elseif movement ~= nil and movement ~= "" then
                 if v.levelObj ~= nil then
                     v.x = v.levelObj.x
@@ -1800,7 +1792,6 @@ do
             v.y = levelObj.y
             v.state = PLAYER_STATE.NORMAL
             v.timer = 0
-            v.timer2 = 0
             v.warpCooldown = 0
 
             setPlayerLevel(v,levelObj)
@@ -1825,7 +1816,6 @@ do
                 v.y = obj.y + ({ left =  0, right =   0, up = 32, down = -32 })[v.lastMovement]
                 v.state = PLAYER_STATE.NORMAL
                 v.timer = 0
-                v.timer2 = 0
                 v.warpCooldown = 0
                 if v.levelObj ~= nil and (v.x ~= v.levelObj.x or v.y ~= v.levelObj.y) then
                     v.levelObj = nil
@@ -1864,7 +1854,6 @@ do
         if v.levelObj == nil then -- failsafe
             v.state = PLAYER_STATE.NORMAL
             v.timer = 0
-            v.timer2 = 0
 
             gameData.winType = LEVEL_WIN_TYPE_NONE
         end
@@ -1896,7 +1885,6 @@ do
 
             v.state = PLAYER_STATE.NORMAL
             v.timer = 0
-            v.timer2 = 0
 
             Misc.saveGame()
 
@@ -1956,7 +1944,6 @@ do
 
         v.state = PLAYER_STATE.NORMAL
         v.timer = 0
-        v.timer2 = 0
 
         Misc.saveGame()
     end)
@@ -1966,7 +1953,6 @@ do
         if v.levelObj == nil then
             v.state = PLAYER_STATE.NORMAL
             v.timer = 0
-            v.timer2 = 0
 
             return
         end
@@ -2012,7 +1998,6 @@ do
             for _,p in ipairs(smwMap.players) do
                 p.state = PLAYER_STATE.NORMAL
                 p.timer = 0
-                p.timer2 = 0
 
                 p.direction = 0
                 p.zOffset = 0
@@ -2066,7 +2051,6 @@ do
             if smwMap.startPointOpenProgress <= 0 then
                 v.state = PLAYER_STATE.NORMAL
                 v.timer = 0
-                v.timer2 = 0
             end
 
             return
@@ -2090,7 +2074,6 @@ do
         if player.keys.jump == KEYS_PRESSED then
             v.state = PLAYER_STATE.SELECTED
             v.timer = 0
-            v.timer2 = 0
 
             smwMap.startPointSelectOptions[smwMap.startPointSelectedOption][2]()
 
@@ -2186,7 +2169,6 @@ do
             end
         end
     end
-
 
     function smwMap.onTickPlayers()
         updateNonMainPlayerCounts()
@@ -2677,7 +2659,6 @@ do
 
     smwMap.mainBuffer   = Graphics.CaptureBuffer(SCREEN_WIDTH,SCREEN_HEIGHT) -- main buffer that everything is drawn to
     smwMap.lockedBuffer = Graphics.CaptureBuffer(SCREEN_WIDTH,SCREEN_HEIGHT) -- buffer that everything that is completed locked gets drawn to, to prevent weird overlapping
-    smwMap.pathBuffer   = Graphics.CaptureBuffer(SCREEN_WIDTH,SCREEN_HEIGHT) -- used to remove 1x1 pixels on paths
 
 
     local lockedShader = Shader()
@@ -3124,487 +3105,6 @@ do
     end
 
 
-    -- Path rendering! (weird)
-    local PATH_STEP = 4
-    local PATH_CACHED_TIME = 160
-    local PATH_MAX_LENGTH = 2048
-    local PATH_STRAIGHTEN_LENIENCY = math.rad(10)
-
-
-    local finalPathDrawArgs = {vertexCoords = {},textureCoords = {},shader = lockedShader,uniforms = {}}
-    local finalPathDrawOldVertexCount = 0
-
-
-    local pathImages = {}
-
-    local pathRenderingDisabled = false
-
-
-    local partsInPathTypes = {
-        ["normal"]     = 3, -- middle, middle, end        (start is just flipped end)
-        ["unique"]     = 4, -- middle, middle, end, start (for having unique start and ends)
-        ["continuous"] = 2, -- middle, middle             (for having no start and end)
-    }
-
-    local pathConfig = {}
-
-    function smwMap.getPathConfig(type)
-        if pathConfig[type] == nil then
-            -- Load config file
-            local configPath = Misc.resolveFile("paths/".. type.. ".txt")
-
-            if configPath ~= nil then
-                config = configFileReader.rawParse(configPath,true)
-            else
-                config = {}
-            end
-
-            -- Load image
-            local imagePath = Misc.resolveGraphicsFile("paths/".. type.. ".png")
-
-            if imagePath ~= nil then
-                config.image = Graphics.loadImage(imagePath)
-            else
-                pathRenderingDisabled = true
-                Misc.warn("Path image '".. type.. "' does not exist.")
-            end
-
-
-            -- Initialise properties
-            config.textureType = config.textureType or "normal"
-            config.parts = partsInPathTypes[config.textureType]
-
-            config.frames         = config.frames         or 1
-            config.framespeed     = config.framespeed     or 8
-            config.isWater        = config.isWater        or false
-            config.isLadder       = config.isLadder       or false
-            config.autoStraighten = config.autoStraighten or false
-
-            if config.image ~= nil then
-                config.partWidth  = config.image.width  / config.frames
-                config.partHeight = config.image.height / config.parts
-            else
-                config.partWidth = 1
-                config.partHeight = 1
-            end
-
-            pathConfig[type] = config
-        end
-
-        return pathConfig[type]
-    end
-
-
-    local function getPathLockedFade(pathObj,distance)
-        if not smwMap.pathIsUnlocked(pathObj.name) then
-            return 1
-        end
-
-        if pathObj.unlockingEventObj == nil then
-            return 0
-        end
-
-        if pathObj.unlockingEventObj.direction == 1 then
-            return math.clamp(math.floor(distance/smwMap.pathSettings.unlockAnimationDistance)+1 - pathObj.unlockingEventObj.pathProgress)
-        else
-            return math.clamp(math.floor((pathObj.splineLength-distance)/smwMap.pathSettings.unlockAnimationDistance)+1 - pathObj.unlockingEventObj.pathProgress)
-        end
-    end
-
-    local function getPathLockedProgress(pathObj)
-        if not smwMap.pathIsUnlocked(pathObj.name) then
-            return 1
-        end
-
-        if pathObj.unlockingEventObj == nil then
-            return 0
-        end
-
-        return math.min(0.9999, pathObj.unlockingEventObj.pathProgress / math.ceil(pathObj.splineLength / smwMap.pathSettings.unlockAnimationDistance))
-    end
-
-
-    local function getDistanceToNextPathType(pathObj,currentProgress,currentDistance,currentType)
-        local lookAheadProgress = currentProgress
-        local lookAheadDistance = currentDistance
-
-        while (lookAheadProgress < 1 and lookAheadDistance < PATH_MAX_LENGTH) do
-            local lookAheadPosition
-            lookAheadProgress,lookAheadPosition = pathObj.splineObj:step(PATH_STEP, lookAheadProgress)
-
-            lookAheadDistance = lookAheadDistance + PATH_STEP
-
-
-            local lookAheadType = pathObj.types[math.floor(lookAheadPosition.z)]
-
-            if lookAheadType ~= nil and lookAheadType ~= currentType then
-                return lookAheadProgress * pathObj.splineLength
-            end
-        end
-
-        return pathObj.splineLength
-    end
-
-
-    local function calculatePathVertexStuff(pathObj)
-        local lockedProgress = getPathLockedProgress(pathObj)
-
-        if pathObj.drawGroups ~= nil and lockedProgress == pathObj.lockedProgress then
-            return
-        end
-
-        pathObj.lockedProgress = lockedProgress
-
-        pathObj.drawGroups = {}
-        pathObj.drawGroupCount = 0
-
-
-        local currentProgress = 0
-        local currentDistance = 0
-        local stepIndex = 0
-
-        local config
-
-        local previousPosition,previousType,previousLockedFade
-        local typeStartDistance,typeEndDistance
-
-        while (currentProgress < 1 and currentDistance < PATH_MAX_LENGTH) do
-            -- Move along the spline --
-            local currentPosition
-
-            if stepIndex > 0 then
-                currentProgress,currentPosition = pathObj.splineObj:step(PATH_STEP, currentProgress)
-                currentDistance = currentDistance + PATH_STEP
-            else
-                currentPosition = vector(pathObj.splineObj.x,pathObj.splineObj.y,0) + pathObj.splineObj.points[1]
-            end
-
-
-            -- Figure stuff out --
-            local currentPointIndex = math.floor(currentPosition.z)
-            local currentType = pathObj.types[currentPointIndex] or "normal"
-
-            local currentLockedFade = getPathLockedFade(pathObj,currentDistance)
-
-
-            if pathObj.drawGroupCount == 0 or currentType ~= previousType or currentLockedFade ~= previousLockedFade then
-                local drawGroup = {}
-
-                config = smwMap.getPathConfig(currentType)
-
-
-                if pathRenderingDisabled then
-                    return
-                end
-
-
-                drawGroup.texture = config.image
-
-                drawGroup.vertexCoords = {}
-                drawGroup.textureCoords = {}
-                drawGroup.vertexCount = 0
-
-                drawGroup.hideIfLocked = pathObj.hideIfLocked
-
-                drawGroup.type = currentType
-
-                if currentLockedFade < 1 or drawGroup.hideIfLocked then
-                    drawGroup.target = smwMap.mainBuffer
-                    drawGroup.lockedFade = currentLockedFade
-                    drawGroup.priority = -60
-                else -- fully locked, so goes into the special buffer
-                    drawGroup.target = smwMap.lockedBuffer
-                    drawGroup.lockedFade = 0
-                    drawGroup.priority = -99
-                end
-
-
-                pathObj.drawGroupCount = pathObj.drawGroupCount + 1
-                pathObj.drawGroups[pathObj.drawGroupCount] = drawGroup
-
-
-                -- Figure out the distance to the next type change
-                if pathObj.drawGroupCount == 0 or currentType ~= previousType then
-                    typeStartDistance = currentDistance
-                    typeEndDistance = getDistanceToNextPathType(pathObj,currentProgress,currentDistance,currentType)
-                end
-            end
-
-
-            -- Figure more stuff out --
-            local drawGroup = pathObj.drawGroups[pathObj.drawGroupCount]
-
-            local width = config.partWidth
-            local height = math.min(PATH_STEP,(typeEndDistance - (currentDistance - PATH_STEP)))
-
-            local x = currentPosition.x
-            local y = currentPosition.y
-
-            local rotation
-
-            if previousPosition ~= nil then
-                rotation = math.atan2(currentPosition.y - previousPosition.y, currentPosition.x - previousPosition.x) + math.pi*0.5
-            else
-                local _,forwardPosition = pathObj.splineObj:step(1, currentProgress)
-
-                rotation = math.atan2(forwardPosition.y - currentPosition.y, forwardPosition.x - currentPosition.x) + math.pi*0.5
-            end
-
-
-            if config.autoStraighten then
-                for i = 0, math.pi*2 - 0.01, math.pi*0.25 do
-                    if math.abs(i - rotation) <= PATH_STRAIGHTEN_LENIENCY then
-                        rotation = i
-                        break
-                    end
-                end
-            end
-
-
-            -- Set up vertex coords --
-            local vc = drawGroup.vertexCoords
-            local count = drawGroup.vertexCount
-
-            local sinAngle = math.sin(rotation)
-            local cosAngle = math.cos(rotation)
-
-            local w1 = cosAngle*width*0.5
-            local w2 = sinAngle*width*0.5
-            local h1 = sinAngle*height
-            local h2 = cosAngle*height
-
-
-            local topLeftX,topLeftY,topRightX,topRightY
-
-            if count > 0 then
-                topLeftX  = vc[count - 11] -- previous one's bottom left
-                topLeftY  = vc[count - 10]
-                topRightX = vc[count - 9]  -- previous one's bottom right
-                topRightY = vc[count - 8]
-            elseif pathObj.drawGroupCount > 1 and previousType == currentType then
-                local lastDrawGroup = pathObj.drawGroups[pathObj.drawGroupCount - 1]
-
-                topLeftX  = lastDrawGroup.vertexCoords[lastDrawGroup.vertexCount - 11] -- previous one's bottom left
-                topLeftY  = lastDrawGroup.vertexCoords[lastDrawGroup.vertexCount - 10]
-                topRightX = lastDrawGroup.vertexCoords[lastDrawGroup.vertexCount - 9]  -- previous one's bottom right
-                topRightY = lastDrawGroup.vertexCoords[lastDrawGroup.vertexCount - 8]
-            else
-                topLeftX  = math.floor(x - w1)
-                topLeftY  = math.floor(y - w2)
-                topRightX = math.floor(x + w1)
-                topRightY = math.floor(y + w2)
-            end
-
-            vc[count+1]  = math.floor(x - h1 - w1) -- bottom left
-            vc[count+2]  = math.floor(y + h2 - w2)
-            vc[count+3]  = math.floor(x - h1 + w1) -- bottom right
-            vc[count+4]  = math.floor(y + h2 + w2)
-            vc[count+5]  = topLeftX                -- top left
-            vc[count+6]  = topLeftY
-
-            vc[count+7]  = math.floor(x - h1 + w1) -- bottom right
-            vc[count+8]  = math.floor(y + h2 + w2)
-            vc[count+9]  = topRightX               -- top right
-            vc[count+10] = topRightY
-            vc[count+11] = topLeftX                -- top left
-            vc[count+12] = topLeftY
-
-
-            -- Set up texture coords --
-            local tc = drawGroup.textureCoords
-
-            local textureHeight = drawGroup.texture.height
-
-            local hasStartAndEnd = (config.textureType ~= "continuous")
-            local startAndEndLength = math.min((typeEndDistance - typeStartDistance) * 0.5, config.partHeight)
-
-
-            local x1 = 0
-            local x2 = 1 / config.frames
-
-            local y1,y2
-
-            if currentType == "specialTest" then -- debug!
-                y1 = (currentProgress)
-                y2 = y1
-            elseif currentDistance >= typeEndDistance-startAndEndLength and hasStartAndEnd then -- end
-                y1 = ((config.partHeight * 3) - (typeEndDistance - currentDistance)) / textureHeight
-                y2 = math.min(config.partHeight*3 / textureHeight,y1 + (height / textureHeight))
-            elseif currentDistance <= typeStartDistance+startAndEndLength and hasStartAndEnd then -- start
-                if config.textureType == "unique" then
-                    y2 = ((config.partHeight*3) + (currentDistance - typeStartDistance)) / textureHeight
-                    y1 = y2 - (height / textureHeight)
-                else
-                    y2 = (textureHeight - (currentDistance - typeStartDistance)) / textureHeight
-                    y1 = y2 + (height / textureHeight)
-                end
-            else
-                local distance = (currentDistance - typeStartDistance)
-                if hasStartAndEnd then
-                    distance = distance - startAndEndLength
-                end
-
-                y2 = ((distance % config.partHeight) + config.partHeight) / textureHeight
-                y1 = y2 - (height / textureHeight)
-            end
-
-
-            tc[count+1]  = x1 -- bottom left
-            tc[count+2]  = y2
-            tc[count+3]  = x2 -- bottom right
-            tc[count+4]  = y2
-            tc[count+5]  = x1 -- top left
-            tc[count+6]  = y1
-
-            tc[count+7]  = x2 -- bottom right
-            tc[count+8]  = y2
-            tc[count+9]  = x2 -- top right
-            tc[count+10] = y1
-            tc[count+11] = x1 -- top left
-            tc[count+12] = y1
-
-
-            drawGroup.vertexCount = drawGroup.vertexCount + 12
-
-
-
-            previousPosition = currentPosition
-            previousType = currentType
-            previousLockedFade = currentLockedFade
-
-            stepIndex = stepIndex + 1
-        end
-    end
-
-
-    local function roundWithRenderScale(a,scale)
-        return math.floor(a * scale) / scale
-    end
-
-    --[[
-    function smwMap.drawPath(pathObj)
-        if pathObj.pointCount == 0 or (pathObj.hideIfLocked and not smwMap.pathIsUnlocked(pathObj.name)) then
-            return
-        end
-
-
-        -- Culling
-        --Graphics.drawBox{target = smwMap.mainBuffer,x = pathObj.minX - smwMap.camera.x,y = pathObj.minY - smwMap.camera.y,width = pathObj.maxX - pathObj.minX,height = pathObj.maxY - pathObj.minY,color = Color.red.. 0.15,priority = -10}
-
-        if not isOnCamera(pathObj.minX,pathObj.minY,pathObj.maxX - pathObj.minX,pathObj.maxY - pathObj.minY) or pathRenderingDisabled then
-            if pathObj.drawGroups ~= nil then
-                -- The draw groups are deleted after enough time of being off screen, so they don't unnecessarily eat up memory
-                pathObj.cachedLifetime = pathObj.cachedLifetime - 1
-
-                --local p = pathObj.splineObj:evaluate(0)
-                --Text.print(pathObj.cachedLifetime,p.x - smwMap.camera.x,p.y - smwMap.camera.y)
-
-                if pathObj.cachedLifetime <= 0 then
-                    pathObj.drawGroups = nil
-                    pathObj.cachedLifetime = nil
-                    return
-                end
-            end
-
-            return
-        end
-
-
-        calculatePathVertexStuff(pathObj)
-
-
-        pathObj.cachedLifetime = PATH_CACHED_TIME
-
-
-        if pathRenderingDisabled then
-            return
-        end
-
-
-        local args = finalPathDrawArgs
-        local vc = args.vertexCoords
-        local tc = args.textureCoords
-
-        local renderScale = smwMap.pathSettings.renderScale
-
-        local cameraX = roundWithRenderScale(smwMap.camera.x,renderScale)
-        local cameraY = roundWithRenderScale(smwMap.camera.y,renderScale)
-
-
-        local newBufferWidth  = SCREEN_WIDTH  + (1 / renderScale)
-        local newBufferHeight = SCREEN_HEIGHT + (1 / renderScale)
-
-        if smwMap.pathBuffer.width ~= newBufferWidth or smwMap.pathBuffer.height ~= newBufferHeight then
-            smwMap.pathBuffer = Graphics.CaptureBuffer(newBufferWidth,newBufferHeight)
-        end
-
-
-        -- Set up for path buffer
-        doBasicGlDrawSetup(smwMap.pathBuffer,cameraX - smwMap.camera.x,cameraY - smwMap.camera.y,smwMap.pathBuffer.width,smwMap.pathBuffer.height,0,0,smwMap.pathBuffer.width * renderScale,smwMap.pathBuffer.height * renderScale)
-
-        --Text.printWP(cameraX - smwMap.camera.x,32,32,10)
-        --Text.printWP(cameraY - smwMap.camera.y,32,64,10)
-
-
-        for _,drawGroup in ipairs(pathObj.drawGroups) do
-            -- Convert vertex coords to screen space rather than scene space, and account for frames with the texture coords
-            local config = smwMap.getPathConfig(drawGroup.type)
-
-            local groupVC = drawGroup.vertexCoords
-            local groupTC = drawGroup.textureCoords
-            local groupVertexCount = drawGroup.vertexCount
-
-            for i = 1, groupVertexCount, 2 do
-                vc[i  ] = (groupVC[i  ] - cameraX) * renderScale
-                vc[i+1] = (groupVC[i+1] - cameraY) * renderScale
-
-                if config.frames > 1 then
-                    local frame = (math.floor(lunatime.tick() / config.framespeed) / config.frames) % 1
-
-                    tc[i] = groupTC[i] + frame
-                else
-                    tc[i] = groupTC[i]
-                end
-
-                tc[i+1] = groupTC[i+1]
-            end
-
-            -- Delete old vertices from last draw
-            for i = groupVertexCount+1, finalPathDrawOldVertexCount do
-                vc[i] = nil
-                tc[i] = nil
-            end
-
-
-            -- Set up some other stuff
-            smwMap.pathBuffer:clear(drawGroup.priority)
-
-            args.target = smwMap.pathBuffer
-
-            args.texture = drawGroup.texture
-            args.priority = drawGroup.priority
-
-            args.shader = lockedShader
-            args.uniforms.lockedFade = drawGroup.lockedFade
-            args.uniforms.hideIfLocked = (drawGroup.hideIfLocked and 1) or 0
-
-
-            Graphics.glDraw(args)
-
-
-            finalPathDrawOldVertexCount = groupVertexCount
-
-            -- Draw the path buffer to the screen
-            basicGlDrawArgs.priority = drawGroup.priority
-            basicGlDrawArgs.target = drawGroup.target
-
-            Graphics.glDraw(basicGlDrawArgs)
-        end
-
-        basicGlDrawArgs.target = smwMap.mainBuffer
-    end
-    ]]
-
     smwMap.walkCycles = {}
 
     smwMap.walkCycles[CHARACTER_MARIO]           = {[PLAYER_SMALL] = {1,2, framespeed = 8},[PLAYER_BIG] = {1,2,3,2, framespeed = 6}}
@@ -3623,14 +3123,6 @@ do
     smwMap.walkCycles[CHARACTER_ULTIMATERINKA]   = smwMap.walkCycles[CHARACTER_TOAD]
     smwMap.walkCycles[CHARACTER_UNCLEBROADSWORD] = smwMap.walkCycles[CHARACTER_TOAD]
     smwMap.walkCycles[CHARACTER_SAMUS]           = smwMap.walkCycles[CHARACTER_LINK]
-
-    smwMap.walkCycles["SMW-MARIO"] = {[PLAYER_SMALL] = {1,2, framespeed = 8},[PLAYER_BIG] = {3,2,1, framespeed = 6}}
-    smwMap.walkCycles["SMW-LUIGI"] = smwMap.walkCycles["SMW-MARIO"]
-
-    smwMap.walkCycles["ACCURATE-SMW-MARIO"] = smwMap.walkCycles["SMW-MARIO"]
-    smwMap.walkCycles["ACCURATE-SMW-LUIGI"] = smwMap.walkCycles["SMW-MARIO"]
-    smwMap.walkCycles["ACCURATE-SMW-TOAD"]  = smwMap.walkCycles["SMW-MARIO"]
-
 
 
     smwMap.hudCounters = {
@@ -3805,8 +3297,6 @@ do
             )
         elseif worldCard.state == WORLD_CARD_STATE.EXPANDING_STARS
             or worldCard.state == WORLD_CARD_STATE.CLOSING_STARS then
-            print("radius =", worldCard.radius)
-            print("center =", worldCard.center.x, worldCard.center.y)
             for i = 1, 8 do
                 local angle = 360 / 8 * (i - 1) + worldCard.starOffset
                 local pos = worldCard.center + vector(
@@ -4139,7 +3629,6 @@ do
             if smwMap.mainPlayer.state == PLAYER_STATE.NORMAL then
                 smwMap.mainPlayer.state = PLAYER_STATE.PARKING_WHERE_I_WANT
                 smwMap.mainPlayer.timer = 0
-                smwMap.mainPlayer.timer2 = 0
                 SFX.play(13)
             end
             return true
