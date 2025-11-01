@@ -110,13 +110,13 @@ smwMap.playerSettings = {
 
 
     framesX = 1,
-    framesY = 4,
+    framesY = 20,
 
     bootFrames = 2,
     clownCarFrames = 2,
     yoshiFrames = 2,
 
-    gfxYOffset = 0,
+    gfxYOffset = -16,
     mountOffsets = {
         [MOUNT_BOOT]     = -12,
         [MOUNT_CLOWNCAR] = -32,
@@ -2213,6 +2213,7 @@ do
                 stateFunctions[v.state](v)
             end
 
+            local baseFrame = v.basePlayer.powerup * 2
 
             -- Animations
             if v.state ~= PLAYER_STATE.SELECTED and (v.state ~= PLAYER_STATE.SELECT_START or v.timer > 0) then
@@ -2222,17 +2223,17 @@ do
                 if #smwMap.activeEvents > 0 then
                     if smwMap.activeEvents[1].type == EVENT_TYPE.BEAT_LEVEL
                     or smwMap.activeEvents[1].type == EVENT_TYPE.SHOW_WORLD_CARD then
-                        v.frame = 3
+                        v.frame = 0
                     else
-                        v.frame = 2
+                        v.frame = 1
                     end
                 elseif v.basePlayer.mount == MOUNT_BOOT then
                     v.mountFrame = math.floor(v.animationTimer / 8) % smwMap.playerSettings.bootFrames
 
                     if v.direction == 0 and (v.state == PLAYER_STATE.NORMAL or v.state == PLAYER_STATE.WON) and v.bounceOffset == 0 then
-                        v.frame = math.floor(v.animationTimer / 8) % 2
+                        v.frame = baseFrame + math.floor(v.animationTimer / 8) % 2
                     else
-                        v.frame = 0
+                        v.frame = baseFrame
                     end
 
                     -- Bouncing
@@ -2249,15 +2250,13 @@ do
                     end
                 elseif v.basePlayer.mount == MOUNT_CLOWNCAR then
                     v.mountFrame = math.floor(v.animationTimer / 3) % smwMap.playerSettings.clownCarFrames
-                    v.frame = 0
+                    v.frame = baseFrame
                 elseif v.basePlayer.mount == MOUNT_YOSHI then
                     v.mountFrame = math.floor(v.animationTimer / 8) % smwMap.playerSettings.yoshiFrames
-                    v.frame = 0
+                    v.frame = baseFrame
                 else
-                    v.frame = math.floor(v.animationTimer / 8) % 2
+                    v.frame = baseFrame + (math.floor(v.animationTimer / 8) % 2)
                 end
-            else
-                v.frame = 0
             end
         end
     end
@@ -2984,7 +2983,9 @@ do
         basicGlDrawArgs.target = v.buffer
         v.buffer:clear(0)
 
-        if v.basePlayer.mount == MOUNT_BOOT then
+        if #smwMap.activeEvents > 0 then
+            -- keep main y offset as it is and prevent mount from appearing
+        elseif v.basePlayer.mount == MOUNT_BOOT then
             mainYOffset = mainYOffset + v.bounceOffset
 
             if not v.isUnderwater then
