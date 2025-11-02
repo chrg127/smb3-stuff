@@ -8,9 +8,10 @@ https://www.smbxgame.com/forums/viewtopic.php?t=30254
 - make player go back to last level when losing
 - inventory
 - object spawning when user-defined conditions are met (very low priority, sorry)
-- change character sprite with power-up
 - various fades
 - castle full-screen flash animation
+- figure out what to do with the castle and bowser castle levels
+- airship animation stuff
 
 ## notes
 

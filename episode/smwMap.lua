@@ -127,21 +127,15 @@ smwMap.playerSettings = {
 }
 
 
-smwMap.pathSettings = {
+smwMap.levelSettings = {
     lockedColor = Color.fromHexRGBA(0x0000004E),
 
     unlockAnimationFrequency = 12,
-    unlockAnimationDistance = 32,
 
     unlockLoopSound = SFX.open(Misc.resolveSoundFile("smwMap/unlock_loop")),
     unlockFinishSound = SFX.open(Misc.resolveSoundFile("smwMap/unlock_finish")),
-    itemPanel = SFX.open(Misc.resolveSoundFile("smwMap/item-panel")),
-
-
-    renderScale = 0.5,
-
-
-    cullingPadding = 8,
+    itemPanelSound = SFX.open(Misc.resolveSoundFile("smwMap/item-panel")),
+    beatenTileImage = Graphics.loadImage(Misc.resolveGraphicsFile("smwMap/beaten-tiles.png"))
 }
 
 
@@ -633,7 +627,7 @@ do
     updateFunctions[EVENT_TYPE.BEAT_LEVEL] = function (eventObj)
         eventObj.timer = eventObj.timer + 1
         if eventObj.timer == 1 then
-            SFX.play(smwMap.pathSettings.itemPanel)
+            SFX.play(smwMap.levelSettings.itemPanelSound)
             smwMap.createObject(levelFlipAnimID, eventObj.levelObj.x, eventObj.levelObj.y)
         elseif eventObj.timer == 3 * 8 then
             smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
@@ -645,7 +639,7 @@ do
     updateFunctions[EVENT_TYPE.SHOW_HIDE_SCENERIES] = function(eventObj)
         if eventObj.sceneryProgress < eventObj.neededSceneryProgress+1 then
             eventObj.timer = eventObj.timer + 1
-            eventObj.sceneryProgress = (eventObj.timer/smwMap.pathSettings.unlockAnimationFrequency)
+            eventObj.sceneryProgress = (eventObj.timer/smwMap.levelSettings.unlockAnimationFrequency)
 
             local scenerySmokeID = 758
 
@@ -2844,7 +2838,7 @@ do
                 hideIfLocked = (v.hideIfLocked and 1) or 0,
                 lockedFade = v.lockedFade,
 
-                lockedPathColor = smwMap.pathSettings.lockedColor,
+                lockedPathColor = smwMap.levelSettings.lockedColor,
             }
         end
 
@@ -3456,7 +3450,7 @@ do
             hideIfLocked = 0,
             lockedFade = 1,
 
-            lockedPathColor = smwMap.pathSettings.lockedColor,
+            lockedPathColor = smwMap.levelSettings.lockedColor,
         }
 
         Graphics.glDraw(basicGlDrawArgs)
