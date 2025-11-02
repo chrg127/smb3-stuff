@@ -3,7 +3,7 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "map.tmx",
+    "activeFile": "world2.tmx",
     "expandedProjectPaths": [
         "."
     ],
@@ -19,8 +19,16 @@
             "scale": 3,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": -19.833333333333314,
-                "y": 16.666666666666686
+                "x": -65.83333333333331,
+                "y": 10
+            }
+        },
+        "world2.tmx": {
+            "scale": 3,
+            "selectedLayer": 4,
+            "viewCenter": {
+                "x": 265.8333333333333,
+                "y": 145.66666666666663
             }
         }
     },
@@ -30,10 +38,11 @@
     "map.tileHeight": 8,
     "map.tileWidth": 8,
     "openFiles": [
-        "map.tmx"
+        "world2.tmx"
     ],
     "project": "smb3-maps.tiled-project",
     "recentFiles": [
+        "world2.tmx",
         "map.tmx",
         "main.tsx"
     ]

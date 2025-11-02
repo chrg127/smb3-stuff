@@ -265,7 +265,7 @@
 </chunk>
   </data>
  </layer>
- <layer id="4" name="scenery" width="30" height="20" visible="0">
+ <layer id="4" name="scenery" width="30" height="20">
   <data encoding="csv">
    <chunk x="-16" y="-16" width="16" height="16">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -341,7 +341,7 @@
 </chunk>
   </data>
  </layer>
- <layer id="3" name="levels" width="30" height="20" visible="0">
+ <layer id="3" name="levels" width="30" height="20">
   <data encoding="csv">
    <chunk x="-16" y="-16" width="16" height="16">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
