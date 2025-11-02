@@ -9,10 +9,8 @@ smwMap.setObjConfig(npcID, {
 
     onTickObj = function(v)
         if smwMap.isLevelBeaten(v) then
-            smwMap.setObjConfig(npcID, {
-                texture = smwMap.levelSettings.beatenTileImage,
-                framesY = smwMap.levelSettings.beatenTileImage.height / 32,
-            })
+            v.textureOverride = smwMap.levelSettings.beatenTileImage
+            v.framesYOverride = smwMap.levelSettings.beatenTileImage.height / 32
             v.frameY = (smwMap.isLevelCompletelyBeaten(v) and 0 or smwMap.playerSettings.numSupported)
                      + SaveData.smwMap.beatenLevels[v.settings.levelFilename].character - 1
         else

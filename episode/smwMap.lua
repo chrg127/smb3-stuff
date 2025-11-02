@@ -142,7 +142,7 @@ smwMap.levelSettings = {
 smwMap.encounterSettings = {
     idleWanderDistance = 12,
 
-    walkSpeed = 1,
+    walkSpeed = 1.5,
 
     maxMovements = 6,
     keepWalkingChance = 3,
@@ -632,6 +632,9 @@ do
         elseif eventObj.timer == 3 * 8 then
             smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
         elseif eventObj.timer >= 5 * 8 then
+            table.insert(smwMap.activeEvents, {
+                type = EVENT_TYPE.MOVE_ENCOUNTERS,
+            })
             table.remove(smwMap.activeEvents, 1)
         end
     end
@@ -681,6 +684,9 @@ do
         elseif eventObj.timer == 32 then
             smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
         elseif eventObj.timer >= 64 then
+            table.insert(smwMap.activeEvents, {
+                type = EVENT_TYPE.MOVE_ENCOUNTERS,
+            })
             table.remove(smwMap.activeEvents,1)
         end
     end)
@@ -1931,11 +1937,6 @@ do
             smwMap.unlockLevelPaths(v.levelObj, gameData.winType)
         end
 
-        -- in any case, trigger the encounters
-        table.insert(smwMap.activeEvents, {
-            type = EVENT_TYPE.MOVE_ENCOUNTERS,
-        })
-
         -- End the state
         gameData.winType = LEVEL_WIN_TYPE_NONE
 
@@ -2202,9 +2203,9 @@ do
                 if #smwMap.activeEvents > 0 then
                     if smwMap.activeEvents[1].type == EVENT_TYPE.BEAT_LEVEL
                     or smwMap.activeEvents[1].type == EVENT_TYPE.SHOW_WORLD_CARD then
-                        v.frame = 0
-                    else
                         v.frame = 1
+                    else
+                        v.frame = 0
                     end
                 elseif v.basePlayer.mount == MOUNT_BOOT then
                     v.mountFrame = math.floor(v.animationTimer / 8) % smwMap.playerSettings.bootFrames
@@ -2770,15 +2771,15 @@ do
     function smwMap.drawObject(v)
         local config = smwMap.getObjectConfig(v.id)
 
-        local texture = config.texture
+        local texture = v.textureOverride and v.textureOverride or config.texture
 
         if texture == nil or v.toRemove or (v.lockedFade >= 1 and v.hideIfLocked) or (config.hidden and not (Misc.inEditor() and Misc.GetKeyState(VK_T))) then
             return
         end
 
 
-        local sourceWidth  = texture.width  / config.framesX
-        local sourceHeight = texture.height / config.framesY
+        local sourceWidth  = texture.width  / (v.framesXOverride or config.framesX)
+        local sourceHeight = texture.height / (v.framesYOverride or config.framesY)
 
         local width,height = sourceWidth,sourceHeight
 

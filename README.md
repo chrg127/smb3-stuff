@@ -7,11 +7,15 @@ https://www.smbxgame.com/forums/viewtopic.php?t=30254
     - their animation is most likely not right (it's hardcoded for hammer brothers)
 - make player go back to last level when losing
 - inventory
+    - twister warp
 - object spawning when user-defined conditions are met (very low priority, sorry)
 - various fades
 - castle full-screen flash animation
 - figure out what to do with the castle and bowser castle levels
 - airship animation stuff
+- figure out invisible warps and their interaction with area names
+    - possibly something like this: check if we came to an area through inv. warp, if we did then simply do not play the animation
+    - pipes would still play the animation, i think? they need to to implement the warp world
 
 ## notes
 
