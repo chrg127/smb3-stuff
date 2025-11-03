@@ -853,7 +853,9 @@ do
         -- Find any paths that are available
         local validPaths = {}
         for _, dir in ipairs{"up","right","down","left"} do
-            if level.settings["unlock_" .. dir] ~= 0 then
+            -- value here may be bool or number
+            local value = level.settings["unlock_" .. dir]
+            if value and value ~= 0 then
                 table.insert(validPaths, dir)
             end
         end
@@ -929,10 +931,12 @@ do
             v.graphicsOffsetY = 0
             data.animationSpeed = 1
         elseif data.state == smwMap.ENCOUNTER_STATE.WALKING then
-            local walkSpeed = walkSpeed or (v.isClimbing and smwMap.playerSettings.climbSpeed) or smwMap.encounterSettings.walkSpeed
+            local walkSpeed = smwMap.encounterSettings.walkSpeed
             local newPosition = vector(v.x, v.y) + v.walkingDirection * walkSpeed
             v.x = newPosition.x
             v.y = newPosition.y
+
+            print("x =", v.x, "y =", v.y)
 
             v.graphicsOffsetX = 0
             v.graphicsOffsetY = 0
@@ -958,6 +962,21 @@ do
                     v.x = levelObj.x
                     v.y = levelObj.y
                     data.levelObj = levelObj
+                end
+            else
+                local obj = findBlockingObj(v, v.x, v.y)
+                if obj ~= nil then
+                    print("found!")
+                    v.x = obj.x + ({ left = 32, right = -32, up =   0, down =  0 })[v.lastMovement]
+                    v.y = obj.y + ({ left =  0, right =   0, up = 32, down = -32 })[v.lastMovement]
+                    if v.levelObj ~= nil and (v.x ~= v.levelObj.x or v.y ~= v.levelObj.y) then
+                        -- reset current level object in case the encounter moved a substantial amount
+                        v.levelObj = nil
+                    end
+                    -- make encounter go the opposite direction
+                    v.walkingDirection = -v.walkingDirection
+                    v.lastMovement = ({ left = "right", right = "left", up = "down", down = "up", })[v.lastMovement]
+                    data.direction = v.walkingDirection.x == 0 and DIR_LEFT or v.walkingDirection.x
                 end
             end
         elseif data.state == smwMap.ENCOUNTER_STATE.SLEEPING then
@@ -1808,13 +1827,13 @@ do
                     SFX.play(26)
                 end
 
-                -- save the last movement here so that the player doesn't remain stuck on a level
-                -- if he quits there
+                -- save the last movement here so that the player doesn't remain stuck on a level if he quits there
                 saveData.lastMovement = v.lastMovement
             end
         else
             local obj = findBlockingObj(v, v.x, v.y)
             if obj ~= nil then
+                -- player must stay to the left/right/up/down of the blocking object
                 v.x = obj.x + ({ left = 32, right = -32, up =   0, down =  0 })[v.lastMovement]
                 v.y = obj.y + ({ left =  0, right =   0, up = 32, down = -32 })[v.lastMovement]
                 v.state = PLAYER_STATE.NORMAL

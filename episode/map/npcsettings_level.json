@@ -56,17 +56,17 @@
 				},
 				{
 					"control": "comboBox",
-					"name": "unlock_right",
-					"title": "Right Unlock",
-					"tooltip": "Type of victory needed to unlock the right.",
+					"name": "unlock_down",
+					"title": "Bottom Unlock",
+					"tooltip": "Type of victory needed to unlock the bottom.",
 					"elements": ["* - None","* - Always Unlocked","* - Any Win","1 - Card Roulette","2 - SMB3 Orb","3 - Offscreen","4 - Keyhole","5 - SMB2 Orb","6 - Warp","7 - SMB3 Star","8 - Goal Tape"],
 					"value-default": 0
 				},
 				{
 					"control": "comboBox",
-					"name": "unlock_down",
-					"title": "Bottom Unlock",
-					"tooltip": "Type of victory needed to unlock the bottom.",
+					"name": "unlock_right",
+					"title": "Right Unlock",
+					"tooltip": "Type of victory needed to unlock the right.",
 					"elements": ["* - None","* - Always Unlocked","* - Any Win","1 - Card Roulette","2 - SMB3 Orb","3 - Offscreen","4 - Keyhole","5 - SMB2 Orb","6 - Warp","7 - SMB3 Star","8 - Goal Tape"],
 					"value-default": 0
 				},
