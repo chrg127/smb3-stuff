@@ -3280,8 +3280,8 @@ do
 
             Graphics.drawImageWP(
                 smwMap.playerSettings.images[player.character],
-                cardPos.x + 128, cardPos.y + 58,
-                0, 0, 32, 32,
+                cardPos.x + 128, cardPos.y + 10,
+                0, 80 * smwMap.mainPlayer.basePlayer.powerup * 2, 32, 80,
                 smwMap.hudSettings.priority
             )
         elseif worldCard.state == WORLD_CARD_STATE.EXPANDING_STARS
