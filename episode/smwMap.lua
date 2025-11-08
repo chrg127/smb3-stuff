@@ -92,7 +92,7 @@ smwMap.playerSettings = {
     shadowImage = Graphics.loadImageResolved("smwMap/shadow.png"),
     waterImage = Graphics.loadImageResolved("smwMap/water.png"),
 
-    levelSelectedSound = SFX.open(Misc.resolveSoundFile("smwMap/levelSelected")),
+    levelSelectedSound = SFX.open(Misc.resolveSoundFile("smwMap/level-selected")),
     levelDestroyedSound = SFX.open(Misc.resolveSoundFile("smwMap/levelDestroyed")),
     switchBlockReleasedSound = SFX.open(Misc.resolveSoundFile("smwMap/switchBlockReleased")),
 
@@ -362,6 +362,16 @@ local function findBlockingObj(v, x, y)
     return nil
 end
 
+local function getPlayerScreenPos()
+    local playerY = smwMap.mainPlayer.y
+                  + (smwMap.playerSettings.mountOffsets[smwMap.mainPlayer.basePlayer.mount] or 0)
+                  + smwMap.mainPlayer.zOffset
+    return vector(
+        smwMap.camera.renderX + (smwMap.mainPlayer.x - smwMap.camera.x),
+        smwMap.camera.renderY + (playerY             - smwMap.camera.y)
+    )
+end
+
 -- Transitions
 do
     smwMap.transitionDrawFunction = nil
@@ -439,10 +449,7 @@ do
 
 
     function smwMap.TRANSITION_IRIS_OUT(progress,priority)
-        local focus = vector(
-            smwMap.mainPlayer.x - smwMap.camera.x + smwMap.camera.renderX,
-            smwMap.mainPlayer.y + smwMap.playerSettings.gfxYOffset + (smwMap.playerSettings.mountOffsets[smwMap.mainPlayer.basePlayer.mount] or 0) + smwMap.mainPlayer.zOffset - smwMap.camera.y + smwMap.camera.renderY
-        )
+        local focus = getPlayerScreenPos()
         local radius = ((1 - progress) * math.max(smwMap.camera.width,smwMap.camera.height))
 
         Graphics.drawBox{
@@ -456,23 +463,14 @@ do
     end
 
 
+    function smwMap.TRANSITION_NONE(progress, priority)
+    end
+
 
     function smwMap.startTransition(middleFunction,endFunction,args)
         if smwMap.transitionDrawFunction ~= nil then
             return
         end
-
-        if args.drawFunction == nil then
-            if middleFunction ~= nil then
-                middleFunction()
-            end
-            if endFunction ~= nil then
-                endFunction()
-            end
-
-            return
-        end
-
 
         smwMap.transitionDrawFunction = args.drawFunction
         smwMap.transitionMiddleFunction = middleFunction
@@ -498,8 +496,8 @@ do
 
 
     local function updateTransition()
-        local beforeEndTime = (smwMap.transitionStartTime + smwMap.transitionWaitTime)
-        local totalLength = (beforeEndTime + smwMap.transitionEndTime)
+        local endTimeThreshold = (smwMap.transitionStartTime + smwMap.transitionWaitTime)
+        local totalLength = (endTimeThreshold + smwMap.transitionEndTime)
 
         smwMap.transitionProgress = 1
 
@@ -520,9 +518,11 @@ do
         elseif smwMap.transitionTimer == (smwMap.transitionStartTime + math.floor(smwMap.transitionWaitTime*0.5)) and smwMap.transitionMiddleFunction ~= nil then
             smwMap.transitionMiddleFunction()
         elseif smwMap.transitionTimer < smwMap.transitionStartTime then
+            -- we're in the starting part
             smwMap.transitionProgress = (smwMap.transitionTimer / smwMap.transitionStartTime)
-        elseif smwMap.transitionTimer > beforeEndTime then
-            smwMap.transitionProgress = 1 - ((smwMap.transitionTimer - beforeEndTime) / smwMap.transitionEndTime)
+        elseif smwMap.transitionTimer > endTimeThreshold then
+            -- we're in the end part
+            smwMap.transitionProgress = 1 - ((smwMap.transitionTimer - endTimeThreshold) / smwMap.transitionEndTime)
         end
     end
 
@@ -547,36 +547,44 @@ do
 end
 
 
+-- a transition is divided into three parts: a starting part, a middle part and an end part.
+-- taking the fade as an example, the starting part is where the fade goes from color to black,
+-- while the end part runs in the opposite direction.
+-- the middle part is always black.
+-- in these settings, progressTime is the time the transition takes during both starting and end parts,
+-- but you can also specify these times individually with startTime and endTime.
 smwMap.transitionSettings = {
     selectedLevelSettings = {
-        drawFunction = smwMap.TRANSITION_MOSAIC,
-        progressTime = 28,
+        drawFunction = smwMap.TRANSITION_IRIS_OUT,
+        progressTime = 60,
         priority = 6,
     },
 
     enterEncounterSettings = {
-        drawFunction = smwMap.TRANSITION_MOSAIC,
-        progressTime = 28,
+        drawFunction = smwMap.TRANSITION_IRIS_OUT,
+        progressTime = 60,
         priority = 6,
     },
 
     enterMapSettings = {
-        drawFunction = smwMap.TRANSITION_MOSAIC,
-        progressTime = 28,
+        drawFunction = smwMap.TRANSITION_NONE,
+        progressTime = 0,
         priority = 6,
 
-        waitTime = 0,startTime = 0, -- these are important! you probably shouldn't touch them
+        waitTime = 0,
+        startTime = 0,
     },
 
     warpToWarpSettings = {
-        drawFunction = smwMap.TRANSITION_FADE,
-        progressTime = 20,
+        drawFunction = smwMap.TRANSITION_IRIS_OUT,
+        progressTime = 60,
         waitTime = 8,
         priority = -4,
     },
+
     warpToPathSettings = {
-        drawFunction = smwMap.TRANSITION_WINDOW,
-        progressTime = 20,
+        drawFunction = smwMap.TRANSITION_IRIS_OUT,
+        progressTime = 60,
         waitTime = 8,
         priority = -6,
         pauses = false,
@@ -774,10 +782,7 @@ do
                 smwMap.camera.renderX + smwMap.camera.width  / 2,
                 smwMap.camera.renderY + smwMap.camera.height / 2
             )
-            local target = vector(
-                smwMap.camera.renderX + smwMap.mainPlayer.x - smwMap.camera.x - 16,
-                smwMap.camera.renderY + smwMap.mainPlayer.y - smwMap.camera.y - 16
-            )
+            local target = getPlayerScreenPos()
             local dist = target - worldCard.center
             worldCard.speed = dist / (eventObj.closingThresh - eventObj.expandThresh)
             SFX.play(settings.starSound)
@@ -1397,12 +1402,12 @@ do
             return
         end
 
-        v.walkingDirection = ({ down = vector( 0, 1), up    = vector(0, -1),
-                                left = vector(-1, 0), right = vector(1,  0) })[directionName]
         v.state = PLAYER_STATE.WALKING
         v.timer = 0
         v.lastMovement = directionName
         v.movementHistory[1] = directionName
+        v.walkingDirection = ({ down = vector( 0, 1), up    = vector(0, -1),
+                                left = vector(-1, 0), right = vector(1,  0) })[directionName]
         return true
     end
 
@@ -1567,7 +1572,7 @@ do
             Misc.unpause()
         end)
 
-        smwMap.startTransition(middleFunction,nil, smwMap.transitionSettings.enterEncounterSettings)
+        smwMap.startTransition(middleFunction, nil, smwMap.transitionSettings.enterEncounterSettings)
 
         if smwMap.encounterSettings.enterSound ~= nil then
             SFX.play(smwMap.encounterSettings.enterSound)
@@ -1635,57 +1640,39 @@ do
 
         if destinationLevel ~= nil then
             local middleFunction = (function()
-                for _,p in ipairs(smwMap.players) do
-                    p.state = PLAYER_STATE.NORMAL
-                    p.timer = 0
-                    p.zOffset = 0
-                    setPlayerLevel(p,destinationLevel)
+                if warpObj.settings.pathWalkingDirection ~= nil then
+                    for _,p in ipairs(smwMap.players) do
+                        p.state = PLAYER_STATE.WALKING
+                        p.timer = p.followingDelay
+                        p.zOffset = 0
+                        p.warpCooldown = 60
+
+                        local directionName = ({ "up", "down", "left", "right" })[warpObj.settings.pathWalkingDirection + 1]
+                        p.lastMovement = directionName
+                        p.movementHistory[1] = directionName
+                        p.walkingDirection = ({ down = vector( 0, 1), up    = vector(0, -1),
+                                                left = vector(-1, 0), right = vector(1,  0) })[directionName]
+
+                        setPlayerLevel(p, destinationLevel)
+                    end
+                else
+                    for _,p in ipairs(smwMap.players) do
+                        p.state = PLAYER_STATE.NORMAL
+                        p.timer = 0
+                        p.zOffset = 0
+                        setPlayerLevel(p,destinationLevel)
+                    end
+                    v.movementHistory = {}
+                    v.lastMovement = nil
                 end
 
-                v.movementHistory = {}
+                -- maybe this shouldn't be changed with instant warps?
                 v.direction = 0
                 updateActiveAreas(v,64)
             end)
 
             smwMap.startTransition(middleFunction,nil, smwMap.transitionSettings.warpToWarpSettings)
         end
-
-        --[[
-        elseif destinationPath ~= nil then
-            local middleFunction = (function()
-                for _,p in ipairs(smwMap.players) do
-                    p.state = PLAYER_STATE.WALKING
-                    p.timer = p.followingDelay
-
-                    p.zOffset = 0
-
-                    p.pathObj = destinationPath
-
-                    if warpObj.settings.pathWalkingDirection == 0 then
-                        p.walkingDirection = 1
-                        p.walkingProgress = 0
-                    else
-                        p.walkingDirection = -1
-                        p.walkingProgress = 1
-                    end
-
-                    p.warpCooldown = 60
-
-                    for i = 1,2 do -- done twice to make sure the player's facing the right way
-                        updateWalkingPosition(p,0.0001)
-                    end
-                end
-
-                v.movementHistory = {}
-
-                updateActiveAreas(v,64)
-
-                smwMap.unlockPath(destinationPath.name)
-            end)
-
-            smwMap.startTransition(middleFunction,nil, smwMap.transitionSettings.warpToPathSettings)
-        end
-        ]]
     end
 
 
@@ -1724,19 +1711,15 @@ do
                     if #smwMap.startPointSelectOptions <= 1 or not smwMap.selectStartPointSettings.enabled then
                         v.state = PLAYER_STATE.SELECTED
                         v.timer = 0
-
                         v.direction = 0
                     else
                         v.state = PLAYER_STATE.SELECT_START
                         v.timer = 0
-
                         v.direction = 0
 
                         smwMap.startPointSelectedOption = 1
                         smwMap.startSelectLayouts = nil
                     end
-
-                    SFX.play(smwMap.playerSettings.levelSelectedSound)
                 end
             elseif player.keys.dropItem == KEYS_PRESSED and v.levelObj ~= nil and Misc.inEditor() then -- unlock ALL the things (only works from in editor)
                 v.state = PLAYER_STATE.WON
@@ -1856,20 +1839,19 @@ do
     end)
 
     -- Has selected a level
-    stateFunctions[PLAYER_STATE.SELECTED] = (function(v)
+    stateFunctions[PLAYER_STATE.SELECTED] = function(v)
         v.timer = v.timer + 1
 
-        smwMap.startPointOpenProgress = math.max(0,smwMap.startPointOpenProgress - v.timer*0.005)
-
-        if v.timer == 48 and v.isMainPlayer then
-            local middleFunction = (function()
+        if v.timer == 1 and v.isMainPlayer then
+            local middleFunction = function()
                 Level.load(v.levelObj.settings.levelFilename,nil,v.levelObj.settings.warpIndex)
                 Misc.unpause()
-            end)
+            end
 
-            smwMap.startTransition(middleFunction,nil, smwMap.transitionSettings.selectedLevelSettings)
+            SFX.play(smwMap.playerSettings.levelSelectedSound)
+            smwMap.startTransition(middleFunction, nil, smwMap.transitionSettings.selectedLevelSettings)
         end
-    end)
+    end
 
     -- Just beat a level, unlock any paths
     stateFunctions[PLAYER_STATE.WON] = (function(v)
@@ -1882,7 +1864,6 @@ do
 
 
         v.timer = v.timer + 1
-
         if v.timer < 24 then
             return
         end
@@ -2058,7 +2039,10 @@ do
         end
     end)
 
-
+    -- on start point menu
+    -- whether timer is 0 or > 0 indicates the state of the menu:
+    -- == 0 => opening / open and selecting a start point
+    --  > 0 => closing
     stateFunctions[PLAYER_STATE.SELECT_START] = (function(v)
         if v.timer > 0 then
             smwMap.startPointOpenProgress = math.max(0,smwMap.startPointOpenProgress - v.timer*0.003)
@@ -2066,35 +2050,35 @@ do
             v.timer = v.timer + 1
 
             if smwMap.startPointOpenProgress <= 0 then
-                v.state = PLAYER_STATE.NORMAL
-                v.timer = 0
+                if smwMap.startPointSelectedOption ~= nil then
+                    v.state = PLAYER_STATE.SELECTED
+                    v.timer = 0
+                    smwMap.startPointSelectOptions[smwMap.startPointSelectedOption][2]()
+                else
+                    v.state = PLAYER_STATE.NORMAL
+                    v.timer = 0
+                end
+            end
+        else
+            smwMap.startPointOpenProgress = math.lerp(smwMap.startPointOpenProgress, 1, 0.125)
+
+            if player.keys.run == KEYS_PRESSED then
+                v.timer = 1
+                smwMap.startPointSelectedOption = nil
+                return
             end
 
-            return
-        end
+            if player.keys.up == KEYS_PRESSED and smwMap.startPointSelectedOption > 1 then
+                smwMap.startPointSelectedOption = smwMap.startPointSelectedOption - 1
+                SFX.play(26)
+            elseif player.keys.down == KEYS_PRESSED and smwMap.startPointSelectedOption < #smwMap.startPointSelectOptions then
+                smwMap.startPointSelectedOption = smwMap.startPointSelectedOption + 1
+                SFX.play(26)
+            end
 
-        if player.keys.run == KEYS_PRESSED then
-            v.timer = 1
-            return
-        end
-
-        smwMap.startPointOpenProgress = math.lerp(smwMap.startPointOpenProgress,1, 0.125)
-
-        if player.keys.up == KEYS_PRESSED and smwMap.startPointSelectedOption > 1 then
-            smwMap.startPointSelectedOption = smwMap.startPointSelectedOption - 1
-            SFX.play(26)
-        elseif player.keys.down == KEYS_PRESSED and smwMap.startPointSelectedOption < #smwMap.startPointSelectOptions then
-            smwMap.startPointSelectedOption = smwMap.startPointSelectedOption + 1
-            SFX.play(26)
-        end
-
-        if player.keys.jump == KEYS_PRESSED then
-            v.state = PLAYER_STATE.SELECTED
-            v.timer = 0
-
-            smwMap.startPointSelectOptions[smwMap.startPointSelectedOption][2]()
-
-            SFX.play(smwMap.playerSettings.levelSelectedSound)
+            if player.keys.jump == KEYS_PRESSED then
+                v.timer = 1
+            end
         end
     end)
 
@@ -3294,7 +3278,7 @@ do
                 )
                 Graphics.drawImageWP(
                     smwMap.hudSettings.worldCard.starImage,
-                    pos.x, pos.y,
+                    pos.x - 16, pos.y - 16,
                     0, worldCard.starFrame * 32, 32, 32,
                     smwMap.hudSettings.priority
                 )
