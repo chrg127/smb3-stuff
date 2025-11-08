@@ -1279,17 +1279,16 @@ do
     function smwMap.getStartSelectLayouts()
         local settings = smwMap.selectStartPointSettings
 
-        smwMap.startSelectLayouts = {}
+        local layouts = {}
 
         for _,option in ipairs(smwMap.startPointSelectOptions) do
-            local layout = textplus.layout(option[1],nil, {
+            table.insert(layouts, textplus.layout(option[1],nil, {
                 font = settings.textFont,
                 xscale = 2,
                 yscale = 2,
-            })
-
-            table.insert(smwMap.startSelectLayouts,layout)
+            }))
         end
+        return layouts
     end
 
     function smwMap.drawStartSelect()
@@ -1300,7 +1299,7 @@ do
 
 
         if smwMap.startSelectLayouts == nil then
-            smwMap.getStartSelectLayouts()
+            smwMap.startSelectLayouts = smwMap.getStartSelectLayouts()
         end
 
 

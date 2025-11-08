@@ -9,13 +9,13 @@ https://www.smbxgame.com/forums/viewtopic.php?t=30254
 - inventory
     - twister warp
 - object spawning when user-defined conditions are met (very low priority, sorry)
-- various fades
-- castle full-screen flash animation
-- figure out what to do with the castle and bowser castle levels
-- airship animation stuff
+    - airship animation
+- castle full-screen flash animation (also low priority)
 - figure out invisible warps and their interaction with area names
     - possibly something like this: check if we came to an area through inv. warp, if we did then simply do not play the animation
     - pipes would still play the animation, i think? they need to to implement the warp world
+- boat (an object that simply follows you until you go on specific tiles)
+- warps with levels (useful for real pipes, important for tower)
 
 ## notes
 
@@ -25,15 +25,4 @@ https://www.smbxgame.com/forums/viewtopic.php?t=30254
 756 - castle beaten animation
 757 - encounter beaten smoke animation
 758 - scenery show/hide smoke
-
-### boat
-
-- player state ON_BOAT.
-- when the player hits a boat level, its state becomes ON_BOAT; the level is moved around (remember to save its position!).
-- the player now can go on any water tile (how do you detect those?). each tile is sitll 16x16 (32x32 in smbx).
-- when the player goes on the ledge, its state reverts back to normal and he leaves the boat. remember that this means we have
-to check which tile the player is about to go to (but this is easy).
-
-a possible simple way is to define the boat area with invisible levels. then you could reuse the normal code for walking around.
-still needs to check for the boat and move it around.
 
