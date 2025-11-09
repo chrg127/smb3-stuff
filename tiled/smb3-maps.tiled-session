@@ -3,7 +3,7 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "world2.tmx",
+    "activeFile": "world5b.tmx",
     "expandedProjectPaths": [
         "."
     ],
@@ -17,26 +17,50 @@
         },
         "map.tmx": {
             "scale": 3,
+            "selectedLayer": 3,
+            "viewCenter": {
+                "x": -5.166666666666657,
+                "y": 9.666666666666686
+            }
+        },
+        "world1.tmx": {
+            "scale": 2,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": -65.83333333333331,
-                "y": 10
+                "x": -19.75,
+                "y": -38
             }
         },
         "world2.tmx": {
             "scale": 2,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 221.25,
-                "y": 117
+                "x": 234.75,
+                "y": 164.5
             }
         },
         "world3.tmx": {
             "scale": 2,
-            "selectedLayer": 2,
+            "selectedLayer": 0,
             "viewCenter": {
-                "x": -39.25,
-                "y": -40.5
+                "x": -85.25,
+                "y": -7
+            }
+        },
+        "world5a.tmx": {
+            "scale": 2,
+            "selectedLayer": 3,
+            "viewCenter": {
+                "x": 100.25,
+                "y": 27.5
+            }
+        },
+        "world5b.tmx": {
+            "scale": 3,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": -15.166666666666657,
+                "y": 73.66666666666667
             }
         }
     },
@@ -46,12 +70,17 @@
     "map.tileHeight": 8,
     "map.tileWidth": 8,
     "openFiles": [
-        "world2.tmx"
+        "world5b.tmx",
+        "world5a.tmx"
     ],
     "project": "smb3-maps.tiled-project",
     "recentFiles": [
-        "world2.tmx",
+        "world5a.tmx",
+        "world5b.tmx",
         "main.tsx",
+        "world1.tmx",
+        "world3.tmx",
+        "world2.tmx",
         "map.tmx"
     ]
 }

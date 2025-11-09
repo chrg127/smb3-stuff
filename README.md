@@ -15,7 +15,9 @@ https://www.smbxgame.com/forums/viewtopic.php?t=30254
     - pipes would still play the animation, i think? they need to to implement the warp world
 - boat (an object that simply follows you until you go on specific tiles)
     - and water tiles
-- warps with levels (useful for real pipes, important for tower)
+
+- bug with lastmovement and warps (use the warps in world 3)
+    - same stuff with encounters?
 
 ## notes
 
