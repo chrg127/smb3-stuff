@@ -31,6 +31,34 @@
 		},
 
 		{
+			"control": "levelFile",
+			"name": "levelFilename",
+			"title": "Level Filename",
+			"tooltip": "Filename of the level associated with this tile.",
+			"value-default": ""
+		},
+		{
+			"control": "spinBox",
+			"name": "warpIndex",
+			"title": "Entrance\nWarp Index",
+			"tooltip": "The warp that the player starts at when entering the level. 0 means no warp and starting from the usual start point.",
+			"type": "int",
+			"value-default": 0,
+			"value-min": 0,
+			"value-max": 200
+		},
+        {
+            "control": "spinBox",
+            "name": "exitWarpIndex",
+            "title": "Exit warp index",
+            "tooltip": "The warp that the player must take to warp to the indicated level warp.",
+            "type": "int",
+			"value-default": 0,
+			"value-min": 0,
+			"value-max": 200
+        },
+
+		{
 			"control": "group",
 			"name": "..",
 			"title": "Unlock Settings",

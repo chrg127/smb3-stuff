@@ -32,9 +32,10 @@ if Level.filename() ~= smwMap.levelFilename then
     gameData.winType = LEVEL_WIN_TYPE_NONE
 
     function smwMap.onInitAPI()
-        registerEvent(smwMap,"onStart")
-        registerEvent(smwMap,"onCheckpoint")
-        registerEvent(smwMap,"onExitLevel")
+        registerEvent(smwMap, "onStart")
+        registerEvent(smwMap, "onCheckpoint")
+        registerEvent(smwMap, "onExitLevel")
+        registerEvent(smwMap, "onWarpEnter")
     end
 
     function smwMap.onStart()
@@ -48,6 +49,10 @@ if Level.filename() ~= smwMap.levelFilename then
 
     function smwMap.onExitLevel(winType)
         gameData.winType = winType
+    end
+
+    function smwMap.onWarpEnter(eventToken, warp, player)
+        gameData.warpIndex = warp.idx
     end
 
     return smwMap
@@ -1634,46 +1639,46 @@ do
     end
 
 
-    function smwMap.doPlayerWarp(v,warpObj)
+    function smwMap.warpPlayer(v, warpObj, destinationLevel)
+        if warpObj.settings.pathWalkingDirection ~= nil then
+            for _,p in ipairs(smwMap.players) do
+                p.state = PLAYER_STATE.WALKING
+                p.timer = p.followingDelay
+                p.zOffset = 0
+                p.warpCooldown = 60
+
+                local directionName = ({ "up", "down", "left", "right" })[warpObj.settings.pathWalkingDirection + 1]
+                p.lastMovement = directionName
+                p.movementHistory[1] = directionName
+                p.walkingDirection = ({ down = vector( 0, 1), up    = vector(0, -1),
+                                        left = vector(-1, 0), right = vector(1,  0) })[directionName]
+
+                setPlayerLevel(p, destinationLevel)
+            end
+            gameData.lastLevelBeaten = nil
+        else
+            for _,p in ipairs(smwMap.players) do
+                p.state = PLAYER_STATE.NORMAL
+                p.timer = 0
+                p.zOffset = 0
+                setPlayerLevel(p,destinationLevel)
+            end
+            v.movementHistory = {}
+            v.lastMovement = nil
+            gameData.lastLevelBeaten = vector(warpObj.x, warpObj.y)
+        end
+
+        -- maybe this shouldn't be changed with instant warps?
+        v.direction = 0
+
+        updateActiveAreas(v,64)
+    end
+
+    function smwMap.warpPlayerWithTransition(v, warpObj)
         local destinationLevel = smwMap.warpsMap[warpObj.settings.destinationWarpName]
-
         if destinationLevel ~= nil then
-            local middleFunction = (function()
-                if warpObj.settings.pathWalkingDirection ~= nil then
-                    for _,p in ipairs(smwMap.players) do
-                        p.state = PLAYER_STATE.WALKING
-                        p.timer = p.followingDelay
-                        p.zOffset = 0
-                        p.warpCooldown = 60
-
-                        local directionName = ({ "up", "down", "left", "right" })[warpObj.settings.pathWalkingDirection + 1]
-                        p.lastMovement = directionName
-                        p.movementHistory[1] = directionName
-                        p.walkingDirection = ({ down = vector( 0, 1), up    = vector(0, -1),
-                                                left = vector(-1, 0), right = vector(1,  0) })[directionName]
-
-                        setPlayerLevel(p, destinationLevel)
-                    end
-                    gameData.lastLevelBeaten = nil
-                else
-                    for _,p in ipairs(smwMap.players) do
-                        p.state = PLAYER_STATE.NORMAL
-                        p.timer = 0
-                        p.zOffset = 0
-                        setPlayerLevel(p,destinationLevel)
-                    end
-                    v.movementHistory = {}
-                    v.lastMovement = nil
-                    gameData.lastLevelBeaten = vector(warpObj.x, warpObj.y)
-                end
-
-                -- maybe this shouldn't be changed with instant warps?
-                v.direction = 0
-
-                updateActiveAreas(v,64)
-            end)
-
-            smwMap.startTransition(middleFunction,nil, smwMap.transitionSettings.warpToWarpSettings)
+            local middleFunction = function() smwMap.warpPlayer(v, warpObj, destinationLevel) end
+            smwMap.startTransition(middleFunction, nil, smwMap.transitionSettings.warpToWarpSettings)
         end
     end
 
@@ -1697,10 +1702,10 @@ do
             elseif player.keys.jump == KEYS_PRESSED and canEnterLevel(v.levelObj) then -- enter level
                 local config = smwMap.getObjectConfig(v.levelObj.id)
 
-                if config.isWarp then
+                if config.isWarp and v.levelObj.settings.levelFilename == "" then
                     -- Warps
                     if config.doWarpOverride == nil then
-                        smwMap.doPlayerWarp(v,v.levelObj)
+                        smwMap.warpPlayerWithTransition(v,v.levelObj)
                     else
                         -- Make all players do the custom warping
                         v.state = PLAYER_STATE.CUSTOM_WARPING
@@ -1780,7 +1785,7 @@ do
         if v.isMainPlayer and v.warpCooldown == 0 then
             for _,warpObj in ipairs(getIntersectingInstantWarps(v.x,v.y)) do
                 if canEnterLevel(warpObj) then
-                    smwMap.doPlayerWarp(v,warpObj)
+                    smwMap.warpPlayerWithTransition(v,warpObj)
                     return
                 end
             end
@@ -1977,7 +1982,7 @@ do
         end
 
         if shouldFinishWarp and v.isMainPlayer then
-            smwMap.doPlayerWarp(v,v.levelObj)
+            smwMap.warpPlayerWithTransition(v,v.levelObj)
         end
     end)
 
@@ -2282,6 +2287,12 @@ do
         if gameData.winType ~= LEVEL_WIN_TYPE_NONE and smwMap.mainPlayer.levelObj ~= nil then
             smwMap.mainPlayer.state = PLAYER_STATE.WON
             gameData.lastLevelBeaten = vector(levelObj.x, levelObj.y)
+            if gameData.winType == LEVEL_WIN_TYPE_WARP and gameData.warpIndex + 1 == levelObj.settings.exitWarpIndex then
+                local destinationLevel = smwMap.warpsMap[levelObj.settings.destinationWarpName]
+                if destinationLevel ~= nil then
+                    smwMap.warpPlayer(smwMap.mainPlayer, levelObj, destinationLevel)
+                end
+            end
         elseif gameData.lastLevelBeaten ~= nil and not (smwMap.mainPlayer.x == gameData.lastLevelBeaten.x and smwMap.mainPlayer.y == gameData.lastLevelBeaten.y) then
             smwMap.mainPlayer.state = PLAYER_STATE.GOING_BACK
         else
@@ -2351,9 +2362,6 @@ do
     function smwMap.setObjConfig(id,settings)
         local config = smwMap.getObjectConfig(id)
         for k,v in pairs(settings) do
-            if k == "canStopEncounters" then
-                print("hi, v = ", v, "id =", id)
-            end
             config[k] = v
         end
         return config
