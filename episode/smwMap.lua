@@ -853,7 +853,7 @@ do
         end
 
         -- should be updated to check a list of ids instead
-        if level.id == 811 and level ~= v.data.levelObj and level ~= smwMap.mainPlayer.levelObj then
+        if smwMap.getObjectConfig(level.id).canStopEncounters and level ~= v.data.levelObj and level ~= smwMap.mainPlayer.levelObj then
             return false
         end
 
@@ -971,7 +971,6 @@ do
             else
                 local obj = findBlockingObj(v, v.x, v.y)
                 if obj ~= nil then
-                    print("found!")
                     v.x = obj.x + ({ left = 32, right = -32, up =   0, down =  0 })[v.lastMovement]
                     v.y = obj.y + ({ left =  0, right =   0, up = 32, down = -32 })[v.lastMovement]
                     if v.levelObj ~= nil and (v.x ~= v.levelObj.x or v.y ~= v.levelObj.y) then
@@ -2312,6 +2311,10 @@ do
     smwMap.areas = {}
 
     function smwMap.getObjectConfig(id)
+        if type(id) ~= "number" then
+            error("getObjectConfig only takes IDs")
+        end
+
         if smwMap.objectConfig[id] == nil then
             smwMap.objectConfig[id] = {}
             local config = smwMap.objectConfig[id]
@@ -2348,6 +2351,9 @@ do
     function smwMap.setObjConfig(id,settings)
         local config = smwMap.getObjectConfig(id)
         for k,v in pairs(settings) do
+            if k == "canStopEncounters" then
+                print("hi, v = ", v, "id =", id)
+            end
             config[k] = v
         end
         return config
