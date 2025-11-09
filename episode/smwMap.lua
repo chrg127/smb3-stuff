@@ -95,6 +95,7 @@ smwMap.playerSettings = {
     levelSelectedSound = SFX.open(Misc.resolveSoundFile("smwMap/level-selected")),
     levelDestroyedSound = SFX.open(Misc.resolveSoundFile("smwMap/levelDestroyed")),
     switchBlockReleasedSound = SFX.open(Misc.resolveSoundFile("smwMap/switchBlockReleased")),
+    goingBackSound = SFX.open(Misc.resolveSoundFile("smwMap/spinjump.wav")),
 
 
     canEnterDestroyedLevels = true,
@@ -124,6 +125,7 @@ smwMap.playerSettings = {
     },
 
     numSupported = 4, -- mario, luigi, peach and toad
+    goingBackTime = 30
 }
 
 
@@ -941,8 +943,6 @@ do
             v.x = newPosition.x
             v.y = newPosition.y
 
-            print("x =", v.x, "y =", v.y)
-
             v.graphicsOffsetX = 0
             v.graphicsOffsetY = 0
 
@@ -1128,6 +1128,7 @@ local PLAYER_STATE = {
     CUSTOM_WARPING       = 4, -- using star road warp
     PARKING_WHERE_I_WANT = 5, -- illparkwhereiwant / debug mode
     SELECT_START         = 6, -- selecting the start point
+    GOING_BACK           = 7, -- lost a level and going back to previous one
 }
 
 local LOOK_AROUND_STATE = {
@@ -1654,6 +1655,7 @@ do
 
                         setPlayerLevel(p, destinationLevel)
                     end
+                    gameData.lastLevelBeaten = nil
                 else
                     for _,p in ipairs(smwMap.players) do
                         p.state = PLAYER_STATE.NORMAL
@@ -1663,10 +1665,12 @@ do
                     end
                     v.movementHistory = {}
                     v.lastMovement = nil
+                    gameData.lastLevelBeaten = vector(warpObj.x, warpObj.y)
                 end
 
                 -- maybe this shouldn't be changed with instant warps?
                 v.direction = 0
+
                 updateActiveAreas(v,64)
             end)
 
@@ -1723,11 +1727,15 @@ do
             elseif player.keys.dropItem == KEYS_PRESSED and v.levelObj ~= nil and Misc.inEditor() then -- unlock ALL the things (only works from in editor)
                 v.state = PLAYER_STATE.WON
                 v.timer = 1000
-
+                gameData.lastLevelBeaten = vector(v.levelObj.x, v.levelObj.y)
                 gameData.winType = 2
             elseif player.keys.altRun == KEYS_PRESSED and Misc.inEditor() then
                 v.state = PLAYER_STATE.PARKING_WHERE_I_WANT
                 v.timer = 0
+            elseif player.keys.run == KEYS_PRESSED and Misc.inEditor() and gameData.lastLevelBeaten ~= nil then
+                v.state = PLAYER_STATE.GOING_BACK
+                v.timer = 0
+                gameData.winType = LEVEL_WIN_TYPE_NONE
             else
                 -- moving
                 for _, dir in ipairs{"up", "down", "left", "right"} do
@@ -2008,7 +2016,8 @@ do
         elseif Misc.GetKeyState(VK_BACK) and Misc.inEditor() then
             local middleFunction = (function()
                 SaveData.smwMap = {}
-
+                gameData.lastLevelBeaten = nil
+                gameData.areaName = ""
                 Misc.unpause()
                 Level.exit()
             end)
@@ -2081,6 +2090,24 @@ do
         end
     end)
 
+    -- going back to previous level
+    stateFunctions[PLAYER_STATE.GOING_BACK] = function (v)
+        v.timer = v.timer + 1
+        if v.timer == 1 then
+            SFX.play(smwMap.playerSettings.goingBackSound)
+        end
+
+        v.x = math.lerp(v.levelObj.x, gameData.lastLevelBeaten.x, v.timer / smwMap.playerSettings.goingBackTime)
+        v.y = math.lerp(v.levelObj.y, gameData.lastLevelBeaten.y, v.timer / smwMap.playerSettings.goingBackTime)
+        if v.timer == smwMap.playerSettings.goingBackTime then
+            v.state = PLAYER_STATE.NORMAL
+            v.timer = 0
+            setPlayerLevel(smwMap.mainPlayer, findLevel(smwMap.mainPlayer, gameData.lastLevelBeaten.x, gameData.lastLevelBeaten.y))
+            table.insert(smwMap.activeEvents, {
+                type = EVENT_TYPE.MOVE_ENCOUNTERS,
+            })
+        end
+    end
 
     -- Handling looking around (done by pressing altJump)
     local lookAroundStateFunctions = {}
@@ -2253,14 +2280,18 @@ do
 
         setPlayerLevel(smwMap.mainPlayer,levelObj)
 
-
-
         if gameData.winType ~= LEVEL_WIN_TYPE_NONE and smwMap.mainPlayer.levelObj ~= nil then
             smwMap.mainPlayer.state = PLAYER_STATE.WON
+            gameData.lastLevelBeaten = vector(levelObj.x, levelObj.y)
+        elseif gameData.lastLevelBeaten ~= nil and not (smwMap.mainPlayer.x == gameData.lastLevelBeaten.x and smwMap.mainPlayer.y == gameData.lastLevelBeaten.y) then
+            smwMap.mainPlayer.state = PLAYER_STATE.GOING_BACK
         else
             smwMap.mainPlayer.state = PLAYER_STATE.NORMAL
         end
 
+        if gameData.lastLevelBeaten == nil and levelObj ~= nil then
+            gameData.lastLevelBeaten = vector(levelObj.x, levelObj.y)
+        end
 
         updateNonMainPlayerCounts()
 
