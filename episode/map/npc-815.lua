@@ -5,6 +5,7 @@ local npcID = NPC_ID
 smwMap.setObjConfig(npcID,{
     framesY = 1,
     isLevel = true,
+    isWaterTile = true,
 
     onTickObj = function(v)
         v.frameY = smwMap.doBasicAnimation(v, smwMap.getObjectConfig(v.id).framesY, 16)

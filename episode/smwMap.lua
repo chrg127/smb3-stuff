@@ -345,28 +345,33 @@ local function getUsualCameraPos()
     return x,y
 end
 
-
-local function isNormalLevel(id)
-    local config = smwMap.getObjectConfig(id)
-    return (config.isLevel and not config.isWarp)
+local function dirToVec(dir)
+    return ({ up   = vector( 0, -1), down  = vector(0, 1),
+              left = vector(-1,  0), right = vector(1, 0), })[dir]
 end
 
-local function findLevel(v, x, y)
-    for _,obj in ipairs(smwMap.getIntersectingObjects(x - v.width*0.5, y - v.height*0.5, x + v.width*0.5, y + v.height*0.5)) do
-        if smwMap.getObjectConfig(obj.id).isLevel then
+local function findFirstObj(x, y, width, height, pred)
+    for _, obj in ipairs(smwMap.getIntersectingObjects(x - width*0.5, y - height*0.5, x + width*0.5, y + height*0.5)) do
+        if pred(obj, smwMap.getObjectConfig(obj.id)) then
             return obj
         end
     end
     return nil
+end
+
+
+local function findLevel(v, x, y)
+    return findFirstObj(x, y, v.width, v.height, function (o, c) return c.isLevel end)
+end
+
+smwMap.findLevel = findLevel
+
+function smwMap.findLevelInDir(x, y, dir)
+    return findLevel({ width = 16, height = 16, }, x + dir.x * 32, y + dir.y * 32)
 end
 
 local function findBlockingObj(v, x, y)
-    for _,obj in ipairs(smwMap.getIntersectingObjects(x - v.width*0.5, y - v.height*0.5, x + v.width*0.5, y + v.height*0.5)) do
-        if obj.id == smwMap.blockingObjID then
-            return obj
-        end
-    end
-    return nil
+    return findFirstObj(x, y, v.width, v.height, function (o, c) return o.id == smwMap.blockingObjID end)
 end
 
 local function getPlayerScreenPos()
@@ -1060,8 +1065,8 @@ function smwMap.onInitAPI()
     registerEvent(smwMap,"onCameraDraw")
 
     registerEvent(smwMap,"onTick","onTickObjects")
-
     registerEvent(smwMap,"onTick","onTickPlayers")
+    registerEvent(smwMap,"onTickEnd", "onTickEndObjects")
 
     registerEvent(smwMap,"onTick")
     registerEvent(smwMap,"onDraw")
@@ -1410,8 +1415,7 @@ do
         v.timer = 0
         v.lastMovement = directionName
         v.movementHistory[1] = directionName
-        v.walkingDirection = ({ down = vector( 0, 1), up    = vector(0, -1),
-                                left = vector(-1, 0), right = vector(1,  0) })[directionName]
+        v.walkingDirection = dirToVec(directionName)
         return true
     end
 
@@ -1419,6 +1423,8 @@ do
         local function reverseDir(dir)
             return ({ down = "up", up = "down", left = "right", right = "left" })[dir]
         end
+
+        local dir = dirToVec(directionName)
 
         -- come-back rule: if the player came to a level from a direction,
         -- then he can ALWAYS come back with the opposite direction
@@ -1428,15 +1434,37 @@ do
         if levelObj == nil then
             return false
         end
-        if isNormalLevel(levelObj.id) then
+
+        local config = smwMap.getObjectConfig(levelObj.id)
+        if config.isWarp then
+            return levelObj.settings["unlock_" .. directionName]
+        elseif config.isWaterTile then
+            local newLevelObj = smwMap.findLevelInDir(levelObj.x, levelObj.y, dir)
+            if newLevelObj == nil then
+                return false
+            end
+            local newConfig = smwMap.getObjectConfig(newLevelObj.id)
+            return newConfig.isWaterTile or newConfig.isBridge
+        elseif config.isLevel and not config.isWarp then
+            if config.isBridge then
+                print("bridge check")
+                local obj = findFirstObj(
+                    levelObj.x + dir.x * 32, levelObj.y + dir.y * 32,
+                    32, 32,
+                    function (o, c) return o.id == smwMap.boatID end
+                )
+                if obj ~= nil and obj.id == smwMap.boatID then
+                    return true
+                end
+            end
+
             local dirtype = levelObj.settings["unlock_" .. directionName]
             if dirtype == 0 then
                 return false
             end
+
             return dirtype == 1
                 or (saveData.beatenLevels[levelObj.settings.levelFilename] or {})[directionName] ~= nil
-        else
-            return levelObj.settings["unlock_" .. directionName]
         end
     end
 
@@ -1906,7 +1934,8 @@ do
         end
 
         -- if the player hasn't already beaten the level
-        if not saveData.beatenLevels[v.levelObj.settings.levelFilename] and isNormalLevel(v.levelObj.id) then
+        local config = smwMap.getObjectConfig(v.levelObj.id)
+        if not saveData.beatenLevels[v.levelObj.settings.levelFilename] and config.isLevel and not config.isWarp then
             -- Releasing blocks from switch palace
             local config = smwMap.getObjectConfig(v.levelObj.id)
             if config.switchColorID ~= nil and smwMap.switchBlockEffectID ~= nil then
@@ -2433,10 +2462,6 @@ do
             v.hideIfLocked = false
         end
 
-        -- very interesting, maybe we should have a isLevelDestroyed function instead
-        -- v.levelDestroyed = isNormalLevel(v.id) and v.settings.levelFilename ~= ""
-                       -- and saveData.beatenLevels[v.settings.levelFilename]
-
         if config.isWarp then
             smwMap.warpsMap[v.settings.warpName] = v
 
@@ -2517,6 +2542,22 @@ do
 
                 if config.onTickObj ~= nil and not v.toRemove then
                     config.onTickObj(v)
+                end
+            end
+        end
+    end
+
+    function smwMap.onTickEndObjects()
+        for idx = #smwMap.objects, 1, -1 do
+            local v = smwMap.objects[idx]
+
+            if v.toRemove then
+                table.remove(smwMap.objects,idx)
+                v.isValid = false
+            else
+                local config = smwMap.getObjectConfig(v.id)
+                if config.onTickEndObj ~= nil and not v.toRemove then
+                    config.onTickEndObj(v)
                 end
             end
         end
