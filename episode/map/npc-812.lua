@@ -5,6 +5,7 @@ local npcID = NPC_ID
 smwMap.setObjConfig(npcID,{
     framesY = 4,
     isLevel = true,
+    isStopPoint = true,
     canStopEncounters = true,
 
     onTickObj = function(v)

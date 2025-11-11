@@ -1,0 +1,58 @@
+{
+	"style" : "groupbox",
+	"title" : "Level Settings",
+	"layout": [
+		{
+			"control": "lineEdit",
+			"name": "levelTitle",
+			"title": "Level Title",
+			"tooltip": "Title shown when standing on this tile.",
+			"value-default": ""
+		},
+		{
+			"control": "checkBox",
+			"name": "alwaysVisible",
+			"title": "Always Visible",
+			"tooltip": "If checked, the level will always be visible, even when locked.",
+			"value-default": true
+		},
+
+		{
+			"control": "group",
+			"name": "..",
+			"title": "Unlock Settings",
+			"children": [
+				{
+					"control": "checkBox",
+					"name": "unlock_up",
+					"title": "Top Unlock",
+					"tooltip": "If checked, the stop point's top path will be open.",
+					"value-default": false
+				},
+				{
+					"control": "checkBox",
+					"name": "unlock_down",
+					"title": "Down Unlock",
+					"tooltip": "If checked, the stop point's bottom path will be open.",
+					"value-default": false
+				},
+				{
+					"control": "checkBox",
+					"name": "unlock_left",
+					"title": "Left Unlock",
+					"tooltip": "If checked, the stop point's left path will be open.",
+					"value-default": false
+				},
+				{
+					"control": "checkBox",
+					"name": "unlock_right",
+					"title": "Right Unlock",
+					"tooltip": "If checked, the stop point's right path will be open.",
+					"value-default": false
+				}
+			]
+		}
+	]
+}
+
+

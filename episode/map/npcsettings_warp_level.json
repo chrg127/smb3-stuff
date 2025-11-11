@@ -68,28 +68,28 @@
 					"name": "unlock_up",
 					"title": "Top Unlock",
 					"tooltip": "If checked, the warp's top path will be open.",
-					"value-default": true
-				},
-				{
-					"control": "checkBox",
-					"name": "unlock_right",
-					"title": "Right Unlock",
-					"tooltip": "If checked, the warp's right path will be open.",
-					"value-default": true
+					"value-default": false
 				},
 				{
 					"control": "checkBox",
 					"name": "unlock_down",
 					"title": "Down Unlock",
 					"tooltip": "If checked, the warp's bottom path will be open.",
-					"value-default": true
+					"value-default": false
 				},
 				{
 					"control": "checkBox",
 					"name": "unlock_left",
 					"title": "Left Unlock",
 					"tooltip": "If checked, the warp's left path will be open.",
-					"value-default": true
+					"value-default": false
+				},
+				{
+					"control": "checkBox",
+					"name": "unlock_right",
+					"title": "Right Unlock",
+					"tooltip": "If checked, the warp's right path will be open.",
+					"value-default": false
 				}
 			]
 		}

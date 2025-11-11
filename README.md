@@ -1,6 +1,3 @@
-https://www.smbxgame.com/forums/viewtopic.php?t=25419
-https://www.smbxgame.com/forums/viewtopic.php?t=30254
-
 ## TODO
 
 - check if other encounters are possible (piranha plant, tanks, hands)
@@ -13,18 +10,17 @@ https://www.smbxgame.com/forums/viewtopic.php?t=30254
 - figure out invisible warps and their interaction with area names
     - possibly something like this: check if we came to an area through inv. warp, if we did then simply do not play the animation
     - pipes would still play the animation, i think? they need to to implement the warp world
-- boat (an object that simply follows you until you go on specific tiles)
-    - and water tiles
 
 - bug with lastmovement and warps (use the warps in world 3)
     - same stuff with encounters?
+    - seems to be fixed now???
+- fix stuff with saved levels
+    - save levels only on win, not on changing them every time
+    - this is because when the game starts it throws the player to the last level beaten
+        - need to check if it does so even in main game
 
-## notes
+## other
 
-### objects
-
-755 - level beaten animation
-756 - castle beaten animation
-757 - encounter beaten smoke animation
-758 - scenery show/hide smoke
+https://www.smbxgame.com/forums/viewtopic.php?t=25419
+https://www.smbxgame.com/forums/viewtopic.php?t=30254
 

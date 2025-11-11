@@ -1436,18 +1436,17 @@ do
         end
 
         local config = smwMap.getObjectConfig(levelObj.id)
-        if config.isWarp then
-            return levelObj.settings["unlock_" .. directionName]
-        elseif config.isWaterTile then
+        if config.isWaterTile then
             local newLevelObj = smwMap.findLevelInDir(levelObj.x, levelObj.y, dir)
             if newLevelObj == nil then
                 return false
             end
             local newConfig = smwMap.getObjectConfig(newLevelObj.id)
             return newConfig.isWaterTile or newConfig.isBridge
-        elseif config.isLevel and not config.isWarp then
+        elseif config.isWarp or config.isStopPoint then
+            return levelObj.settings["unlock_" .. directionName]
+        elseif config.isLevel then
             if config.isBridge then
-                print("bridge check")
                 local obj = findFirstObj(
                     levelObj.x + dir.x * 32, levelObj.y + dir.y * 32,
                     32, 32,
@@ -1497,11 +1496,10 @@ do
             v.isUnderwater = smwMap.getObjectConfig(levelObj.id).isWater
             v.isClimbing = false
 
-
             levelObj.lockedFade = 0
 
 
-            if v.isMainPlayer then
+            if v.isMainPlayer and not smwMap.getObjectConfig(levelObj.id).isStopPoint then
                 saveData.playerX = v.x
                 saveData.playerY = v.y
             end
@@ -1693,7 +1691,8 @@ do
             end
             v.movementHistory = {}
             v.lastMovement = nil
-            gameData.lastLevelBeaten = vector(warpObj.x, warpObj.y)
+            gameData.lastLevelBeaten = vector(destinationLevel.x, destinationLevel.y)
+            gameData.winType = LEVEL_WIN_TYPE_NONE
         end
 
         -- maybe this shouldn't be changed with instant warps?
@@ -1935,7 +1934,9 @@ do
 
         -- if the player hasn't already beaten the level
         local config = smwMap.getObjectConfig(v.levelObj.id)
-        if not saveData.beatenLevels[v.levelObj.settings.levelFilename] and config.isLevel and not config.isWarp then
+        local isNormalLevel = config.isLevel and not (config.isWarp or config.isStopPoint)
+
+        if not saveData.beatenLevels[v.levelObj.settings.levelFilename] and isNormalLevel then
             -- Releasing blocks from switch palace
             local config = smwMap.getObjectConfig(v.levelObj.id)
             if config.switchColorID ~= nil and smwMap.switchBlockEffectID ~= nil then
