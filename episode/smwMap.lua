@@ -2397,13 +2397,10 @@ do
         return config
     end
 
+    smwMap.objectCount = 0
 
     function smwMap.createObject(id, x, y, npc)
         local config = smwMap.getObjectConfig(id)
-
-        if id == 754 and smwMap.isLevelBeaten(npc.data._settings.levelFilename) then
-            return
-        end
 
         local v = {}
 
