@@ -410,7 +410,7 @@ ID:802;X:-197504;Y:-200512;D:-1;XTRA:"{\n    \"levelFilename\"\: \"3-2.lvlx\"\,\
 ID:803;X:-197376;Y:-200576;D:-1;XTRA:"{\n    \"levelFilename\"\: \"3-3.lvlx\"\,\n    \"levelTitle\"\: \"3-3\"\,\n    \"unlock_down\"\: 2\,\n    \"unlock_left\"\: 2\n}\n";
 ID:816;X:-197376;Y:-200448;D:-1;XTRA:"{\n    \"destroyAfterWin\"\: true\,\n    \"levelFilename\"\: \"3-fortress1.lvlx\"\,\n    \"levelTitle\"\: \"3-Fortress\"\,\n    \"unlock_down\"\: 2\,\n    \"unlock_left\"\: 2\,\n    \"unlock_right\"\: 2\,\n    \"unlock_up\"\: 2\n}\n";
 ID:804;X:-197248;Y:-200512;D:-1;XTRA:"{\n    \"levelFilename\"\: \"3-4.lvlx\"\,\n    \"levelTitle\"\: \"3-4\"\,\n    \"unlock_down\"\: 2\,\n    \"unlock_right\"\: 2\,\n    \"unlock_up\"\: 2\n}\n";
-ID:805;X:-197248;Y:-200384;D:-1;XTRA:"{\n    \"levelFilename\"\: \"3-5.lvlx\"\,\n    \"levelTitle\"\: \"3-5\"\,\n    \"unlock_right\"\: 2\,\n    \"unlock_up\"\: 2\n}\n";
+ID:805;X:-197248;Y:-200384;D:-1;XTRA:"{\n    \"levelFilename\"\: \"start.lvlx\"\,\n    \"levelTitle\"\: \"3-5\"\,\n    \"unlock_right\"\: 2\,\n    \"unlock_up\"\: 2\n}\n";
 ID:806;X:-197120;Y:-200576;D:-1;XTRA:"{\n    \"levelFilename\"\: \"3-6.lvlx\"\,\n    \"levelTitle\"\: \"3-6\"\,\n    \"unlock_left\"\: 2\,\n    \"unlock_right\"\: 2\n}\n";
 ID:807;X:-196992;Y:-200576;D:-1;XTRA:"{\n    \"levelFilename\"\: \"3-7.lvlx\"\,\n    \"levelTitle\"\: \"3-7\"\,\n    \"unlock_left\"\: 2\,\n    \"unlock_right\"\: 2\n}\n";
 ID:816;X:-196928;Y:-200512;D:-1;XTRA:"{\n    \"levelFilename\"\: \"3-fortress2.lvlx\"\,\n    \"levelTitle\"\: \"3-Fortress\"\,\n    \"unlock_down\"\: 2\,\n    \"unlock_left\"\: 2\,\n    \"unlock_up\"\: 2\n}\n";
@@ -460,7 +460,7 @@ ID:823;X:-198976;Y:-200128;D:-1;XTRA:"{\n    \"levelFilename\"\: \"5-house1.lvlx
 ID:803;X:-198912;Y:-200128;D:-1;XTRA:"{\n    \"levelFilename\"\: \"5-3.lvlx\"\,\n    \"levelTitle\"\: \"5-3\"\,\n    \"unlock_down\"\: 2\,\n    \"unlock_right\"\: 2\n}\n";
 ID:816;X:-199040;Y:-200000;D:-1;XTRA:"{\n    \"destroyAfterWin\"\: true\,\n    \"levelFilename\"\: \"5-fortress1.lvlx\"\,\n    \"levelTitle\"\: \"5-Fortress\"\,\n    \"unlock_down\"\: 2\,\n    \"unlock_left\"\: 2\,\n    \"unlock_right\"\: 2\n}\n";
 ID:821;X:-198976;Y:-199936;D:-1;XTRA:"{\n    \"levelFilename\"\: \"5-bonus1.lvlx\"\,\n    \"levelTitle\"\: \"5-Bonus\"\,\n    \"unlock_left\"\: 1\,\n    \"unlock_right\"\: 1\n}\n";
-ID:830;X:-198784;Y:-200064;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"5-D\"\,\n    \"exitWarpIndex\"\: 2\,\n    \"levelFilename\"\: \"5-tower.lvlx\"\,\n    \"levelTitle\"\: \"5-Tower\"\,\n    \"unlock_down\"\: false\,\n    \"unlock_right\"\: false\,\n    \"unlock_up\"\: false\,\n    \"warpIndex\"\: 1\,\n    \"warpName\"\: \"5-C\"\n}\n";
+ID:830;X:-198784;Y:-200064;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"5-D\"\,\n    \"exitWarpIndex\"\: 2\,\n    \"levelFilename\"\: \"5-tower.lvlx\"\,\n    \"levelTitle\"\: \"5-Tower\"\,\n    \"unlock_down\"\: false\,\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: false\,\n    \"unlock_up\"\: false\,\n    \"warpIndex\"\: 1\,\n    \"warpName\"\: \"5-C\"\n}\n";
 ID:761;X:-198848;Y:-200000;D:-1;
 ID:761;X:-198848;Y:-200128;D:-1;
 ID:754;X:-199072;Y:-200000;D:-1;XTRA:"{\n    \"levelFilename\"\: \"5-fortress1.lvlx\"\n}\n";

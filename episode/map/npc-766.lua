@@ -8,6 +8,15 @@ smwMap.setObjConfig(npcID,{
     framesY = 2,
     gfxoffsety = 16,
 
+    onInitObj = function (v)
+        if SaveData.smwMap.objectData[v.data.index] == nil then
+            SaveData.smwMap.objectData[v.data.index] = {}
+        else
+            v.x = SaveData.smwMap.objectData[v.data.index].x
+            v.y = SaveData.smwMap.objectData[v.data.index].y
+        end
+    end,
+
     onTickEndObj = function(v)
         v.frameY = smwMap.doBasicAnimation(v, smwMap.getObjectConfig(v.id).framesY, 16)
 
@@ -26,6 +35,9 @@ smwMap.setObjConfig(npcID,{
             v.x = smwMap.mainPlayer.x
             v.y = smwMap.mainPlayer.y
         end
+
+        SaveData.smwMap.objectData[v.data.index].x = v.x
+        SaveData.smwMap.objectData[v.data.index].y = v.y
     end,
 })
 

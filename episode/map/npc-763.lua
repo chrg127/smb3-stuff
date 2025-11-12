@@ -9,6 +9,24 @@ smwMap.setObjConfig(npcID,{
     isEncounter = true,
 
     onTickObj = function(v)
+        if v.data.state == smwMap.ENCOUNTER_STATE.NORMAL then
+            if #smwMap.activeEvents > 0 then
+                v.graphicsOffsetX = 0
+            else
+                v.graphicsOffsetX = v.graphicsOffsetX + v.data.direction*0.5
+            end
+            if v.graphicsOffsetX*v.data.direction >= smwMap.encounterSettings.idleWanderDistance then
+                v.data.direction = -v.data.direction
+            end
+            v.data.animationSpeed = 1
+        elseif v.data.state == smwMap.ENCOUNTER_STATE.WALKING then
+            v.graphicsOffsetX = 0
+            v.data.animationSpeed = 4
+        elseif v.data.state == smwMap.ENCOUNTER_STATE.DEFEATED then
+            v.data.animationSpeed = 4
+        end
+
+
         -- Frames
         local totalFrames = smwMap.getObjectConfig(v.id).framesY
 

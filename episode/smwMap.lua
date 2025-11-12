@@ -19,7 +19,7 @@ smwMap.levelFilename = "map.lvlx"
 SaveData.smwMap = SaveData.smwMap or {}
 local saveData = SaveData.smwMap
 saveData.beatenLevels        = saveData.beatenLevels        or {}
-saveData.encounterData       = saveData.encounterData       or {}
+saveData.objectData          = saveData.objectData          or {}
 saveData.unlockedCheckpoints = saveData.unlockedCheckpoints or {}
 
 GameData.smwMap = GameData.smwMap or {}
@@ -839,8 +839,6 @@ do
     smwMap.encountersWaitingTimer = 0
     smwMap.encountersWaitingToMove = {}
 
-    smwMap.encountersCount = 0
-
 
     local function setEncounterLevel(v,data,levelObj)
         local config = smwMap.getObjectConfig(levelObj.id)
@@ -897,15 +895,12 @@ do
         local data = v.data
 
         if data.state == nil then
-            smwMap.encountersCount = smwMap.encountersCount + 1
-            data.index = smwMap.encountersCount
-
-            saveData.encounterData[data.index] = saveData.encounterData[data.index] or {
+            saveData.objectData[data.index] = saveData.objectData[data.index] or {
                 x = v.x,
                 y = v.y,
                 killed = false,
             }
-            data.savedData = saveData.encounterData[data.index]
+            data.savedData = saveData.objectData[data.index]
 
 
             if data.savedData.killed then
@@ -937,26 +932,11 @@ do
 
 
         if data.state == smwMap.ENCOUNTER_STATE.NORMAL then
-            if #smwMap.activeEvents > 0 then
-                v.graphicsOffsetX = 0
-            else
-                v.graphicsOffsetX = v.graphicsOffsetX + data.direction*0.5
-            end
-            if v.graphicsOffsetX*data.direction >= smwMap.encounterSettings.idleWanderDistance then
-                data.direction = -data.direction
-            end
-            v.graphicsOffsetY = 0
-            data.animationSpeed = 1
         elseif data.state == smwMap.ENCOUNTER_STATE.WALKING then
             local walkSpeed = smwMap.encounterSettings.walkSpeed
             local newPosition = vector(v.x, v.y) + v.walkingDirection * walkSpeed
             v.x = newPosition.x
             v.y = newPosition.y
-
-            v.graphicsOffsetX = 0
-            v.graphicsOffsetY = 0
-
-            data.animationSpeed = 4
 
             local levelObj = findLevel(v,v.x,v.y)
 
@@ -994,7 +974,6 @@ do
                 end
             end
         elseif data.state == smwMap.ENCOUNTER_STATE.SLEEPING then
-            v.graphicsOffsetY = 0
         elseif data.state == smwMap.ENCOUNTER_STATE.DEFEATED then
             data.timer = data.timer + 1
 
@@ -1021,8 +1000,6 @@ do
 
             v.graphicsOffsetX = v.graphicsOffsetX + 0.5
             v.graphicsOffsetY = v.graphicsOffsetY + data.defeatedSpeedY
-
-            data.animationSpeed = 4
         end
     end
 
@@ -1499,7 +1476,7 @@ do
             levelObj.lockedFade = 0
 
 
-            if v.isMainPlayer and not smwMap.getObjectConfig(levelObj.id).isStopPoint then
+            if v.isMainPlayer --[[and not smwMap.getObjectConfig(levelObj.id).isStopPoint]] then
                 saveData.playerX = v.x
                 saveData.playerY = v.y
             end
@@ -1602,6 +1579,7 @@ do
             Misc.unpause()
         end)
 
+        SFX.play(smwMap.playerSettings.levelSelectedSound)
         smwMap.startTransition(middleFunction, nil, smwMap.transitionSettings.enterEncounterSettings)
 
         if smwMap.encounterSettings.enterSound ~= nil then
@@ -2442,8 +2420,10 @@ do
         v.cutoffTopY = nil
 
 
-        v.data = {}
-
+        v.data = {
+            index = smwMap.objectCount,
+        }
+        smwMap.objectCount = smwMap.objectCount + 1
 
         if npc ~= nil then
             v.settings = npc.data._settings
