@@ -9,6 +9,7 @@ smwMap.setObjConfig(npcID,{
     gfxoffsety = 16,
 
     onInitObj = function (v)
+        v.originalPos = vector(v.x, v.y)
         if SaveData.smwMap.objectData[v.data.index] == nil then
             SaveData.smwMap.objectData[v.data.index] = {}
         else
@@ -17,7 +18,7 @@ smwMap.setObjConfig(npcID,{
         end
     end,
 
-    onTickEndObj = function(v)
+     onTickEndObj = function(v)
         v.frameY = smwMap.doBasicAnimation(v, smwMap.getObjectConfig(v.id).framesY, 16)
 
         if v.x == smwMap.mainPlayer.x and v.y == smwMap.mainPlayer.y then
@@ -29,6 +30,10 @@ smwMap.setObjConfig(npcID,{
             if level ~= nil and smwMap.getObjectConfig(level.id).isBridge then
                 v.isPlayerOnBoat = false
             end
+        elseif smwMap.mainPlayer.state == smwMap.PLAYER_STATE.GOING_BACK and not GameData.smwMap.lastLevelBeaten.isWaterTile then
+            v.isPlayerOnBoat = false
+            v.x = v.originalPos.x
+            v.y = v.originalPos.y
         end
 
         if v.isPlayerOnBoat then

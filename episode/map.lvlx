@@ -438,7 +438,7 @@ ID:754;X:-196928;Y:-200480;D:-1;XTRA:"{\n    \"levelFilename\"\: \"3-fortress2.l
 ID:753;X:-197600;Y:-200608;D:-1;XTRA:"{\n    \"backgroundName\"\: \"water\"\,\n    \"height\"\: 408\,\n    \"music\"\: 12\,\n    \"name\"\: \"World 3\"\,\n    \"restrictCamera\"\: true\,\n    \"width\"\: 1472\n}\n";
 ID:761;X:-197376;Y:-200320;D:-1;XTRA:"{\n    \"levelFilename\"\: \"3-hammer1.lvlx\"\n}\n";
 ID:761;X:-197184;Y:-200512;D:-1;XTRA:"{\n    \"levelFilename\"\: \"3-hammer2.lvlx\"\n}\n";
-ID:814;X:-196992;Y:-200384;D:-1;XTRA:"{\n    \"unlock_left\"\: 1\,\n    \"unlock_right\"\: 0\n}\n";
+ID:814;X:-196992;Y:-200384;D:-1;XTRA:"{\n    \"unlock_down\"\: false\,\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: false\,\n    \"unlock_up\"\: false\n}\n";
 ID:753;X:-199232;Y:-200192;D:-1;XTRA:"{\n    \"backgroundName\"\: \"water\"\,\n    \"height\"\: 408\,\n    \"music\"\: 14\,\n    \"name\"\: \"World 1\"\,\n    \"restrictCamera\"\: true\,\n    \"width\"\: 668\n}\n";
 ID:753;X:-198560;Y:-200192;D:-1;XTRA:"{\n    \"backgroundName\"\: \"water\"\,\n    \"height\"\: 408\,\n    \"music\"\: 14\,\n    \"name\"\: \"World 1\"\,\n    \"restrictCamera\"\: true\,\n    \"width\"\: 668\n}\n";
 ID:800;X:-199104;Y:-199936;D:-1;XTRA:"{\n    \"unlock_up\"\: 1\n}\n";
@@ -489,8 +489,8 @@ ID:819;X:-198400;Y:-199872;D:-1;XTRA:"{\n    \"levelFilename\"\: \"5-castle.lvlx
 ID:754;X:-198240;Y:-200000;D:-1;XTRA:"{\n    \"levelFilename\"\: \"5-fortress2.lvlx\"\n}\n";
 ID:761;X:-198144;Y:-199936;D:-1;
 ID:811;X:-197056;Y:-200384;D:-1;XTRA:"{\n    \"unlock_down\"\: false\,\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: true\,\n    \"unlock_up\"\: false\n}\n";
-ID:814;X:-196864;Y:-200416;D:-1;XTRA:"{\n    \"unlock_left\"\: 0\,\n    \"unlock_right\"\: 1\n}\n";
-ID:814;X:-196608;Y:-200576;D:-1;XTRA:"{\n    \"unlock_left\"\: 0\,\n    \"unlock_right\"\: 1\n}\n";
+ID:814;X:-196864;Y:-200416;D:-1;XTRA:"{\n    \"unlock_down\"\: false\,\n    \"unlock_left\"\: false\,\n    \"unlock_right\"\: true\,\n    \"unlock_up\"\: false\n}\n";
+ID:814;X:-196608;Y:-200576;D:-1;XTRA:"{\n    \"unlock_down\"\: false\,\n    \"unlock_left\"\: false\,\n    \"unlock_right\"\: true\,\n    \"unlock_up\"\: false\n}\n";
 ID:815;X:-196992;Y:-200416;D:-1;
 ID:815;X:-196960;Y:-200416;D:-1;
 ID:815;X:-196928;Y:-200416;D:-1;
@@ -776,7 +776,9 @@ ID:815;X:-197056;Y:-200544;D:-1;
 ID:815;X:-197024;Y:-200544;D:-1;
 ID:815;X:-196992;Y:-200544;D:-1;
 ID:815;X:-196960;Y:-200544;D:-1;
-ID:751;X:-199104;Y:-199936;D:-1;
+ID:751;X:-197056;Y:-200384;D:-1;
+ID:761;X:-196896;Y:-200384;D:-1;XTRA:"{\n    \"levelFilename\"\: \"hammer.lvlx\"\n}\n";
+ID:761;X:-196896;Y:-200336;D:-1;XTRA:"{\n    \"levelFilename\"\: \"hammer2.lvlx\"\n}\n";
 NPC_END
 LAYERS
 LR:"Default";

@@ -359,7 +359,6 @@ local function findFirstObj(x, y, width, height, pred)
     return nil
 end
 
-
 local function findLevel(v, x, y)
     return findFirstObj(x, y, v.width, v.height, function (o, c) return c.isLevel end)
 end
@@ -373,6 +372,17 @@ end
 local function findBlockingObj(v, x, y)
     return findFirstObj(x, y, v.width, v.height, function (o, c) return o.id == smwMap.blockingObjID end)
 end
+
+local function setLastLevelBeaten(level)
+    if level ~= nil and not smwMap.getObjectConfig(level.id).cantGetBack then
+        gameData.lastLevelBeaten = {
+            x = level.x,
+            y = level.y,
+            isWaterTile = smwMap.getObjectConfig(level.id).isWaterTile
+        }
+    end
+end
+smwMap.setLastLevelBeaten = setLastLevelBeaten
 
 local function getPlayerScreenPos()
     local playerY = smwMap.mainPlayer.y
@@ -1421,8 +1431,6 @@ do
             local newConfig = smwMap.getObjectConfig(newLevelObj.id)
             return newConfig.isWaterTile or newConfig.isBridge
         elseif config.isWarp or config.isStopPoint then
-            return levelObj.settings["unlock_" .. directionName]
-        elseif config.isLevel then
             if config.isBridge then
                 local obj = findFirstObj(
                     levelObj.x + dir.x * 32, levelObj.y + dir.y * 32,
@@ -1433,7 +1441,8 @@ do
                     return true
                 end
             end
-
+            return levelObj.settings["unlock_" .. directionName]
+        elseif config.isLevel then
             local dirtype = levelObj.settings["unlock_" .. directionName]
             if dirtype == 0 then
                 return false
@@ -1495,7 +1504,7 @@ do
         end
 
         -- Does the level file actually exist?
-        if levelObj.settings.levelFilename == "" then
+        if levelObj.settings.levelFilename == nil or levelObj.settings.levelFilename == "" then
             return false
         end
 
@@ -1669,7 +1678,7 @@ do
             end
             v.movementHistory = {}
             v.lastMovement = nil
-            gameData.lastLevelBeaten = vector(destinationLevel.x, destinationLevel.y)
+            setLastLevelBeaten(destinationLevel)
             gameData.winType = LEVEL_WIN_TYPE_NONE
         end
 
@@ -1736,7 +1745,7 @@ do
             elseif player.keys.dropItem == KEYS_PRESSED and v.levelObj ~= nil and Misc.inEditor() then -- unlock ALL the things (only works from in editor)
                 v.state = PLAYER_STATE.WON
                 v.timer = 1000
-                gameData.lastLevelBeaten = vector(v.levelObj.x, v.levelObj.y)
+                setLastLevelBeaten(v.levelObj)
                 gameData.winType = 2
             elseif player.keys.altRun == KEYS_PRESSED and Misc.inEditor() then
                 v.state = PLAYER_STATE.PARKING_WHERE_I_WANT
@@ -2294,7 +2303,7 @@ do
 
         if gameData.winType ~= LEVEL_WIN_TYPE_NONE and smwMap.mainPlayer.levelObj ~= nil then
             smwMap.mainPlayer.state = PLAYER_STATE.WON
-            gameData.lastLevelBeaten = vector(levelObj.x, levelObj.y)
+            setLastLevelBeaten(levelObj)
             if gameData.winType == LEVEL_WIN_TYPE_WARP and gameData.warpIndex + 1 == levelObj.settings.exitWarpIndex then
                 local destinationLevel = smwMap.warpsMap[levelObj.settings.destinationWarpName]
                 if destinationLevel ~= nil then
@@ -2307,8 +2316,8 @@ do
             smwMap.mainPlayer.state = PLAYER_STATE.NORMAL
         end
 
-        if gameData.lastLevelBeaten == nil and levelObj ~= nil then
-            gameData.lastLevelBeaten = vector(levelObj.x, levelObj.y)
+        if gameData.lastLevelBeaten == nil then
+            setLastLevelBeaten(levelObj)
         end
 
         updateNonMainPlayerCounts()
