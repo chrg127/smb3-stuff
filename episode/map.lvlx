@@ -150,7 +150,7 @@ ID:756;X:-196480;Y:-200576;W:32;H:32;
 ID:756;X:-196480;Y:-200608;W:32;H:32;
 ID:756;X:-196512;Y:-200608;W:32;H:32;
 ID:756;X:-196576;Y:-200544;W:32;H:32;
-ID:751;X:-197344;Y:-200384;W:32;H:32;XTRA:"{\n    \"global\"\: {\n        \"hideLevelName\"\: \"3-fortress1.lvlx\"\,\n        \"useSmoke\"\: true\n    }\n}\n";
+ID:751;X:-197344;Y:-200384;W:32;H:32;XTRA:"{\n    \"global\"\: {\n        \"hideLevelName\"\: \"3-fortress1.lvlx\"\,\n        \"useSmoke\"\: false\n    }\n}\n";
 ID:751;X:-196928;Y:-200480;W:32;H:32;XTRA:"{\n    \"global\"\: {\n        \"hideLevelName\"\: \"3-fortress2.lvlx\"\,\n        \"useSmoke\"\: true\n    }\n}\n";
 ID:765;X:-198592;Y:-199952;W:16;H:16;
 ID:766;X:-198576;Y:-199952;W:16;H:16;
@@ -776,7 +776,7 @@ ID:815;X:-197056;Y:-200544;D:-1;
 ID:815;X:-197024;Y:-200544;D:-1;
 ID:815;X:-196992;Y:-200544;D:-1;
 ID:815;X:-196960;Y:-200544;D:-1;
-ID:751;X:-197056;Y:-200384;D:-1;
+ID:751;X:-197568;Y:-200320;D:-1;
 ID:761;X:-196896;Y:-200384;D:-1;XTRA:"{\n    \"levelFilename\"\: \"hammer.lvlx\"\n}\n";
 ID:761;X:-196896;Y:-200336;D:-1;XTRA:"{\n    \"levelFilename\"\: \"hammer2.lvlx\"\n}\n";
 NPC_END

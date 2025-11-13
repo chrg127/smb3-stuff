@@ -674,14 +674,12 @@ do
             eventObj.timer = eventObj.timer + 1
             eventObj.sceneryProgress = (eventObj.timer/smwMap.levelSettings.unlockAnimationFrequency)
 
-            local scenerySmokeID = 758
-
             -- Update each scenery
             for _,scenery in ipairs(eventObj.showSceneries) do
                 if scenery.globalSettings.useSmoke then
                     if scenery.globalSettings.showDelay == math.floor(eventObj.sceneryProgress) and scenery.opacity == 0 then
                         scenery.opacity = 1
-                        smwMap.createObject(scenerySmokeID, scenery.x, scenery.y)
+                        smwMap.createObject(smwMap.scenerySmokeID, scenery.x, scenery.y)
                     end
                 else
                     scenery.opacity = math.clamp(eventObj.sceneryProgress - scenery.globalSettings.showDelay)
@@ -692,7 +690,7 @@ do
                 if scenery.globalSettings.useSmoke then
                     if scenery.globalSettings.hideDelay == math.floor(eventObj.sceneryProgress) and scenery.opacity == 1 then
                         scenery.opacity = 0
-                        smwMap.createObject(scenerySmokeID, scenery.x, scenery.y)
+                        smwMap.createObject(smwMap.scenerySmokeID, scenery.x, scenery.y)
                     end
                 else
                     scenery.opacity = math.clamp(1 - (eventObj.sceneryProgress - scenery.globalSettings.hideDelay))
@@ -1560,22 +1558,25 @@ do
 
                     -- finds each blocking obj belonging to the level and remove them
                     for _, o in ipairs(smwMap.objects) do
-                        if o.id == 754 and o.settings.levelFilename == levelObj.settings.levelFilename then
+                        if o.id == smwMap.blockingObjID and o.settings.levelFilename == levelObj.settings.levelFilename then
                             o:remove()
                         end
                     end
 
                     -- Initialise showing/hiding sceneries
-                    local showSceneries, hideSceneries = getSceneryEventData(levelObj.settings.levelFilename)
-                    table.insert(smwMap.activeEvents, {
-                        type = EVENT_TYPE.SHOW_HIDE_SCENERIES,
-                        neededSceneryProgress = math.max(arrayMax(showSceneries, function (e) return e.globalSettings.showDelay end),
-                                                         arrayMax(hideSceneries, function (e) return e.globalSettings.hideDelay end)),
-                        sceneryProgress = 0,
-                        timer = 0,
-                        showSceneries = showSceneries,
-                        hideSceneries = hideSceneries,
-                    })
+                    local lastEvent = smwMap.activeEvents[#smwMap.activeEvents]
+                    if lastEvent == nil or lastEvent.type ~= EVENT_TYPE.SHOW_HIDE_SCENERIES then
+                        local showSceneries, hideSceneries = getSceneryEventData(levelObj.settings.levelFilename)
+                        table.insert(smwMap.activeEvents, {
+                            type = EVENT_TYPE.SHOW_HIDE_SCENERIES,
+                            neededSceneryProgress = math.max(arrayMax(showSceneries, function (e) return e.globalSettings.showDelay end),
+                                                             arrayMax(hideSceneries, function (e) return e.globalSettings.hideDelay end)),
+                            sceneryProgress = 0,
+                            timer = 0,
+                            showSceneries = showSceneries,
+                            hideSceneries = hideSceneries,
+                        })
+                    end
                 end
             end
         end
