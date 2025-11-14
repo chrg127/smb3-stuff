@@ -3,7 +3,7 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "world8a.tmx",
+    "activeFile": "",
     "expandedProjectPaths": [
         "."
     ],
@@ -49,18 +49,26 @@
         },
         "world5a.tmx": {
             "scale": 2,
-            "selectedLayer": 0,
+            "selectedLayer": 4,
             "viewCenter": {
-                "x": 102.75,
-                "y": 30
+                "x": 122.25,
+                "y": 65
             }
         },
         "world5b.tmx": {
             "scale": 2,
-            "selectedLayer": 1,
+            "selectedLayer": 0,
             "viewCenter": {
                 "x": -17.75,
-                "y": 94.5
+                "y": 94
+            }
+        },
+        "world8.tmx": {
+            "scale": 0.75,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 535.3333333333334,
+                "y": -124
             }
         },
         "world8a.tmx": {
@@ -78,16 +86,15 @@
     "map.tileHeight": 8,
     "map.tileWidth": 8,
     "openFiles": [
-        "world8a.tmx",
-        "world1.tmx"
     ],
     "project": "smb3-maps.tiled-project",
     "recentFiles": [
+        "world5a.tmx",
+        "world5b.tmx",
+        "world8.tmx",
         "world1.tmx",
         "world8a.tmx",
         "world3.tmx",
-        "world5b.tmx",
-        "world5a.tmx",
         "main.tsx",
         "world2.tmx",
         "map.tmx"
