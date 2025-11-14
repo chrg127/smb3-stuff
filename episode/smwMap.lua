@@ -382,7 +382,6 @@ local function setLastLevelBeaten(level)
         }
     end
 end
-smwMap.setLastLevelBeaten = setLastLevelBeaten
 
 local function getPlayerScreenPos()
     local playerY = smwMap.mainPlayer.y
@@ -392,6 +391,28 @@ local function getPlayerScreenPos()
         smwMap.camera.renderX + (smwMap.mainPlayer.x - smwMap.camera.x),
         smwMap.camera.renderY + (playerY             - smwMap.camera.y)
     )
+end
+
+local function arrayMax(t, f)
+    local res = -math.huge
+    for _, e in ipairs(t) do
+        res = math.max(res, f(e))
+    end
+    return res
+end
+
+local function getSceneryEventData(name)
+    local show = {}
+    local hide = {}
+    for _, scenery in ipairs(smwMap.sceneries) do
+        if scenery.globalSettings.showLevelName == name and (scenery.opacity == 0 or scenery.globalSettings.hideLevelName == name) then
+            table.insert(show, scenery)
+        end
+        if scenery.globalSettings.hideLevelName == name and (scenery.opacity == 1 or scenery.globalSettings.showLevelName == name) then
+            table.insert(hide, scenery)
+        end
+    end
+    return show, hide
 end
 
 -- Transitions
@@ -643,6 +664,30 @@ local EVENT_TYPE = {
     SHOW_WORLD_CARD    = 6,
 }
 
+local function postLevelBeaten(filename)
+    -- finds each blocking obj belonging to the level and remove them
+    for _, o in ipairs(smwMap.objects) do
+        if o.id == smwMap.blockingObjID and o.settings.levelFilename == filename then
+            o:remove()
+        end
+    end
+
+    -- Initialise showing/hiding sceneries
+    local lastEvent = smwMap.activeEvents[#smwMap.activeEvents]
+    if lastEvent == nil or lastEvent.type ~= EVENT_TYPE.SHOW_HIDE_SCENERIES then
+        local showSceneries, hideSceneries = getSceneryEventData(filename)
+        table.insert(smwMap.activeEvents, {
+            type = EVENT_TYPE.SHOW_HIDE_SCENERIES,
+            neededSceneryProgress = math.max(arrayMax(showSceneries, function (e) return e.globalSettings.showDelay end),
+                                             arrayMax(hideSceneries, function (e) return e.globalSettings.hideDelay end)),
+            sceneryProgress = 0,
+            timer = 0,
+            showSceneries = showSceneries,
+            hideSceneries = hideSceneries,
+        })
+    end
+end
+
 local updateEvent
 local unlockLoopObj
 
@@ -757,6 +802,7 @@ do
 
     updateFunctions[EVENT_TYPE.ENCOUNTER_DEFEATED] = (function(eventObj)
         if not eventObj.encounterObj.isValid then
+            postLevelBeaten(eventObj.encounterObj.settings.levelFilename)
             table.remove(smwMap.activeEvents,1)
         end
     end)
@@ -824,6 +870,7 @@ do
         updateFunctions[eventObj.type](eventObj)
     end
 end
+
 
 
 -- Encounters stuff
@@ -994,6 +1041,9 @@ do
                 v.priority = -10
 
                 data.savedData.killed = true
+                saveData.beatenLevels[v.settings.levelFilename] = {
+                    character = smwMap.mainPlayer.basePlayer.character
+                }
 
                 SFX.play(9)
             elseif data.timer > 32 then
@@ -1522,28 +1572,6 @@ do
     end
 
     function smwMap.unlockLevelPaths(levelObj, winType)
-        local function arrayMax(t, f)
-            local res = -math.huge
-            for _, e in ipairs(t) do
-                res = math.max(res, f(e))
-            end
-            return res
-        end
-
-        local function getSceneryEventData(name)
-            local show = {}
-            local hide = {}
-            for _, scenery in ipairs(smwMap.sceneries) do
-                if scenery.globalSettings.showLevelName == name and (scenery.opacity == 0 or scenery.globalSettings.hideLevelName == name) then
-                    table.insert(show, scenery)
-                end
-                if scenery.globalSettings.hideLevelName == name and (scenery.opacity == 1 or scenery.globalSettings.showLevelName == name) then
-                    table.insert(hide, scenery)
-                end
-            end
-            return show, hide
-        end
-
         if levelObj.settings.levelFilename == nil then
             return
         end
@@ -1555,28 +1583,7 @@ do
             if (type(unlockType) == "number" and (unlockType == 2 or unlockType-2 == winType)) or unlockType == true then
                 if not saveData.beatenLevels[levelObj.settings.levelFilename][directionName] then
                     saveData.beatenLevels[levelObj.settings.levelFilename][directionName] = true
-
-                    -- finds each blocking obj belonging to the level and remove them
-                    for _, o in ipairs(smwMap.objects) do
-                        if o.id == smwMap.blockingObjID and o.settings.levelFilename == levelObj.settings.levelFilename then
-                            o:remove()
-                        end
-                    end
-
-                    -- Initialise showing/hiding sceneries
-                    local lastEvent = smwMap.activeEvents[#smwMap.activeEvents]
-                    if lastEvent == nil or lastEvent.type ~= EVENT_TYPE.SHOW_HIDE_SCENERIES then
-                        local showSceneries, hideSceneries = getSceneryEventData(levelObj.settings.levelFilename)
-                        table.insert(smwMap.activeEvents, {
-                            type = EVENT_TYPE.SHOW_HIDE_SCENERIES,
-                            neededSceneryProgress = math.max(arrayMax(showSceneries, function (e) return e.globalSettings.showDelay end),
-                                                             arrayMax(hideSceneries, function (e) return e.globalSettings.hideDelay end)),
-                            sceneryProgress = 0,
-                            timer = 0,
-                            showSceneries = showSceneries,
-                            hideSceneries = hideSceneries,
-                        })
-                    end
+                    postLevelBeaten(levelObj.settings.levelFilename)
                 end
             end
         end
