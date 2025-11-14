@@ -8,7 +8,6 @@
 - figure out invisible warps and their interaction with area names
     - possibly something like this: check if we came to an area through inv. warp, if we did then simply do not play the animation
     - pipes would still play the animation, i think? they need to to implement the warp world
-- boat shenanigans
 
 ## other
 
