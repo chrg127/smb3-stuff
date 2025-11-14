@@ -97,9 +97,6 @@ smwMap.playerSettings = {
     shadowImage = Graphics.loadImageResolved("smwMap/shadow.png"),
     waterImage = Graphics.loadImageResolved("smwMap/water.png"),
 
-    levelSelectedSound = SFX.open(Misc.resolveSoundFile("smwMap/level-selected")),
-    levelDestroyedSound = SFX.open(Misc.resolveSoundFile("smwMap/levelDestroyed")),
-    switchBlockReleasedSound = SFX.open(Misc.resolveSoundFile("smwMap/switchBlockReleased")),
     goingBackSound = SFX.open(Misc.resolveSoundFile("smwMap/spinjump.wav")),
 
 
@@ -130,7 +127,7 @@ smwMap.playerSettings = {
     },
 
     numSupported = 4, -- mario, luigi, peach and toad
-    goingBackTime = 30
+    goingBackTime = 30,
 }
 
 
@@ -139,10 +136,13 @@ smwMap.levelSettings = {
 
     unlockAnimationFrequency = 12,
 
-    unlockLoopSound = SFX.open(Misc.resolveSoundFile("smwMap/unlock_loop")),
-    unlockFinishSound = SFX.open(Misc.resolveSoundFile("smwMap/unlock_finish")),
-    itemPanelSound = SFX.open(Misc.resolveSoundFile("smwMap/item-panel")),
-    beatenTileImage = Graphics.loadImage(Misc.resolveGraphicsFile("smwMap/beaten-tiles.png"))
+    beatenTileImage = Graphics.loadImage(Misc.resolveGraphicsFile("smwMap/beaten-tiles.png")),
+
+    levelSelectedSound = SFX.open(Misc.resolveSoundFile("smwMap/level-selected")),
+    levelBeatenSound = SFX.open(Misc.resolveSoundFile("smwMap/item-panel")),
+    levelDestroyedSound = SFX.open(Misc.resolveSoundFile("smwMap/levelDestroyed")),
+    switchBlockReleasedSound = SFX.open(Misc.resolveSoundFile("smwMap/switchBlockReleased")),
+    showHideScenerySound = SFX.open(Misc.resolveSoundFile("smwMap/new-path")),
 }
 
 
@@ -359,28 +359,16 @@ local function findFirstObj(x, y, width, height, pred)
     return nil
 end
 
-local function findLevel(v, x, y)
+function smwMap.findLevel(v, x, y)
     return findFirstObj(x, y, v.width, v.height, function (o, c) return c.isLevel end)
 end
 
-smwMap.findLevel = findLevel
-
 function smwMap.findLevelInDir(x, y, dir)
-    return findLevel({ width = 16, height = 16, }, x + dir.x * 32, y + dir.y * 32)
+    return smwMap.findLevel({ width = 16, height = 16, }, x + dir.x * 32, y + dir.y * 32)
 end
 
-local function findBlockingObj(v, x, y)
-    return findFirstObj(x, y, v.width, v.height, function (o, c) return o.id == smwMap.blockingObjID end)
-end
-
-local function setLastLevelBeaten(level)
-    if level ~= nil and not smwMap.getObjectConfig(level.id).cantGetBack then
-        gameData.lastLevelBeaten = {
-            x = level.x,
-            y = level.y,
-            isWaterTile = smwMap.getObjectConfig(level.id).isWaterTile
-        }
-    end
+local function findObjByID(v, x, y, id)
+    return findFirstObj(x, y, v.width, v.height, function (o, c) return o.id == id end)
 end
 
 local function getPlayerScreenPos()
@@ -636,7 +624,7 @@ smwMap.transitionSettings = {
 
 
 -- world card, shown when entering an area with a name
-WORLD_CARD_STATE = {
+local WORLD_CARD_STATE = {
     NOT_SHOWN = 0,
     ON_CARD = 1,
     EXPANDING_STARS = 2,
@@ -655,41 +643,16 @@ local worldCard = {
 -- Events system
 -- Handles stuff like paths opening, castle destruction, etc.
 local EVENT_TYPE = {
-    BEAT_LEVEL         = 0,
-    LEVEL_DESTROYED    = 1,
-    SWITCH_PALACE      = 2,
-    ENCOUNTER_DEFEATED = 3,
-    SHOW_HIDE_SCENERIES= 4,
-    MOVE_ENCOUNTERS    = 5,
-    SHOW_WORLD_CARD    = 6,
+    BEAT_LEVEL          = 0,
+    LEVEL_DESTROYED     = 1,
+    SWITCH_PALACE       = 2,
+    ENCOUNTER_DEFEATED  = 3,
+    SHOW_HIDE_SCENERIES = 4,
+    MOVE_ENCOUNTERS     = 5,
+    SHOW_WORLD_CARD     = 6,
 }
 
-local function postLevelBeaten(filename)
-    -- finds each blocking obj belonging to the level and remove them
-    for _, o in ipairs(smwMap.objects) do
-        if o.id == smwMap.blockingObjID and o.settings.levelFilename == filename then
-            o:remove()
-        end
-    end
-
-    -- Initialise showing/hiding sceneries
-    local lastEvent = smwMap.activeEvents[#smwMap.activeEvents]
-    if lastEvent == nil or lastEvent.type ~= EVENT_TYPE.SHOW_HIDE_SCENERIES then
-        local showSceneries, hideSceneries = getSceneryEventData(filename)
-        table.insert(smwMap.activeEvents, {
-            type = EVENT_TYPE.SHOW_HIDE_SCENERIES,
-            neededSceneryProgress = math.max(arrayMax(showSceneries, function (e) return e.globalSettings.showDelay end),
-                                             arrayMax(hideSceneries, function (e) return e.globalSettings.hideDelay end)),
-            sceneryProgress = 0,
-            timer = 0,
-            showSceneries = showSceneries,
-            hideSceneries = hideSceneries,
-        })
-    end
-end
-
 local updateEvent
-local unlockLoopObj
 
 smwMap.activeEvents = {}
 
@@ -702,7 +665,7 @@ do
     updateFunctions[EVENT_TYPE.BEAT_LEVEL] = function (eventObj)
         eventObj.timer = eventObj.timer + 1
         if eventObj.timer == 1 then
-            SFX.play(smwMap.levelSettings.itemPanelSound)
+            SFX.play(smwMap.levelSettings.levelBeatenSound)
             smwMap.createObject(levelFlipAnimID, eventObj.levelObj.x, eventObj.levelObj.y)
         elseif eventObj.timer == 3 * 8 then
             smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
@@ -721,23 +684,29 @@ do
 
             -- Update each scenery
             for _,scenery in ipairs(eventObj.showSceneries) do
-                if scenery.globalSettings.useSmoke then
-                    if scenery.globalSettings.showDelay == math.floor(eventObj.sceneryProgress) and scenery.opacity == 0 then
+                if scenery.globalSettings.showDelay == math.floor(eventObj.sceneryProgress) and scenery.opacity == 0 then
+                    SFX.play(smwMap.levelSettings.showHideScenerySound)
+                    if scenery.globalSettings.useSmoke then
                         scenery.opacity = 1
                         smwMap.createObject(smwMap.scenerySmokeID, scenery.x, scenery.y)
                     end
-                else
+                end
+
+                if not scenery.globalSettings.useSmoke then
                     scenery.opacity = math.clamp(eventObj.sceneryProgress - scenery.globalSettings.showDelay)
                 end
             end
 
             for _,scenery in ipairs(eventObj.hideSceneries) do
-                if scenery.globalSettings.useSmoke then
-                    if scenery.globalSettings.hideDelay == math.floor(eventObj.sceneryProgress) and scenery.opacity == 1 then
+                if scenery.globalSettings.hideDelay == math.floor(eventObj.sceneryProgress) and scenery.opacity == 1 then
+                    SFX.play(smwMap.levelSettings.showHideScenerySound)
+                    if scenery.globalSettings.useSmoke then
                         scenery.opacity = 0
                         smwMap.createObject(smwMap.scenerySmokeID, scenery.x, scenery.y)
                     end
-                else
+                end
+
+                if not scenery.globalSettings.useSmoke then
                     scenery.opacity = math.clamp(1 - (eventObj.sceneryProgress - scenery.globalSettings.hideDelay))
                 end
             end
@@ -750,7 +719,7 @@ do
     updateFunctions[EVENT_TYPE.LEVEL_DESTROYED] = (function(eventObj)
         eventObj.timer = eventObj.timer + 1
         if eventObj.timer == 1 then
-            SFX.play(smwMap.playerSettings.levelDestroyedSound)
+            SFX.play(smwMap.levelSettings.levelDestroyedSound)
             if smwMap.levelDestroyedSmokeEffectID ~= nil then
                 smwMap.createObject(smwMap.levelDestroyedSmokeEffectID, eventObj.levelObj.x, eventObj.levelObj.y + 16)
             end
@@ -790,7 +759,7 @@ do
                     switchBlockReleasedSound:stop()
                 end
 
-                switchBlockReleasedSound = SFX.play(smwMap.playerSettings.switchBlockReleasedSound)
+                switchBlockReleasedSound = SFX.play(smwMap.levelSettings.switchBlockReleasedSound)
             elseif interval > 12 then
                 smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
                 table.remove(smwMap.activeEvents,1)
@@ -802,7 +771,6 @@ do
 
     updateFunctions[EVENT_TYPE.ENCOUNTER_DEFEATED] = (function(eventObj)
         if not eventObj.encounterObj.isValid then
-            postLevelBeaten(eventObj.encounterObj.settings.levelFilename)
             table.remove(smwMap.activeEvents,1)
         end
     end)
@@ -873,226 +841,6 @@ end
 
 
 
--- Encounters stuff
-local onTickEncounterObj
-
-do
-    smwMap.ENCOUNTER_STATE = {
-        NORMAL   = 0,
-        WALKING  = 1,
-        SLEEPING = 2,
-        DEFEATED = 3,
-    }
-
-    local CAN_WALK_ON = {
-        NON_HIDDEN = 0,
-        ANY        = 1,
-        UNLOCKED   = 2,
-        NONE       = 3,
-    }
-
-    smwMap.encountersWaitingTimer = 0
-    smwMap.encountersWaitingToMove = {}
-
-
-    local function setEncounterLevel(v,data,levelObj)
-        local config = smwMap.getObjectConfig(levelObj.id)
-
-        v.x = levelObj.x
-        v.y = levelObj.y
-
-        v.isUnderwater = config.isWater
-
-        data.savedData.x = v.x
-        data.savedData.y = v.y
-
-        data.levelObj = levelObj
-    end
-
-    local function choosePath(v, data, level)
-        local canWalkOn = v.settings.canWalkOn
-        if canWalkOn == CAN_WALK_ON.NONE then
-            return false
-        end
-
-        -- should be updated to check a list of ids instead
-        if smwMap.getObjectConfig(level.id).canStopEncounters and level ~= v.data.levelObj and level ~= smwMap.mainPlayer.levelObj then
-            return false
-        end
-
-        -- Find any paths that are available
-        local validPaths = {}
-        for _, dir in ipairs{"up","right","down","left"} do
-            -- value here may be bool or number
-            local value = level.settings["unlock_" .. dir]
-            if value and value ~= 0 then
-                table.insert(validPaths, dir)
-            end
-        end
-
-        if #validPaths == 0 then
-            return false
-        end
-
-        -- Walk down one
-        local chosenPath = RNG.irandomEntry(validPaths)
-        v.walkingDirection = ({ down = vector( 0, 1), up    = vector(0, -1),
-                                left = vector(-1, 0), right = vector(1,  0) })[chosenPath]
-        data.direction = v.walkingDirection.x == 0 and DIR_LEFT or v.walkingDirection.x
-        v.lastMovement = chosenPath
-        data.state = smwMap.ENCOUNTER_STATE.WALKING
-        data.timer = 0
-        return true
-    end
-
-
-    function onTickEncounterObj(v)
-        local data = v.data
-
-        if data.state == nil then
-            saveData.objectData[data.index] = saveData.objectData[data.index] or {
-                x = v.x,
-                y = v.y,
-                killed = false,
-            }
-            data.savedData = saveData.objectData[data.index]
-
-
-            if data.savedData.killed then
-                v:remove()
-                return
-            end
-
-            v.x = data.savedData.x
-            v.y = data.savedData.y
-
-
-            -- Initialise
-            data.state = smwMap.ENCOUNTER_STATE.NORMAL
-            data.timer = 0
-
-            data.direction = DIR_LEFT
-
-            data.animationSpeed = 1
-
-            data.defeatedSpeedY = 0
-
-            local levelObj = findLevel(v,v.x,v.y)
-            if levelObj ~= nil then
-                setEncounterLevel(v,data,levelObj)
-            else
-                data.levelObj = nil
-            end
-        end
-
-
-        if data.state == smwMap.ENCOUNTER_STATE.NORMAL then
-        elseif data.state == smwMap.ENCOUNTER_STATE.WALKING then
-            local walkSpeed = smwMap.encounterSettings.walkSpeed
-            local newPosition = vector(v.x, v.y) + v.walkingDirection * walkSpeed
-            v.x = newPosition.x
-            v.y = newPosition.y
-
-            local levelObj = findLevel(v,v.x,v.y)
-
-            local function isWithin(movement, x, y, lx, ly)
-                return movement == "down"  and (y >= ly and x == lx)
-                    or movement == "up"    and (y <= ly and x == lx)
-                    or movement == "right" and (x >= lx and y == ly)
-                    or movement == "left"  and (x <= lx and y == ly)
-            end
-
-            if levelObj ~= nil and levelObj ~= data.levelObj and isWithin(v.lastMovement, v.x, v.y, levelObj.x, levelObj.y) then
-                local keepWalking = choosePath(v, data, levelObj)
-                if not keepWalking then
-                    setEncounterLevel(v,data,levelObj)
-                    data.state = smwMap.ENCOUNTER_STATE.NORMAL
-                    data.timer = 0
-                else
-                    v.x = levelObj.x
-                    v.y = levelObj.y
-                    data.levelObj = levelObj
-                end
-            else
-                local obj = findBlockingObj(v, v.x, v.y)
-                if obj ~= nil then
-                    v.x = obj.x + ({ left = 32, right = -32, up =   0, down =  0 })[v.lastMovement]
-                    v.y = obj.y + ({ left =  0, right =   0, up = 32, down = -32 })[v.lastMovement]
-                    if v.levelObj ~= nil and (v.x ~= v.levelObj.x or v.y ~= v.levelObj.y) then
-                        -- reset current level object in case the encounter moved a substantial amount
-                        v.levelObj = nil
-                    end
-                    -- make encounter go the opposite direction
-                    v.walkingDirection = -v.walkingDirection
-                    v.lastMovement = ({ left = "right", right = "left", up = "down", down = "up", })[v.lastMovement]
-                    data.direction = v.walkingDirection.x == 0 and DIR_LEFT or v.walkingDirection.x
-                end
-            end
-        elseif data.state == smwMap.ENCOUNTER_STATE.SLEEPING then
-        elseif data.state == smwMap.ENCOUNTER_STATE.DEFEATED then
-            data.timer = data.timer + 1
-
-            if data.timer == 1 then
-                data.defeatedSpeedY = -6
-                v.graphicsOffsetY = 0
-
-                v.isUnderwater = false
-
-                v.priority = -10
-
-                data.savedData.killed = true
-                saveData.beatenLevels[v.settings.levelFilename] = {
-                    character = smwMap.mainPlayer.basePlayer.character
-                }
-
-                SFX.play(9)
-            elseif data.timer > 32 then
-                if smwMap.encounterBeatenSmokeID ~= nil then
-                    smwMap.createObject(smwMap.encounterBeatenSmokeID,v.x + v.graphicsOffsetX,v.y + v.graphicsOffsetY)
-                end
-
-                v:remove()
-            end
-
-            data.defeatedSpeedY = data.defeatedSpeedY + 0.26
-
-            v.graphicsOffsetX = v.graphicsOffsetX + 0.5
-            v.graphicsOffsetY = v.graphicsOffsetY + data.defeatedSpeedY
-        end
-    end
-
-
-    function smwMap.getMovingEncountersCount()
-        local res = 0
-        for _, v in ipairs(smwMap.objects) do
-            if smwMap.getObjectConfig(v.id).isEncounter and v.data.state == smwMap.ENCOUNTER_STATE.WALKING then
-                res = res + 1
-            end
-        end
-        return res
-    end
-
-
-    function smwMap.beginMovingEncounters()
-        for _, v in ipairs(smwMap.objects) do
-            local cameraX, cameraY = getUsualCameraPos()
-
-            if  smwMap.getObjectConfig(v.id).isEncounter
-            and v.isValid
-            -- If on camera, add to the list that'll move around
-            and (cameraX + smwMap.camera.width ) > v.x-v.width *0.5
-            and (cameraY + smwMap.camera.height) > v.y-v.height*0.5
-            and (cameraX                       ) < v.x+v.width *0.5
-            and (cameraY                       ) < v.y+v.height*0.5
-            then
-                choosePath(v, v.data, v.data.levelObj)
-            end
-        end
-    end
-end
-
-
-
 function smwMap.onInitAPI()
     registerEvent(smwMap,"onStart")
 
@@ -1104,14 +852,11 @@ function smwMap.onInitAPI()
     registerEvent(smwMap,"onTickEnd", "onTickEndObjects")
 
     registerEvent(smwMap,"onTick")
-    registerEvent(smwMap,"onDraw")
 
     registerEvent(smwMap,"onDraw","updateMusic")
 
     registerEvent(smwMap,"onTick","onTickTransition")
     registerEvent(smwMap,"onDraw","onDrawTransition")
-
-    -- registerEvent(smwMap,"onTick","updateEncounters")
 
     registerEvent(smwMap,"onTickEnd")
 end
@@ -1183,6 +928,30 @@ local LOOK_AROUND_STATE = {
 
 smwMap.PLAYER_STATE = PLAYER_STATE
 smwMap.LOOK_AROUND_STATE = LOOK_AROUND_STATE
+
+local function postLevelBeaten(filename)
+    -- finds each blocking objects belonging to the level and remove them
+    for _, o in ipairs(smwMap.objects) do
+        if o.id == smwMap.blockingObjID and o.settings.levelFilename == filename then
+            o:remove()
+        end
+    end
+
+    -- Initialise showing/hiding sceneries
+    local lastEvent = smwMap.activeEvents[#smwMap.activeEvents]
+    if lastEvent == nil or lastEvent.type ~= EVENT_TYPE.SHOW_HIDE_SCENERIES then
+        local showSceneries, hideSceneries = getSceneryEventData(filename)
+        table.insert(smwMap.activeEvents, {
+            type = EVENT_TYPE.SHOW_HIDE_SCENERIES,
+            neededSceneryProgress = math.max(arrayMax(showSceneries, function (e) return e.globalSettings.showDelay end),
+                                             arrayMax(hideSceneries, function (e) return e.globalSettings.hideDelay end)),
+            sceneryProgress = 0,
+            timer = 0,
+            showSceneries = showSceneries,
+            hideSceneries = hideSceneries,
+        })
+    end
+end
 
 do
     smwMap.players = {}
@@ -1480,10 +1249,10 @@ do
             return newConfig.isWaterTile or newConfig.isBridge
         elseif config.isWarp or config.isStopPoint then
             if config.isBridge then
-                local obj = findFirstObj(
+                local obj = findObjByID(
+                    {width = 32, height = 32},
                     levelObj.x + dir.x * 32, levelObj.y + dir.y * 32,
-                    32, 32,
-                    function (o, c) return o.id == smwMap.boatID end
+                    smwMap.boatID
                 )
                 if obj ~= nil and obj.id == smwMap.boatID then
                     return true
@@ -1596,7 +1365,7 @@ do
             Misc.unpause()
         end)
 
-        SFX.play(smwMap.playerSettings.levelSelectedSound)
+        SFX.play(smwMap.levelSettings.levelSelectedSound)
         smwMap.startTransition(middleFunction, nil, smwMap.transitionSettings.enterEncounterSettings)
 
         if smwMap.encounterSettings.enterSound ~= nil then
@@ -1656,6 +1425,17 @@ do
             table.insert(smwMap.activeEvents, {
                 type = EVENT_TYPE.SHOW_WORLD_CARD
             })
+        end
+    end
+
+
+    local function setLastLevelBeaten(level)
+        if level ~= nil and not smwMap.getObjectConfig(level.id).cantGetBack then
+            gameData.lastLevelBeaten = {
+                x = level.x,
+                y = level.y,
+                isWaterTile = smwMap.getObjectConfig(level.id).isWaterTile
+            }
         end
     end
 
@@ -1816,7 +1596,7 @@ do
         v.warpCooldown = math.max(0, v.warpCooldown - 1)
 
         -- has the player has finished walking the path (i.e. is resting on a level)?
-        local levelObj = findLevel(v,v.x,v.y)
+        local levelObj = smwMap.findLevel(v,v.x,v.y)
 
         local function isWithin(movement, x, y, lx, ly)
             return movement == "down"  and (y >= ly and x == lx)
@@ -1847,7 +1627,7 @@ do
                 saveData.lastMovement = v.lastMovement
             end
         else
-            local obj = findBlockingObj(v, v.x, v.y)
+            local obj = findObjByID(v, v.x, v.y, smwMap.blockingObjID)
             if obj ~= nil then
                 -- player must stay to the left/right/up/down of the blocking object
                 v.x = obj.x + ({ left = 32, right = -32, up =   0, down =  0 })[v.lastMovement]
@@ -1881,7 +1661,7 @@ do
                 Misc.unpause()
             end
 
-            SFX.play(smwMap.playerSettings.levelSelectedSound)
+            SFX.play(smwMap.levelSettings.levelSelectedSound)
             smwMap.startTransition(middleFunction, nil, smwMap.transitionSettings.selectedLevelSettings)
         end
     end
@@ -2026,7 +1806,7 @@ do
         end
 
 
-        v.levelObj = findLevel(v,v.x,v.y)
+        v.levelObj = smwMap.findLevel(v,v.x,v.y)
 
         if v.levelObj ~= nil and player.keys.jump == KEYS_PRESSED then
             for _,p in ipairs(smwMap.players) do
@@ -2131,7 +1911,7 @@ do
         if v.timer == smwMap.playerSettings.goingBackTime then
             v.state = PLAYER_STATE.NORMAL
             v.timer = 0
-            setPlayerLevel(smwMap.mainPlayer, findLevel(smwMap.mainPlayer, gameData.lastLevelBeaten.x, gameData.lastLevelBeaten.y))
+            setPlayerLevel(smwMap.mainPlayer, smwMap.findLevel(smwMap.mainPlayer, gameData.lastLevelBeaten.x, gameData.lastLevelBeaten.y))
             table.insert(smwMap.activeEvents, {
                 type = EVENT_TYPE.MOVE_ENCOUNTERS,
             })
@@ -2302,10 +2082,10 @@ do
     function smwMap.initPlayers()
         local levelObj
         if saveData.playerX ~= nil and saveData.playerY ~= nil then
-            levelObj = findLevel(smwMap.mainPlayer,saveData.playerX,saveData.playerY)
+            levelObj = smwMap.findLevel(smwMap.mainPlayer,saveData.playerX,saveData.playerY)
         end
 
-        levelObj = levelObj or findLevel(smwMap.mainPlayer,smwMap.mainPlayer.x,smwMap.mainPlayer.y)
+        levelObj = levelObj or smwMap.findLevel(smwMap.mainPlayer,smwMap.mainPlayer.x,smwMap.mainPlayer.y)
 
         setPlayerLevel(smwMap.mainPlayer,levelObj)
 
@@ -2331,6 +2111,228 @@ do
         updateNonMainPlayerCounts()
 
         updateActiveAreas(smwMap.mainPlayer,0)
+    end
+end
+
+
+-- Encounters stuff
+
+local onTickEncounterObj
+
+do
+    smwMap.ENCOUNTER_STATE = {
+        NORMAL   = 0,
+        WALKING  = 1,
+        SLEEPING = 2,
+        DEFEATED = 3,
+    }
+
+    local CAN_WALK_ON = {
+        NON_HIDDEN = 0,
+        ANY        = 1,
+        UNLOCKED   = 2,
+        NONE       = 3,
+    }
+
+    smwMap.encountersWaitingTimer = 0
+    smwMap.encountersWaitingToMove = {}
+
+
+    local function setEncounterLevel(v,data,levelObj)
+        local config = smwMap.getObjectConfig(levelObj.id)
+
+        v.x = levelObj.x
+        v.y = levelObj.y
+
+        v.isUnderwater = config.isWater
+
+        data.savedData.x = v.x
+        data.savedData.y = v.y
+
+        data.levelObj = levelObj
+    end
+
+    local function choosePath(v, data, level)
+        local canWalkOn = v.settings.canWalkOn
+        if canWalkOn == CAN_WALK_ON.NONE then
+            return false
+        end
+
+        -- should be updated to check a list of ids instead
+        if smwMap.getObjectConfig(level.id).canStopEncounters and level ~= v.data.levelObj and level ~= smwMap.mainPlayer.levelObj then
+            return false
+        end
+
+        -- Find any paths that are available
+        local validPaths = {}
+        for _, dir in ipairs{"up","right","down","left"} do
+            -- value here may be bool or number
+            local value = level.settings["unlock_" .. dir]
+            if value and value ~= 0 then
+                table.insert(validPaths, dir)
+            end
+        end
+
+        if #validPaths == 0 then
+            return false
+        end
+
+        -- Walk down one
+        local chosenPath = RNG.irandomEntry(validPaths)
+        v.walkingDirection = ({ down = vector( 0, 1), up    = vector(0, -1),
+                                left = vector(-1, 0), right = vector(1,  0) })[chosenPath]
+        data.direction = v.walkingDirection.x == 0 and DIR_LEFT or v.walkingDirection.x
+        v.lastMovement = chosenPath
+        data.state = smwMap.ENCOUNTER_STATE.WALKING
+        data.timer = 0
+        return true
+    end
+
+
+    function onTickEncounterObj(v)
+        local data = v.data
+
+        if data.state == nil then
+            saveData.objectData[data.index] = saveData.objectData[data.index] or {
+                x = v.x,
+                y = v.y,
+                killed = false,
+            }
+            data.savedData = saveData.objectData[data.index]
+
+
+            if data.savedData.killed then
+                v:remove()
+                return
+            end
+
+            v.x = data.savedData.x
+            v.y = data.savedData.y
+
+
+            -- Initialise
+            data.state = smwMap.ENCOUNTER_STATE.NORMAL
+            data.timer = 0
+
+            data.direction = DIR_LEFT
+
+            data.animationSpeed = 1
+
+            data.defeatedSpeedY = 0
+
+            local levelObj = smwMap.findLevel(v,v.x,v.y)
+            if levelObj ~= nil then
+                setEncounterLevel(v,data,levelObj)
+            else
+                data.levelObj = nil
+            end
+        end
+
+
+        if data.state == smwMap.ENCOUNTER_STATE.NORMAL then
+        elseif data.state == smwMap.ENCOUNTER_STATE.WALKING then
+            local walkSpeed = smwMap.encounterSettings.walkSpeed
+            local newPosition = vector(v.x, v.y) + v.walkingDirection * walkSpeed
+            v.x = newPosition.x
+            v.y = newPosition.y
+
+            local levelObj = smwMap.findLevel(v,v.x,v.y)
+
+            local function isWithin(movement, x, y, lx, ly)
+                return movement == "down"  and (y >= ly and x == lx)
+                    or movement == "up"    and (y <= ly and x == lx)
+                    or movement == "right" and (x >= lx and y == ly)
+                    or movement == "left"  and (x <= lx and y == ly)
+            end
+
+            if levelObj ~= nil and levelObj ~= data.levelObj and isWithin(v.lastMovement, v.x, v.y, levelObj.x, levelObj.y) then
+                local keepWalking = choosePath(v, data, levelObj)
+                if not keepWalking then
+                    setEncounterLevel(v,data,levelObj)
+                    data.state = smwMap.ENCOUNTER_STATE.NORMAL
+                    data.timer = 0
+                else
+                    v.x = levelObj.x
+                    v.y = levelObj.y
+                    data.levelObj = levelObj
+                end
+            else
+                local obj = findObjByID(v, v.x, v.y, smwMap.blockingObjID)
+                if obj ~= nil then
+                    v.x = obj.x + ({ left = 32, right = -32, up =   0, down =  0 })[v.lastMovement]
+                    v.y = obj.y + ({ left =  0, right =   0, up = 32, down = -32 })[v.lastMovement]
+                    if v.levelObj ~= nil and (v.x ~= v.levelObj.x or v.y ~= v.levelObj.y) then
+                        -- reset current level object in case the encounter moved a substantial amount
+                        v.levelObj = nil
+                    end
+                    -- make encounter go the opposite direction
+                    v.walkingDirection = -v.walkingDirection
+                    v.lastMovement = ({ left = "right", right = "left", up = "down", down = "up", })[v.lastMovement]
+                    data.direction = v.walkingDirection.x == 0 and DIR_LEFT or v.walkingDirection.x
+                end
+            end
+        elseif data.state == smwMap.ENCOUNTER_STATE.SLEEPING then
+        elseif data.state == smwMap.ENCOUNTER_STATE.DEFEATED then
+            data.timer = data.timer + 1
+
+            if data.timer == 1 then
+                data.defeatedSpeedY = -6
+                v.graphicsOffsetY = 0
+
+                v.isUnderwater = false
+
+                v.priority = -10
+
+                data.savedData.killed = true
+                saveData.beatenLevels[v.settings.levelFilename] = {
+                    character = smwMap.mainPlayer.basePlayer.character
+                }
+
+                SFX.play(9)
+            elseif data.timer > 32 then
+                postLevelBeaten(v.settings.levelFilename)
+
+                if smwMap.encounterBeatenSmokeID ~= nil then
+                    smwMap.createObject(smwMap.encounterBeatenSmokeID,v.x + v.graphicsOffsetX,v.y + v.graphicsOffsetY)
+                end
+
+                v:remove()
+            end
+
+            data.defeatedSpeedY = data.defeatedSpeedY + 0.26
+
+            v.graphicsOffsetX = v.graphicsOffsetX + 0.5
+            v.graphicsOffsetY = v.graphicsOffsetY + data.defeatedSpeedY
+        end
+    end
+
+
+    function smwMap.getMovingEncountersCount()
+        local res = 0
+        for _, v in ipairs(smwMap.objects) do
+            if smwMap.getObjectConfig(v.id).isEncounter and v.data.state == smwMap.ENCOUNTER_STATE.WALKING then
+                res = res + 1
+            end
+        end
+        return res
+    end
+
+
+    function smwMap.beginMovingEncounters()
+        for _, v in ipairs(smwMap.objects) do
+            local cameraX, cameraY = getUsualCameraPos()
+
+            if  smwMap.getObjectConfig(v.id).isEncounter
+            and v.isValid
+            -- If on camera, add to the list that'll move around
+            and (cameraX + smwMap.camera.width ) > v.x-v.width *0.5
+            and (cameraY + smwMap.camera.height) > v.y-v.height*0.5
+            and (cameraX                       ) < v.x+v.width *0.5
+            and (cameraY                       ) < v.y+v.height*0.5
+            then
+                choosePath(v, v.data, v.data.levelObj)
+            end
+        end
     end
 end
 
@@ -3651,11 +3653,6 @@ function smwMap.onTick()
     end
 end
 
-function smwMap.onDraw()
-    if Misc.isPaused() and unlockLoopObj ~= nil and unlockLoopObj:isPlaying() then
-        unlockLoopObj:pause()
-    end
-end
 
 
 -- Cheats!
