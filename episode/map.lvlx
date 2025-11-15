@@ -1163,7 +1163,7 @@ ID:811;X:-196960;Y:-199552;D:-1;XTRA:"{\n    \"unlock_left\"\: true\,\n    \"unl
 ID:811;X:-196896;Y:-199552;D:-1;XTRA:"{\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: true\n}\n";
 ID:811;X:-196832;Y:-199552;D:-1;XTRA:"{\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: true\n}\n";
 ID:820;X:-196752;Y:-199552;D:-1;XTRA:"{\n    \"levelFilename\"\: \"8-bowser\"\,\n    \"levelTitle\"\: \"Bowser's castle\"\,\n    \"unlock_left\"\: 1\n}\n";
-ID:800;X:-199072;Y:-199616;D:-1;XTRA:"{\n    \"unlock_down\"\: 1\n}\n";
+ID:800;X:-199072;Y:-199616;D:-1;XTRA:"{\n    \"levelFilename\"\: \"start.lvlx\"\,\n    \"levelTitle\"\: \"Start\"\,\n    \"unlock_down\"\: 1\n}\n";
 ID:811;X:-199072;Y:-199552;D:-1;XTRA:"{\n    \"unlock_right\"\: true\,\n    \"unlock_up\"\: true\n}\n";
 ID:811;X:-199008;Y:-199552;D:-1;XTRA:"{\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: true\,\n    \"unlock_up\"\: false\n}\n";
 ID:811;X:-198944;Y:-199552;D:-1;XTRA:"{\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: true\,\n    \"unlock_up\"\: true\n}\n";
@@ -1177,11 +1177,10 @@ ID:768;X:-198880;Y:-199552;D:-1;XTRA:"{\n    \"canWalkOn\"\: 3\,\n    \"levelFil
 ID:754;X:-198880;Y:-199648;D:-1;XTRA:"{\n    \"levelFilename\"\: \"8-battleship.lvlx\"\n}\n";
 ID:767;X:-197024;Y:-199552;D:-1;XTRA:"{\n    \"canWalkOn\"\: 3\,\n    \"levelFilename\"\: \"8-tank2.lvlx\"\n}\n";
 ID:754;X:-196992;Y:-199552;D:-1;XTRA:"{\n    \"levelFilename\"\: \"8-tank2.lvlx\"\n}\n";
-ID:753;X:-199232;Y:-199776;D:-1;XTRA:"{\n    \"backgroundName\"\: \"lava\"\,\n    \"height\"\: 408\,\n    \"music\"\: 17\,\n    \"name\"\: \"World 8\"\,\n    \"restrictCamera\"\: true\n}\n";
+ID:753;X:-199232;Y:-199776;D:-1;XTRA:"{\n    \"backgroundName\"\: \"lava\"\,\n    \"height\"\: 408\,\n    \"music\"\: 17\,\n    \"name\"\: \"ω8\"\,\n    \"restrictCamera\"\: true\n}\n";
 ID:753;X:-198560;Y:-199776;D:-1;XTRA:"{\n    \"backgroundName\"\: \"lava\"\,\n    \"height\"\: 408\,\n    \"music\"\: 17\,\n    \"name\"\: \"World 8\"\,\n    \"restrictCamera\"\: true\n}\n";
 ID:753;X:-197888;Y:-199776;D:-1;XTRA:"{\n    \"backgroundName\"\: \"lava\"\,\n    \"height\"\: 408\,\n    \"music\"\: 17\,\n    \"name\"\: \"World 8\"\,\n    \"restrictCamera\"\: true\n}\n";
 ID:753;X:-197216;Y:-199776;D:-1;XTRA:"{\n    \"backgroundName\"\: \"lava\"\,\n    \"height\"\: 408\,\n    \"music\"\: 17\,\n    \"name\"\: \"World 8\"\,\n    \"restrictCamera\"\: true\n}\n";
-ID:751;X:-199072;Y:-199616;D:-1;
 ID:828;X:-198144;Y:-199680;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"8-G\"\,\n    \"unlock_down\"\: true\,\n    \"warpName\"\: \"8-H\"\n}\n";
 ID:828;X:-198400;Y:-199616;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"8-D\"\,\n    \"unlock_right\"\: true\,\n    \"warpName\"\: \"8-C\"\n}\n";
 ID:811;X:-198144;Y:-199616;D:-1;XTRA:"{\n    \"unlock_down\"\: false\,\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: false\,\n    \"unlock_up\"\: true\n}\n";
@@ -1191,6 +1190,7 @@ ID:811;X:-198336;Y:-199616;D:-1;XTRA:"{\n    \"unlock_down\"\: true\,\n    \"unl
 ID:828;X:-198208;Y:-199616;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"8-J\"\,\n    \"unlock_right\"\: true\,\n    \"warpName\"\: \"8-I\"\n}\n";
 ID:769;X:-198336;Y:-199616;D:-1;XTRA:"{\n    \"canWalkOn\"\: 3\,\n    \"levelFilename\"\: \"8-airship.lvlx\"\n}\n";
 ID:754;X:-198176;Y:-199616;D:-1;XTRA:"{\n    \"levelFilename\"\: \"8-airship.lvlx\"\n}\n";
+ID:751;X:-199072;Y:-199616;D:-1;
 NPC_END
 LAYERS
 LR:"Default";

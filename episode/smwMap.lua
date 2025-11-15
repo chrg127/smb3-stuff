@@ -160,6 +160,9 @@ smwMap.encounterSettings = {
 
 
 smwMap.hudSettings = {
+    fontYellow = textplus.loadFont("smwMap/smb3-font-yellow.ini"),
+    fontWhite  = textplus.loadFont("smwMap/smb3-font-white.ini"),
+
     border = {
         enabled = true,
         image = Graphics.loadImageResolved("smwMap/hud_border.png"),
@@ -175,11 +178,8 @@ smwMap.hudSettings = {
         y = 528,
     },
 
-    countersFont = textplus.loadFont("smwMap/smb3-font.ini"),
-
     levelTitle = {
         enabled = true,
-        font = textplus.loadFont("smwMap/titleFont.ini"),
         x = 104,
         y = 26,
     },
@@ -193,7 +193,6 @@ smwMap.hudSettings = {
     },
 
     playerIcon = {
-        image = Graphics.loadImageResolved("smwMap/player-icons.png"),
         x = 8,
         y = 30,
     },
@@ -225,7 +224,7 @@ smwMap.selectStartPointSettings = {
     checkpointSingleText = "Checkpoint",
     checkpointMultipleText = "Checkpoint %d",
 
-    textFont = textplus.loadFont("smwMap/titleFont.ini"),
+    textFont = textplus.loadFont("smwMap/smb3-font-white.ini"),
     textColorSelected = Color(1,1,0.25),
     textColorUnselected = Color.white,
 
@@ -3207,43 +3206,73 @@ do
     smwMap.walkCycles[CHARACTER_UNCLEBROADSWORD] = smwMap.walkCycles[CHARACTER_TOAD]
     smwMap.walkCycles[CHARACTER_SAMUS]           = smwMap.walkCycles[CHARACTER_LINK]
 
-
-    smwMap.hudCounters = {
-        -- lives
-        {
-            getValue = (function()
-                return mem(0x00B2C5AC,FIELD_FLOAT)
-            end),
-            x = 56, y = 28,
-            formatString = "%2d",
-        },
-        -- Coins
-        {
-            getValue = (function()
-                return mem(0x00B2C5A8,FIELD_WORD)
-            end),
-            x = 408, y = 12,
-            formatString = "%2d",
-        },
-        -- Stars
-        {
-            getValue = (function()
-                return mem(0x00B251E0,FIELD_WORD)
-            end),
-            x = 488, y = 12,
-            formatString = "%3d",
-        }
-    }
-
-
-    local function getImage(image)
-        if type(image) == "table" then
-            return image.img
-        else
-            return image
-        end
+    local function getLives()
+        return mem(0x00B2C5AC, FIELD_FLOAT)
     end
 
+    smwMap.hudComponents = {
+        levelTitle = {
+            pos = vector(smwMap.hudSettings.levelTitle.x, smwMap.hudSettings.levelTitle.y),
+            font = smwMap.hudSettings.fontWhite,
+            getText = function (levelObj)
+                local levelTitle = ""
+                if smwMap.hudSettings.levelTitle.enabled and levelObj ~= nil then
+                    levelTitle = levelObj.settings.levelTitle or ""
+                end
+                return levelTitle
+            end,
+        },
+        lives = {
+            pos = vector(smwMap.hudSettings.box.x, smwMap.hudSettings.box.y)
+                + vector(smwMap.hudSettings.playerIcon.x, smwMap.hudSettings.playerIcon.y),
+            font = smwMap.hudSettings.fontYellow,
+            getText = function ()
+                local charBlocks = { "α", "β", "γ", "δ" }
+                local charBlock = charBlocks[smwMap.mainPlayer.basePlayer.character]
+                return charBlock .. string.format("✖%2d", getLives())
+            end
+        },
+        coins = {
+            pos = vector(smwMap.hudSettings.box.x, smwMap.hudSettings.box.y) + vector(392, 12),
+            font = smwMap.hudSettings.fontYellow,
+            getText = function ()
+                return string.format("$%2d", mem(0x00B2C5A8, FIELD_WORD))
+            end
+        },
+        stars = {
+            pos = vector(smwMap.hudSettings.box.x, smwMap.hudSettings.box.y) + vector(456, 12),
+            font = smwMap.hudSettings.fontYellow,
+            getText = function ()
+                return string.format("@✖%3d", mem(0x00B251E0, FIELD_WORD))
+            end
+        },
+        starcoins = {
+            pos = vector(smwMap.hudSettings.box.x,      smwMap.hudSettings.box.y)
+                + vector(smwMap.hudSettings.starcoin.x, smwMap.hudSettings.starcoin.y),
+            font = smwMap.hudSettings.fontYellow,
+            getText = function (level)
+                local res = ""
+                if level ~= nil then
+                    local starcoinCount = gameData.starcoinCounts[level.settings.levelFilename]
+                    if starcoinCount ~= nil and starcoinCount > 0 then
+                        local starcoinData = starcoin.getLevelList(level.settings.levelFilename) or {}
+                        for i = 1, starcoinCount do
+                            res = res .. (starcoinData[i] == 1 and "£" or "€")
+                        end
+                    end
+                end
+                return res
+            end
+        },
+        areaName = {
+            pos = vector(smwMap.hudSettings.box.x, smwMap.hudSettings.box.y)
+                + vector(smwMap.hudSettings.worldName.x, smwMap.hudSettings.worldName.y),
+            font = smwMap.hudSettings.fontYellow,
+            getText = function ()
+                return smwMap.currentCameraArea.name
+            end
+        },
+    }
 
     local yoshiAnimationFrames = {
         {bodyFrame = 0,headFrame = 0,headOffsetX = 0 ,headOffsetY = 0,bodyOffsetX = 0,bodyOffsetY = 0,playerOffset = 0},
@@ -3252,11 +3281,9 @@ do
         {bodyFrame = 1,headFrame = 0,headOffsetX = -1,headOffsetY = 2,bodyOffsetX = 0,bodyOffsetY = 1,playerOffset = 1},
     }
 
-    local bootBounceData = {}
-
-    local function drawHudText(text, pos, font, width)
+    local function drawHudText(text, pos, font)
         textplus.render{
-            layout = textplus.layout(text, width ~= nil and width or #text * 16, {
+            layout = textplus.layout(text, nil, {
                 font = font,
                 xscale = 2,
                 yscale = 2,
@@ -3267,64 +3294,18 @@ do
         }
     end
 
-
     function smwMap.drawHUD()
-        local hudSettings = smwMap.hudSettings
-
-        if hudSettings.border.enabled and hudSettings.border.image ~= nil then
-            Graphics.drawImageWP(hudSettings.border.image, 0, 0, hudSettings.priority)
+        if smwMap.hudSettings.border.enabled and smwMap.hudSettings.border.image ~= nil then
+            Graphics.drawImageWP(smwMap.hudSettings.border.image, 0, 0, smwMap.hudSettings.priority)
         end
+
+        Graphics.drawImageWP(smwMap.hudSettings.box.image, smwMap.hudSettings.box.x, smwMap.hudSettings.box.y, smwMap.hudSettings.priority);
 
         local levelObj = smwMap.mainPlayer.levelObj
-
-        -- Level title
-        local levelTitleMaxWidth = 592
-
-        if hudSettings.levelTitle.enabled then
-            local levelTitle = ""
-            if levelObj ~= nil then
-                levelTitle = levelObj.settings.levelTitle or ""
-            end
-
-            drawHudText(levelTitle, vector(hudSettings.levelTitle.x, hudSettings.levelTitle.y), hudSettings.levelTitle.font, levelTitleMaxWidth)
+        for _, c in pairs(smwMap.hudComponents) do
+            local text = c.getText(levelObj)
+            drawHudText(text, c.pos, c.font)
         end
-
-        -- box
-        Graphics.drawImageWP(hudSettings.box.image, hudSettings.box.x, hudSettings.box.y, hudSettings.priority);
-
-        -- counters
-        for _, c in ipairs(smwMap.hudCounters) do
-            local text = string.format(c.formatString, c.getValue())
-            drawHudText(text, vector(hudSettings.box.x + c.x, hudSettings.box.y + c.y), hudSettings.countersFont)
-        end
-
-        -- starcoins
-        if levelObj ~= nil then
-            local starcoinCount = gameData.starcoinCounts[levelObj.settings.levelFilename]
-            if starcoinCount ~= nil and starcoinCount > 0 then
-                local starcoinData = starcoin.getLevelList(levelObj.settings.levelFilename) or {}
-                for i = 1, starcoinCount do
-                    local image = starcoinData[i] == 1 and hudSettings.starcoin.collectedImage
-                                                        or hudSettings.starcoin.uncollectedImage
-                    local x = hudSettings.box.x + hudSettings.starcoin.x + 16 * (i - 1) + 2
-                    local y = hudSettings.box.y + hudSettings.starcoin.y
-                    Graphics.drawImageWP(image, x, y, hudSettings.priority)
-                end
-            end
-        end
-
-        -- player icon
-        Graphics.drawImageWP(
-            hudSettings.playerIcon.image,
-            hudSettings.box.x + hudSettings.playerIcon.x,
-            hudSettings.box.y + hudSettings.playerIcon.y,
-            0, (smwMap.mainPlayer.basePlayer.character - 1) * 14,
-            32, 14,
-            hudSettings.priority
-        )
-
-        -- area name
-        drawHudText(smwMap.currentCameraArea.name, vector(hudSettings.box.x + hudSettings.worldName.x, hudSettings.box.y + hudSettings.worldName.y), hudSettings.levelTitle.font)
     end
 
     function smwMap.drawWorldCard()
@@ -3336,13 +3317,13 @@ do
             Graphics.drawImageWP(smwMap.hudSettings.worldCard.cardImage, cardPos.x, cardPos.y, smwMap.hudSettings.priority)
 
             local areaNameX = (smwMap.hudSettings.worldCard.cardImage.width - #gameData.areaName * 16) / 2
-            drawHudText(gameData.areaName, cardPos + vector(areaNameX, 24), smwMap.hudSettings.levelTitle.font)
+            drawHudText(gameData.areaName, cardPos + vector(areaNameX, 24), smwMap.hudSettings.fontWhite)
 
             local characterNames = { "MARIO", "LUIGI", "PEACH", "TOAD " }
-            drawHudText(characterNames[smwMap.mainPlayer.basePlayer.character], cardPos + vector(24, 70), smwMap.hudSettings.levelTitle.font)
+            drawHudText(characterNames[smwMap.mainPlayer.basePlayer.character], cardPos + vector(24, 70), smwMap.hudSettings.fontWhite)
 
-            local lives = smwMap.hudCounters[1].getValue()
-            drawHudText(string.format("×%2d", lives), cardPos + vector(168, 72), smwMap.hudSettings.levelTitle.font)
+            local lives = getLives()
+            drawHudText(string.format("×%2d", lives), cardPos + vector(168, 72), smwMap.hudSettings.fontWhite)
 
             Graphics.drawImageWP(
                 smwMap.playerSettings.images[player.character],
