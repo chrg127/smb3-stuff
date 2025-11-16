@@ -12,5 +12,5 @@ void main()
 {
 	float dist = length(focus - (gl_TexCoord[0].xy * screenSize));
 
-	gl_FragColor = mix(gl_Color,vec4(0.0), lt(dist,radius));
+	gl_FragColor = mix(gl_Color, vec4(0.0), lt(dist, radius));
 }

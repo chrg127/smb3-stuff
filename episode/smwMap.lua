@@ -403,6 +403,12 @@ local function getSceneryEventData(name)
 end
 
 -- Transitions
+local mosaicShader = Shader()
+mosaicShader:compileFromFile(nil, Misc.multiResolveFile("fuzzy_pixel.frag", "shaders/npc/fuzzy_pixel.frag"))
+
+local irisOutShader = Shader()
+irisOutShader:compileFromFile(nil, Misc.resolveFile("smwMap/irisOut.frag"))
+
 do
     smwMap.transitionDrawFunction = nil
     smwMap.transitionMiddleFunction = nil
@@ -418,12 +424,6 @@ do
 
     smwMap.transitionTimer = 0
 
-
-    local mosaicShader = Shader()
-    mosaicShader:compileFromFile(nil, Misc.multiResolveFile("fuzzy_pixel.frag", "shaders/npc/fuzzy_pixel.frag"))
-
-    local irisOutShader = Shader()
-    irisOutShader:compileFromFile(nil, Misc.resolveFile("smwMap/irisOut.frag"))
 
     local buffer = Graphics.CaptureBuffer(SCREEN_WIDTH,SCREEN_HEIGHT)
 
@@ -3353,6 +3353,32 @@ do
         end
     end
 
+    -- should be in the same order as the combobox
+    smwMap.areaEffects = {
+        function () end,
+        function ()
+            local focus = getPlayerScreenPos()
+            local radius = 64
+
+            Graphics.drawBox{
+                priority = 6,
+                color = Color.black,
+                x = 0, y = 0,
+                width = SCREEN_WIDTH, height = SCREEN_HEIGHT,
+                shader = irisOutShader,
+                uniforms = {
+                    screenSize = vector(SCREEN_WIDTH, SCREEN_HEIGHT),
+                    radius = radius,
+                    focus = focus,
+                },
+            }
+        end
+    }
+
+    function smwMap.drawAreaEffect()
+        smwMap.areaEffects[2]()
+    end
+
     local function drawLookAroundArrows()
         if lunatime.tick()%32 < 16 then
             return
@@ -3549,6 +3575,7 @@ do
             }
 
             smwMap.drawHUD()
+            smwMap.drawAreaEffect()
         else
             Graphics.drawBox{texture = smwMap.mainBuffer,x = 0,y = 0,priority = -5.01}
         end

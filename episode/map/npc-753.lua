@@ -28,6 +28,7 @@ smwMap.setObjConfig(npcID,{
             backgroundName  = v.settings.backgroundName,
             backgroundColor = v.settings.backgroundColor,
             music = getMusic(v.settings),
+            areaEffect = v.settings.areaEffect,
         })
         v:remove()
     end,

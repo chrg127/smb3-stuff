@@ -107,6 +107,17 @@
 			"tooltip": "The color of the background, if the image is not specified.",
 			"value-default": "#000000"
 		},
+        {
+            "control": "comboBox",
+            "name": "areaEffect",
+            "title": "Area effect",
+            "tooltip": "The graphical effect applied while the player is in this area",
+            "value-default": 0,
+			"elements": [
+                "None",
+                "Small light circle"
+            ]
+        },
 		{
 			"control": "description",
 			"text": "<b>Note:</b> This should be placed in the top left corner of where you want the area to be. The player can also be in multiple areas at once."
