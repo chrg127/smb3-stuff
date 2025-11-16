@@ -98,7 +98,7 @@ smwMap.playerSettings = {
     waterImage = Graphics.loadImageResolved("smwMap/water.png"),
 
     goingBackSound = SFX.open(Misc.resolveSoundFile("smwMap/spinjump.wav")),
-
+    itemPanelSound = SFX.open(Misc.resolveSoundFile("smwMap/item-panel")),
 
     canEnterDestroyedLevels = true,
     canEnterDestroyedBonusLevels = false,
@@ -176,6 +176,11 @@ smwMap.hudSettings = {
         image = Graphics.loadImageResolved("smwMap/hud.png"),
         x = 48,
         y = 528,
+    },
+
+    itemPanel = {
+        image = Graphics.loadImageResolved("smwMap/item-panel.png"),
+        itemsImage = Graphics.loadImageResolved("smwMap/items.png"),
     },
 
     levelTitle = {
@@ -401,6 +406,16 @@ local function getSceneryEventData(name)
     end
     return show, hide
 end
+
+local function getLives()
+    return mem(0x00B2C5AC, FIELD_FLOAT)
+end
+
+local function setLives(num)
+    mem(0x00B2C5AC, FIELD_FLOAT, num)
+end
+
+
 
 -- Transitions
 local mosaicShader = Shader()
@@ -917,6 +932,7 @@ local PLAYER_STATE = {
     PARKING_WHERE_I_WANT = 5, -- illparkwhereiwant / debug mode
     SELECT_START         = 6, -- selecting the start point
     GOING_BACK           = 7, -- lost a level and going back to previous one
+    ITEM_PANEL           = 8, -- viewing item panel
 }
 
 local LOOK_AROUND_STATE = {
@@ -927,6 +943,57 @@ local LOOK_AROUND_STATE = {
 
 smwMap.PLAYER_STATE = PLAYER_STATE
 smwMap.LOOK_AROUND_STATE = LOOK_AROUND_STATE
+
+-- Item panel stuff
+smwMap.ITEM = {
+    HAMMER = 0,
+    FLUTE = 1,
+    MUSHROOM = 2,
+    FIRE_FLOWER = 3,
+    LEAF = 4,
+    TANOOKI_SUIT = 5,
+    HAMMER_SUIT = 6,
+    ICE_FLOWER = 7,
+    STAR = 8,
+    FROG_SUIT = 9,
+    PWING = 10,
+    ONE_UP = 11,
+    CLOUD = 12,
+    MUSIC_BOX = 13,
+    ANCHOR = 14,
+}
+
+smwMap.itemPanel = {
+    cursor = 1,
+    items = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 },
+}
+
+local function givePowerup(index)
+    SFX.play(6) -- Grow sound
+    smwMap.createObject(smwMap.getPowerupSmoke, smwMap.mainPlayer.x, smwMap.mainPlayer.y)
+    smwMap.mainPlayer.basePlayer.powerup = index
+end
+
+smwMap.itemPanelFunctions = {
+    [smwMap.ITEM.HAMMER] = function () end,
+    [smwMap.ITEM.FLUTE] = function () end,
+    [smwMap.ITEM.MUSHROOM] = givePowerup,
+    [smwMap.ITEM.FIRE_FLOWER] = givePowerup,
+    [smwMap.ITEM.LEAF] = givePowerup,
+    [smwMap.ITEM.TANOOKI_SUIT] = givePowerup,
+    [smwMap.ITEM.HAMMER_SUIT] = givePowerup,
+    [smwMap.ITEM.ICE_FLOWER] = givePowerup,
+    [smwMap.ITEM.STAR] = function () end,
+    [smwMap.ITEM.FROG_SUIT] = function () end,
+    [smwMap.ITEM.PWING] = function () end,
+    [smwMap.ITEM.ONE_UP] = function ()
+        SFX.play(15)
+        setLives(getLives() + 1)
+    end,
+    [smwMap.ITEM.CLOUD] = function () end,
+    [smwMap.ITEM.MUSIC_BOX] = function () end,
+    [smwMap.ITEM.ANCHOR] = function () end,
+}
 
 local function postLevelBeaten(filename)
     -- finds each blocking objects belonging to the level and remove them
@@ -1538,10 +1605,14 @@ do
             elseif player.keys.altRun == KEYS_PRESSED and Misc.inEditor() then
                 v.state = PLAYER_STATE.PARKING_WHERE_I_WANT
                 v.timer = 0
-            elseif player.keys.run == KEYS_PRESSED and Misc.inEditor() and gameData.lastLevelBeaten ~= nil then
+            elseif player.keys.run == KEYS_PRESSED then
+                v.state = PLAYER_STATE.ITEM_PANEL
+                v.timer = 0
+                SFX.play(smwMap.playerSettings.itemPanelSound)
+            --[[ elseif player.keys.run == KEYS_PRESSED and Misc.inEditor() and gameData.lastLevelBeaten ~= nil then
                 v.state = PLAYER_STATE.GOING_BACK
                 v.timer = 0
-                gameData.winType = LEVEL_WIN_TYPE_NONE
+                gameData.winType = LEVEL_WIN_TYPE_NONE ]]
             else
                 -- moving
                 for _, dir in ipairs{"up", "down", "left", "right"} do
@@ -1915,6 +1986,23 @@ do
             table.insert(smwMap.activeEvents, {
                 type = EVENT_TYPE.MOVE_ENCOUNTERS,
             })
+        end
+    end
+
+    stateFunctions[PLAYER_STATE.ITEM_PANEL] = function (v)
+        if player.keys.run == KEYS_PRESSED then
+            v.state = PLAYER_STATE.NORMAL
+            SFX.play(smwMap.playerSettings.itemPanelSound)
+        elseif player.keys.right == KEYS_PRESSED or player.keys.left == KEYS_PRESSED then
+            SFX.play(26)
+            smwMap.itemPanel.cursor = math.clamp(smwMap.itemPanel.cursor + (player.keys.right == KEYS_PRESSED and  1 or  -1), 1, #smwMap.itemPanel.items)
+        elseif player.keys.down == KEYS_PRESSED or player.keys.up == KEYS_PRESSED then
+            SFX.play(26)
+            smwMap.itemPanel.cursor = math.clamp(smwMap.itemPanel.cursor + (player.keys.down == KEYS_PRESSED and 11 or -11), 1, #smwMap.itemPanel.items)
+        elseif player.keys.jump == KEYS_PRESSED then
+            local item = smwMap.itemPanel.items[smwMap.itemPanel.cursor]
+            smwMap.itemPanelFunctions[item](item)
+            v.state = PLAYER_STATE.NORMAL
         end
     end
 
@@ -3207,22 +3295,7 @@ do
     smwMap.walkCycles[CHARACTER_UNCLEBROADSWORD] = smwMap.walkCycles[CHARACTER_TOAD]
     smwMap.walkCycles[CHARACTER_SAMUS]           = smwMap.walkCycles[CHARACTER_LINK]
 
-    local function getLives()
-        return mem(0x00B2C5AC, FIELD_FLOAT)
-    end
-
     smwMap.hudComponents = {
-        levelTitle = {
-            pos = vector(smwMap.hudSettings.levelTitle.x, smwMap.hudSettings.levelTitle.y),
-            font = smwMap.hudSettings.fontWhite,
-            getText = function (levelObj)
-                local levelTitle = ""
-                if smwMap.hudSettings.levelTitle.enabled and levelObj ~= nil then
-                    levelTitle = levelObj.settings.levelTitle or ""
-                end
-                return levelTitle
-            end,
-        },
         lives = {
             pos = vector(smwMap.hudSettings.box.x, smwMap.hudSettings.box.y)
                 + vector(smwMap.hudSettings.playerIcon.x, smwMap.hudSettings.playerIcon.y),
@@ -3295,6 +3368,24 @@ do
         }
     end
 
+    function smwMap.drawItemPanel()
+        Graphics.drawImageWP(smwMap.hudSettings.itemPanel.image, smwMap.hudSettings.box.x, smwMap.hudSettings.box.y, smwMap.hudSettings.priority);
+        local cursor = smwMap.itemPanel.cursor - 1
+        for i = 0, 10 do
+            local page = math.floor(cursor / 11)
+            local cursorInPage = cursor % 11
+            local itemIndex = smwMap.itemPanel.items[1 + page * 11 + i]
+            if itemIndex ~= nil then
+                Graphics.drawImageWP(smwMap.hudSettings.itemPanel.itemsImage,
+                    (i+1) * 48 + 16, smwMap.hudSettings.box.y + 12,
+                    i == cursorInPage and 32 or 0, itemIndex * 32,
+                    32, 32,
+                    smwMap.hudSettings.priority
+                )
+            end
+        end
+    end
+
     function smwMap.drawHUD()
         if smwMap.hudSettings.border.enabled and smwMap.hudSettings.border.image ~= nil then
             Graphics.drawImageWP(smwMap.hudSettings.border.image, 0, 0, smwMap.hudSettings.priority)
@@ -3302,10 +3393,20 @@ do
 
         Graphics.drawImageWP(smwMap.hudSettings.box.image, smwMap.hudSettings.box.x, smwMap.hudSettings.box.y, smwMap.hudSettings.priority);
 
-        local levelObj = smwMap.mainPlayer.levelObj
-        for _, c in pairs(smwMap.hudComponents) do
-            local text = c.getText(levelObj)
-            drawHudText(text, c.pos, c.font)
+        local levelTitle = ""
+        if smwMap.hudSettings.levelTitle.enabled and levelObj ~= nil then
+            levelTitle = levelObj.settings.levelTitle or ""
+        end
+        drawHudText(levelTitle, vector(smwMap.hudSettings.levelTitle.x, smwMap.hudSettings.levelTitle.y), smwMap.hudSettings.fontWhite)
+
+        if smwMap.mainPlayer.state == PLAYER_STATE.ITEM_PANEL then
+            smwMap.drawItemPanel()
+        else
+            local levelObj = smwMap.mainPlayer.levelObj
+            for _, c in pairs(smwMap.hudComponents) do
+                local text = c.getText(levelObj)
+                drawHudText(text, c.pos, c.font)
+            end
         end
     end
 
