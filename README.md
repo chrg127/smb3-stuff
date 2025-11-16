@@ -9,7 +9,7 @@
 - encounter movement types
 - re-check settings (specifically hud settings, but others too)
 - think about isClimbing and isWater properties
-- change levelFlipAnimID
+- add more characters in fonts
 
 - object spawning when user-defined conditions are met
     - airship animation

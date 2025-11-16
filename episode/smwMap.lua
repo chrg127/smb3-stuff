@@ -673,14 +673,14 @@ smwMap.activeEvents = {}
 do
     local updateFunctions = {}
 
-    local levelFlipAnimID = 755
-
     -- handles flipping icon animation, the player icon showing is handled by the level objects themselves
     updateFunctions[EVENT_TYPE.BEAT_LEVEL] = function (eventObj)
         eventObj.timer = eventObj.timer + 1
         if eventObj.timer == 1 then
             SFX.play(smwMap.levelSettings.levelBeatenSound)
-            smwMap.createObject(levelFlipAnimID, eventObj.levelObj.x, eventObj.levelObj.y)
+            if smwMap.levelFlipAnimID ~= nil then
+                smwMap.createObject(levelFlipAnimID, eventObj.levelObj.x, eventObj.levelObj.y)
+            end
         elseif eventObj.timer == 3 * 8 then
             smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
         elseif eventObj.timer >= 5 * 8 then

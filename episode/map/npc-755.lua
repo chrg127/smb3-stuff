@@ -3,6 +3,8 @@ local smwMap = require("smwMap")
 local npcID = NPC_ID
 local frameLength = 8
 
+smwMap.levelFlipAnimID = npcID
+
 smwMap.setObjConfig(npcID, {
     framesY = 3,
     priority = -10,
