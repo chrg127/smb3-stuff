@@ -2,9 +2,9 @@
 
 - inventory
     - twister warp
-- area names: 2 lines for hud, 2 lines for world card
 - encounter movement types
-- area effects
+- re-check settings (specifically hud settings, but others too)
+- think about isClimbing and isWater properties
 
 - object spawning when user-defined conditions are met
     - airship animation

@@ -3357,17 +3357,17 @@ do
     smwMap.areaEffects = {
         function () end,
         function ()
-            local focus = getPlayerScreenPos()
+            local focus = getPlayerScreenPos() - vector(smwMap.camera.renderX, smwMap.camera.renderY)
             local radius = 64
 
             Graphics.drawBox{
                 priority = 6,
                 color = Color.black,
-                x = 0, y = 0,
-                width = SCREEN_WIDTH, height = SCREEN_HEIGHT,
+                x = smwMap.camera.renderX, y = smwMap.camera.renderY,
+                width = smwMap.camera.width, height = smwMap.camera.height,
                 shader = irisOutShader,
                 uniforms = {
-                    screenSize = vector(SCREEN_WIDTH, SCREEN_HEIGHT),
+                    screenSize = vector(smwMap.camera.width, smwMap.camera.height),
                     radius = radius,
                     focus = focus,
                 },
