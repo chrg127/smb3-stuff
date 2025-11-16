@@ -2,6 +2,10 @@
 
 - inventory
     - twister warp
+- area names: 2 lines for hud, 2 lines for world card
+- encounter movement types
+- area effects
+
 - object spawning when user-defined conditions are met
     - airship animation
 - castle full-screen flash animation (low priority)

@@ -1419,8 +1419,9 @@ do
             end
         end
 
-        if smwMap.currentCameraArea.name ~= nil and gameData.areaName ~= smwMap.currentCameraArea.name then
-            gameData.areaName = smwMap.currentCameraArea.name
+        local areaName =  smwMap.currentCameraArea.name1 .. smwMap.currentCameraArea.name2
+        if gameData.areaName ~= areaName then
+            gameData.areaName = areaName
             table.insert(smwMap.activeEvents, {
                 type = EVENT_TYPE.SHOW_WORLD_CARD
             })
@@ -3269,7 +3270,7 @@ do
                 + vector(smwMap.hudSettings.worldName.x, smwMap.hudSettings.worldName.y),
             font = smwMap.hudSettings.fontYellow,
             getText = function ()
-                return smwMap.currentCameraArea.name
+                return smwMap.currentCameraArea.name1hud
             end
         },
     }
@@ -3316,8 +3317,11 @@ do
             )
             Graphics.drawImageWP(smwMap.hudSettings.worldCard.cardImage, cardPos.x, cardPos.y, smwMap.hudSettings.priority)
 
-            local areaNameX = (smwMap.hudSettings.worldCard.cardImage.width - #gameData.areaName * 16) / 2
-            drawHudText(gameData.areaName, cardPos + vector(areaNameX, 24), smwMap.hudSettings.fontWhite)
+            for _, obj in ipairs({ {smwMap.currentCameraArea.name1, 24}, {smwMap.currentCameraArea.name2, 24+16} }) do
+                -- TODO: not a great way to calculate text width
+                local areaNameX = (smwMap.hudSettings.worldCard.cardImage.width - #obj[1] * 16) / 2
+                drawHudText(obj[1], cardPos + vector(areaNameX, obj[2]), smwMap.hudSettings.fontWhite)
+            end
 
             local characterNames = { "MARIO", "LUIGI", "PEACH", "TOAD " }
             drawHudText(characterNames[smwMap.mainPlayer.basePlayer.character], cardPos + vector(24, 70), smwMap.hudSettings.fontWhite)

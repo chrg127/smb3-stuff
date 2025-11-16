@@ -4,9 +4,30 @@
 	"layout": [
         {
             "control": "lineEdit",
-            "name": "name",
-            "title": "Name",
-            "tooltip": "Name of the area, displayed in the HUD and during the world-enter animation.",
+            "name": "name1",
+            "title": "Name, line 1",
+            "tooltip": "First line of the name of the area, displayed during the world-enter animation.",
+            "value-default": ""
+        },
+        {
+            "control": "lineEdit",
+            "name": "name2",
+            "title": "Name, line 2",
+            "tooltip": "Second line of the name of the area, displayed during the world-enter animation.",
+            "value-default": ""
+        },
+        {
+            "control": "lineEdit",
+            "name": "name1hud",
+            "title": "Name, line 1 (HUD)",
+            "tooltip": "First line of the name of the area, displayed in the HUD.",
+            "value-default": ""
+        },
+        {
+            "control": "lineEdit",
+            "name": "name2hud",
+            "title": "Name, line 2 (HUD)",
+            "tooltip": "Second line of the name of the area, displayed in the HUD.",
             "value-default": ""
         },
 		{

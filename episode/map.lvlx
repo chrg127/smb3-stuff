@@ -1177,7 +1177,7 @@ ID:768;X:-198880;Y:-199552;D:-1;XTRA:"{\n    \"canWalkOn\"\: 3\,\n    \"levelFil
 ID:754;X:-198880;Y:-199648;D:-1;XTRA:"{\n    \"levelFilename\"\: \"8-battleship.lvlx\"\n}\n";
 ID:767;X:-197024;Y:-199552;D:-1;XTRA:"{\n    \"canWalkOn\"\: 3\,\n    \"levelFilename\"\: \"8-tank2.lvlx\"\n}\n";
 ID:754;X:-196992;Y:-199552;D:-1;XTRA:"{\n    \"levelFilename\"\: \"8-tank2.lvlx\"\n}\n";
-ID:753;X:-199232;Y:-199776;D:-1;XTRA:"{\n    \"backgroundName\"\: \"lava\"\,\n    \"height\"\: 408\,\n    \"music\"\: 17\,\n    \"name\"\: \"ω8\"\,\n    \"restrictCamera\"\: true\n}\n";
+ID:753;X:-199232;Y:-199776;D:-1;XTRA:"{\n    \"backgroundName\"\: \"lava\"\,\n    \"height\"\: 408\,\n    \"music\"\: 17\,\n    \"name\"\: \"ω8\"\,\n    \"name1\"\: \"World 8\"\,\n    \"name1hud\"\: \"ω8\"\,\n    \"name2\"\: \"Dark Land\"\,\n    \"name2hud\"\: \"\"\,\n    \"restrictCamera\"\: true\n}\n";
 ID:753;X:-198560;Y:-199776;D:-1;XTRA:"{\n    \"backgroundName\"\: \"lava\"\,\n    \"height\"\: 408\,\n    \"music\"\: 17\,\n    \"name\"\: \"World 8\"\,\n    \"restrictCamera\"\: true\n}\n";
 ID:753;X:-197888;Y:-199776;D:-1;XTRA:"{\n    \"backgroundName\"\: \"lava\"\,\n    \"height\"\: 408\,\n    \"music\"\: 17\,\n    \"name\"\: \"World 8\"\,\n    \"restrictCamera\"\: true\n}\n";
 ID:753;X:-197216;Y:-199776;D:-1;XTRA:"{\n    \"backgroundName\"\: \"lava\"\,\n    \"height\"\: 408\,\n    \"music\"\: 17\,\n    \"name\"\: \"World 8\"\,\n    \"restrictCamera\"\: true\n}\n";

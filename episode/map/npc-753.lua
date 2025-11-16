@@ -19,7 +19,10 @@ smwMap.setObjConfig(npcID,{
 
     onInitObj = function(v)
         table.insert(smwMap.areas, {
-            name = v.settings.name,
+            name1 = v.settings.name1,
+            name2 = v.settings.name2,
+            name1hud = v.settings.name1hud,
+            name2hud = v.settings.name2hud,
             collider = Colliders.Box(v.x - v.width*0.5,v.y - v.height*0.5,v.settings.width,v.settings.height),
             restrictCamera = v.settings.restrictCamera,
             backgroundName  = v.settings.backgroundName,
