@@ -946,8 +946,8 @@ smwMap.LOOK_AROUND_STATE = LOOK_AROUND_STATE
 
 -- Item panel stuff
 smwMap.ITEM = {
-    HAMMER = 0,
-    WHISTLE = 1,
+    WHISTLE = 0,
+    HAMMER = 1,
     MUSHROOM = 2,
     FIRE_FLOWER = 3,
     LEAF = 4,
@@ -976,11 +976,28 @@ local function givePowerup(index)
     end
     smwMap.createObject(smwMap.getPowerupSmoke, smwMap.mainPlayer.x, smwMap.mainPlayer.y)
     smwMap.mainPlayer.basePlayer.powerup = index
+    return true
 end
 
 smwMap.itemPanelFunctions = {
-    [smwMap.ITEM.HAMMER] = function () end,
     [smwMap.ITEM.WHISTLE] = function () end,
+    [smwMap.ITEM.HAMMER] = function ()
+        local p = smwMap.mainPlayer
+        local used = false
+        for _, dir in ipairs({ vector(1, 0), vector(-1, 0), vector(0, 1), vector(0, -1) }) do
+            local pos = vector(p.x + dir.x * 32, p.y + dir.y * 32)
+            local obj = findFirstObj(pos.x, pos.y, p.width, p.height, function (o, c)
+                return c.isBlocking and c.isBreakable
+            end)
+            if obj ~= nil then
+                SFX.play(4) -- block smashed
+                smwMap.createObject(smwMap.getPowerupSmoke, pos.x, pos.y)
+                obj:remove()
+                used = true
+            end
+        end
+        return used
+    end,
     [smwMap.ITEM.MUSHROOM] = givePowerup,
     [smwMap.ITEM.FIRE_FLOWER] = givePowerup,
     [smwMap.ITEM.LEAF] = givePowerup,
@@ -993,11 +1010,13 @@ smwMap.itemPanelFunctions = {
     [smwMap.ITEM.ONE_UP] = function ()
         SFX.play(15)
         setLives(getLives() + 1)
+        return true
     end,
     [smwMap.ITEM.CLOUD] = function ()
         smwMap.createObject(smwMap.getPowerupSmoke, smwMap.mainPlayer.x, smwMap.mainPlayer.y)
         SFX.play(34) -- raccoon
         smwMap.mainPlayer.insideCloud = true
+        return true
     end,
     [smwMap.ITEM.MUSIC_BOX] = function () end,
     [smwMap.ITEM.ANCHOR] = function () end,
@@ -1005,11 +1024,13 @@ smwMap.itemPanelFunctions = {
 
 local function postLevelBeaten(filename)
     -- finds each blocking objects belonging to the level and remove them
+    --[[
     for _, o in ipairs(smwMap.objects) do
         if o.id == smwMap.blockingObjID and o.settings.levelFilename == filename then
             o:remove()
         end
     end
+    ]]
 
     -- Initialise showing/hiding sceneries
     local lastEvent = smwMap.activeEvents[#smwMap.activeEvents]
@@ -1711,7 +1732,7 @@ do
                 saveData.lastMovement = v.lastMovement
             end
         else
-            local obj = findObjByID(v, v.x, v.y, smwMap.blockingObjID)
+            local obj = findFirstObj(v.x, v.y, v.width, v.height, function (o, c) return c.isBlocking end)
             if obj ~= nil then
                 -- player must stay to the left/right/up/down of the blocking object
                 v.x = obj.x + ({ left = 32, right = -32, up =   0, down =  0 })[v.lastMovement]
@@ -2014,7 +2035,9 @@ do
             smwMap.itemPanel.cursor = math.clamp(smwMap.itemPanel.cursor + (player.keys.down == KEYS_PRESSED and 11 or -11), 1, #smwMap.itemPanel.items)
         elseif player.keys.jump == KEYS_PRESSED then
             local item = smwMap.itemPanel.items[smwMap.itemPanel.cursor]
-            smwMap.itemPanelFunctions[item](item)
+            if smwMap.itemPanelFunctions[item](item) then
+                table.remove(smwMap.itemPanel.items, smwMap.itemPanel.cursor)
+            end
             v.state = PLAYER_STATE.NORMAL
         end
     end
@@ -2360,7 +2383,7 @@ do
                     data.levelObj = levelObj
                 end
             else
-                local obj = findObjByID(v, v.x, v.y, smwMap.blockingObjID)
+                local obj = findFirstObj(v.x, v.y, v.width, v.height, function (o, c) return c.isBlocking end)
                 if obj ~= nil then
                     v.x = obj.x + ({ left = 32, right = -32, up =   0, down =  0 })[v.lastMovement]
                     v.y = obj.y + ({ left =  0, right =   0, up = 32, down = -32 })[v.lastMovement]
