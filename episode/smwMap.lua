@@ -3492,7 +3492,7 @@ do
     }
 
     function smwMap.drawAreaEffect()
-        smwMap.areaEffects[2]()
+        smwMap.areaEffects[smwMap.currentCameraArea.areaEffect+1]()
     end
 
     local function drawLookAroundArrows()
