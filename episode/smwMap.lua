@@ -113,7 +113,7 @@ smwMap.playerSettings = {
 
 
     framesX = 1,
-    framesY = 16,
+    framesY = 18,
 
     bootFrames = 2,
     clownCarFrames = 2,
@@ -947,7 +947,7 @@ smwMap.LOOK_AROUND_STATE = LOOK_AROUND_STATE
 -- Item panel stuff
 smwMap.ITEM = {
     HAMMER = 0,
-    FLUTE = 1,
+    WHISTLE = 1,
     MUSHROOM = 2,
     FIRE_FLOWER = 3,
     LEAF = 4,
@@ -969,14 +969,18 @@ smwMap.itemPanel = {
 }
 
 local function givePowerup(index)
-    SFX.play(6) -- Grow sound
+    if index == smwMap.ITEM.LEAF or index == smwMap.ITEM.TANOOKI_SUIT or index == smwMap.ITEM.HAMMER_SUIT then
+        SFX.play(34) -- Raccoon sound
+    else
+        SFX.play(6) -- Grow sound
+    end
     smwMap.createObject(smwMap.getPowerupSmoke, smwMap.mainPlayer.x, smwMap.mainPlayer.y)
     smwMap.mainPlayer.basePlayer.powerup = index
 end
 
 smwMap.itemPanelFunctions = {
     [smwMap.ITEM.HAMMER] = function () end,
-    [smwMap.ITEM.FLUTE] = function () end,
+    [smwMap.ITEM.WHISTLE] = function () end,
     [smwMap.ITEM.MUSHROOM] = givePowerup,
     [smwMap.ITEM.FIRE_FLOWER] = givePowerup,
     [smwMap.ITEM.LEAF] = givePowerup,
@@ -990,7 +994,11 @@ smwMap.itemPanelFunctions = {
         SFX.play(15)
         setLives(getLives() + 1)
     end,
-    [smwMap.ITEM.CLOUD] = function () end,
+    [smwMap.ITEM.CLOUD] = function ()
+        smwMap.createObject(smwMap.getPowerupSmoke, smwMap.mainPlayer.x, smwMap.mainPlayer.y)
+        SFX.play(34) -- raccoon
+        smwMap.mainPlayer.insideCloud = true
+    end,
     [smwMap.ITEM.MUSIC_BOX] = function () end,
     [smwMap.ITEM.ANCHOR] = function () end,
 }
@@ -1329,6 +1337,11 @@ do
             local dirtype = levelObj.settings["unlock_" .. directionName]
             if dirtype == 0 then
                 return false
+            end
+
+            if dirtype ~= 1 and smwMap.mainPlayer.insideCloud then
+                smwMap.mainPlayer.insideCloud = false
+                return true
             end
 
             return dirtype == 1
@@ -2133,6 +2146,8 @@ do
                     else
                         v.frame = 0
                     end
+                elseif v.insideCloud then
+                    v.frame = 16 + (math.floor(v.animationTimer / 8) % 2)
                 elseif v.basePlayer.mount == MOUNT_BOOT then
                     v.mountFrame = math.floor(v.animationTimer / 8) % smwMap.playerSettings.bootFrames
 
@@ -3135,7 +3150,7 @@ do
         basicGlDrawArgs.target = v.buffer
         v.buffer:clear(0)
 
-        if #smwMap.activeEvents > 0 then
+        if #smwMap.activeEvents > 0 or v.insideCloud then
             -- keep main y offset as it is and prevent mount from appearing
         elseif v.basePlayer.mount == MOUNT_BOOT then
             mainYOffset = mainYOffset + v.bounceOffset
