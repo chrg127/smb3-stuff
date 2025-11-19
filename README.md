@@ -1,15 +1,14 @@
 ## TODO
 
 - flute and twister warp
-- cloud item
 - music box item
-- hammer iem
 - anchor item
 - 1up effect when using a 1up from the item panel
 - encounter movement types
 - re-check settings (specifically hud settings, but others too)
 - think about isClimbing and isWater properties
 - add more characters in fonts
+- world 3 conditional bridges
 
 - object spawning when user-defined conditions are met
     - airship animation
