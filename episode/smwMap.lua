@@ -138,7 +138,7 @@ smwMap.levelSettings = {
 
     beatenTileImage = Graphics.loadImage(Misc.resolveGraphicsFile("smwMap/beaten-tiles.png")),
 
-    levelSelectedSound = SFX.open(Misc.resolveSoundFile("smwMap/level-selected")),
+    levelSelectedSound = 28,
     levelBeatenSound = SFX.open(Misc.resolveSoundFile("smwMap/item-panel")),
     levelDestroyedSound = SFX.open(Misc.resolveSoundFile("smwMap/levelDestroyed")),
     switchBlockReleasedSound = SFX.open(Misc.resolveSoundFile("smwMap/switchBlockReleased")),
@@ -156,6 +156,8 @@ smwMap.encounterSettings = {
 
     movingSound = Misc.resolveSoundFile("smwMap/encountersMoving.wav"),
     enterSound = nil,
+
+    sleepMusic = Misc.episodePath() .. "/map/smwMap/music-box.spc|0;g=2.7;",
 }
 
 
@@ -181,6 +183,7 @@ smwMap.hudSettings = {
     itemPanel = {
         image = Graphics.loadImageResolved("smwMap/item-panel.png"),
         itemsImage = Graphics.loadImageResolved("smwMap/items.png"),
+        wrongSound = SFX.open(Misc.resolveSoundFile("smwMap/choice-wrong")),
     },
 
     levelTitle = {
@@ -1018,7 +1021,21 @@ smwMap.itemPanelFunctions = {
         smwMap.mainPlayer.insideCloud = true
         return true
     end,
-    [smwMap.ITEM.MUSIC_BOX] = function () end,
+    [smwMap.ITEM.MUSIC_BOX] = function ()
+        local found = false
+        for _, v in ipairs(smwMap.objects) do
+            if smwMap.getObjectConfig(v.id).isEncounter then
+                v.data.state = smwMap.ENCOUNTER_STATE.SLEEPING
+                found = true
+            end
+        end
+        if found then
+            Audio.MusicOpen(smwMap.encounterSettings.sleepMusic)
+            Audio.MusicPlay()
+            return true
+        end
+        return true
+    end,
     [smwMap.ITEM.ANCHOR] = function () end,
 }
 
@@ -2037,8 +2054,10 @@ do
             local item = smwMap.itemPanel.items[smwMap.itemPanel.cursor]
             if smwMap.itemPanelFunctions[item](item) then
                 table.remove(smwMap.itemPanel.items, smwMap.itemPanel.cursor)
+                v.state = PLAYER_STATE.NORMAL
+            else
+                SFX.play(smwMap.hudSettings.itemPanel.wrongSound)
             end
-            v.state = PLAYER_STATE.NORMAL
         end
     end
 
