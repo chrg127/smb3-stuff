@@ -1,2 +1,0 @@
-isWater=true
-textureType=continuous

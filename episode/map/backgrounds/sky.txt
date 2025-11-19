@@ -1,4 +1,0 @@
-parallaxX = 0.5
-parallaxY = 0.5
-speedX = -0.25
-speedY =  0.25

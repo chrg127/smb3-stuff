@@ -9,6 +9,7 @@
 - think about isClimbing and isWater properties
 - add more characters in fonts
 - world 3 conditional bridges
+- find default spinjump sound
 
 - object spawning when user-defined conditions are met
     - airship animation

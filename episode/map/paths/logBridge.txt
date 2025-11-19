@@ -1,2 +1,0 @@
-textureType=continuous
-autoStraighten=true
