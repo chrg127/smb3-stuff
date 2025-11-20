@@ -8,10 +8,10 @@ smwMap.setObjConfig(npcID,{
     isEncounter = true,
 
     onTickObj = function(v)
-        if v.data.state == smwMap.ENCOUNTER_STATE.SLEEPING then
-            v.frameY = 0
-        else
-            v.frameY = smwMap.doBasicAnimation(v, 2, 8 / v.data.animationSpeed)
+        local totalFrames = smwMap.getObjectConfig(v.id).framesY
+        v.frameY = smwMap.doBasicAnimation(v, 2, 8 / v.data.animationSpeed)
+        if v.data.direction == DIR_RIGHT then
+            v.frameY = v.frameY + totalFrames / 2
         end
     end,
 })

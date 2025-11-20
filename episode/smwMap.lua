@@ -682,7 +682,7 @@ do
         if eventObj.timer == 1 then
             SFX.play(smwMap.levelSettings.levelBeatenSound)
             if smwMap.levelFlipAnimID ~= nil then
-                smwMap.createObject(levelFlipAnimID, eventObj.levelObj.x, eventObj.levelObj.y)
+                smwMap.createObject(smwMap.levelFlipAnimID, eventObj.levelObj.x, eventObj.levelObj.y)
             end
         elseif eventObj.timer == 3 * 8 then
             smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
@@ -1024,7 +1024,8 @@ smwMap.itemPanelFunctions = {
     [smwMap.ITEM.MUSIC_BOX] = function ()
         local found = false
         for _, v in ipairs(smwMap.objects) do
-            if smwMap.getObjectConfig(v.id).isEncounter then
+            local config = smwMap.getObjectConfig(v.id)
+            if config.isEncounter and config.canSleep then
                 v.data.state = smwMap.ENCOUNTER_STATE.SLEEPING
                 found = true
             end
@@ -1040,15 +1041,6 @@ smwMap.itemPanelFunctions = {
 }
 
 local function postLevelBeaten(filename)
-    -- finds each blocking objects belonging to the level and remove them
-    --[[
-    for _, o in ipairs(smwMap.objects) do
-        if o.id == smwMap.blockingObjID and o.settings.levelFilename == filename then
-            o:remove()
-        end
-    end
-    ]]
-
     -- Initialise showing/hiding sceneries
     local lastEvent = smwMap.activeEvents[#smwMap.activeEvents]
     if lastEvent == nil or lastEvent.type ~= EVENT_TYPE.SHOW_HIDE_SCENERIES then

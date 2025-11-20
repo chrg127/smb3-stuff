@@ -6,6 +6,7 @@ smwMap.setObjConfig(npcID,{
     framesY = 3,
     usePositionBasedPriority = true,
     isEncounter = true,
+    canSleep = true,
 
     onTickObj = function(v)
         if v.data.state == smwMap.ENCOUNTER_STATE.SLEEPING then

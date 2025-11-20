@@ -7,6 +7,7 @@ smwMap.setObjConfig(npcID,{
     gfxoffsety = 0,
     usePositionBasedPriority = true,
     isEncounter = true,
+    canSleep = true,
 
     onTickObj = function(v)
         if v.data.state == smwMap.ENCOUNTER_STATE.NORMAL then
