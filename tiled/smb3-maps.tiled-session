@@ -9,7 +9,8 @@
     ],
     "fileStates": {
         "extra.tsx": {
-            "scaleInDock": 2
+            "scaleInDock": 2,
+            "scaleInEditor": 3
         },
         "main.tsx": {
             "scaleInDock": 2,
@@ -102,6 +103,14 @@
                 "x": 435.25,
                 "y": 60
             }
+        },
+        "world9.tmx": {
+            "scale": 4,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 82.125,
+                "y": 20.25
+            }
         }
     },
     "frame.defaultDuration": 200,
@@ -114,7 +123,10 @@
     ],
     "project": "smb3-maps.tiled-project",
     "recentFiles": [
+        "world9.tmx",
+        "extra.tsx",
         "world7.tmx",
+        "main.tsx",
         "world6.tmx",
         "world4.tmx",
         "world5a.tmx",
@@ -122,9 +134,6 @@
         "world8.tmx",
         "world1.tmx",
         "world8a.tmx",
-        "world3.tmx",
-        "main.tsx",
-        "world2.tmx",
-        "map.tmx"
+        "world3.tmx"
     ]
 }
