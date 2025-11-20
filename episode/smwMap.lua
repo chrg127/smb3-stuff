@@ -601,6 +601,7 @@ end
 -- the middle part is always black.
 -- in these settings, progressTime is the time the transition takes during both starting and end parts,
 -- but you can also specify these times individually with startTime and endTime.
+-- waitTime is the time the middle part takes.
 smwMap.transitionSettings = {
     selectedLevelSettings = {
         drawFunction = smwMap.TRANSITION_IRIS_OUT,
@@ -637,6 +638,13 @@ smwMap.transitionSettings = {
         priority = -6,
         pauses = false,
     },
+
+    whistleWarp = {
+        drawFunction = smwMap.TRANSITION_FADE,
+        progressTime = 20,
+        waitTime = 8,
+        priority = -4,
+    }
 }
 
 
@@ -983,7 +991,13 @@ local function givePowerup(index)
 end
 
 smwMap.itemPanelFunctions = {
-    [smwMap.ITEM.WHISTLE] = function () end,
+    [smwMap.ITEM.WHISTLE] = function ()
+        local mid = function ()
+            smwMap.warpPlayer(smwMap.mainPlayer, {}, smwMap.warpsMap[smwMap.currentCameraArea.whistleWarpName])
+        end
+        smwMap.startTransition(mid, nil, smwMap.transitionSettings.whistleWarp)
+        return true
+    end,
     [smwMap.ITEM.HAMMER] = function ()
         local p = smwMap.mainPlayer
         local used = false
@@ -1530,7 +1544,7 @@ do
         end
 
         local areaName =  smwMap.currentCameraArea.name1 .. smwMap.currentCameraArea.name2
-        if gameData.areaName ~= areaName then
+        if gameData.areaName ~= areaName and smwMap.currentCameraArea.showWorldCard then
             gameData.areaName = areaName
             table.insert(smwMap.activeEvents, {
                 type = EVENT_TYPE.SHOW_WORLD_CARD
@@ -1550,15 +1564,15 @@ do
     end
 
 
-    function smwMap.warpPlayer(v, warpObj, destinationLevel)
-        if warpObj.settings.pathWalkingDirection ~= nil then
+    function smwMap.warpPlayer(v, settings, destinationLevel)
+        if settings.pathWalkingDirection ~= nil then
             for _,p in ipairs(smwMap.players) do
                 p.state = PLAYER_STATE.WALKING
                 p.timer = p.followingDelay
                 p.zOffset = 0
                 p.warpCooldown = 60
 
-                local directionName = ({ "up", "down", "left", "right" })[warpObj.settings.pathWalkingDirection + 1]
+                local directionName = ({ "up", "down", "left", "right" })[settings.pathWalkingDirection + 1]
                 p.lastMovement = directionName
                 p.movementHistory[1] = directionName
                 p.walkingDirection = ({ down = vector( 0, 1), up    = vector(0, -1),
@@ -1586,10 +1600,10 @@ do
         updateActiveAreas(v,64)
     end
 
-    function smwMap.warpPlayerWithTransition(v, warpObj)
-        local destinationLevel = smwMap.warpsMap[warpObj.settings.destinationWarpName]
+    function smwMap.warpPlayerWithTransition(player, settings)
+        local destinationLevel = smwMap.warpsMap[settings.destinationWarpName]
         if destinationLevel ~= nil then
-            local middleFunction = function() smwMap.warpPlayer(v, warpObj, destinationLevel) end
+            local middleFunction = function() smwMap.warpPlayer(player, settings, destinationLevel) end
             smwMap.startTransition(middleFunction, nil, smwMap.transitionSettings.warpToWarpSettings)
         end
     end
@@ -1617,7 +1631,7 @@ do
                 if config.isWarp and v.levelObj.settings.levelFilename == "" then
                     -- Warps
                     if config.doWarpOverride == nil then
-                        smwMap.warpPlayerWithTransition(v,v.levelObj)
+                        smwMap.warpPlayerWithTransition(v, v.levelObj.settings)
                     else
                         -- Make all players do the custom warping
                         v.state = PLAYER_STATE.CUSTOM_WARPING
@@ -1701,7 +1715,7 @@ do
         if v.isMainPlayer and v.warpCooldown == 0 then
             for _,warpObj in ipairs(getIntersectingInstantWarps(v.x,v.y)) do
                 if canEnterLevel(warpObj) then
-                    smwMap.warpPlayerWithTransition(v,warpObj)
+                    smwMap.warpPlayerWithTransition(v, warpObj.settings)
                     return
                 end
             end
@@ -1901,7 +1915,7 @@ do
         end
 
         if shouldFinishWarp and v.isMainPlayer then
-            smwMap.warpPlayerWithTransition(v,v.levelObj)
+            smwMap.warpPlayerWithTransition(v, v.levelObj.settings)
         end
     end)
 
@@ -2486,7 +2500,9 @@ do
     smwMap.areas = {}
 
     function smwMap.getObjectConfig(id)
-        if type(id) ~= "number" then
+        if id == nil then
+            error("id is nil")
+        elseif type(id) ~= "number" then
             error("getObjectConfig only takes IDs")
         end
 

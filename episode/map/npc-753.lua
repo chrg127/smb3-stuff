@@ -23,12 +23,14 @@ smwMap.setObjConfig(npcID,{
             name2 = v.settings.name2,
             name1hud = v.settings.name1hud,
             name2hud = v.settings.name2hud,
+            showWorldCard = v.settings.showWorldCard,
             collider = Colliders.Box(v.x - v.width*0.5,v.y - v.height*0.5,v.settings.width,v.settings.height),
             restrictCamera = v.settings.restrictCamera,
             backgroundName  = v.settings.backgroundName,
             backgroundColor = v.settings.backgroundColor,
             music = getMusic(v.settings),
             areaEffect = v.settings.areaEffect,
+            whistleWarpName = v.settings.whistleWarpName,
         })
         v:remove()
     end,

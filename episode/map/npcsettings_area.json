@@ -30,6 +30,13 @@
             "tooltip": "Second line of the name of the area, displayed in the HUD.",
             "value-default": ""
         },
+        {
+            "control": "checkBox",
+            "name": "enableWorldCard",
+            "title": "Enable world card",
+            "tooltip": "Show a card with the level name when entering this area.",
+            "value-default": true
+        },
 		{
 			"control": "spinBox",
 			"name": "width",
@@ -117,6 +124,12 @@
                 "None",
                 "Small light circle"
             ]
+        },
+        {
+            "control": "lineEdit",
+            "name": "whistleWarpName",
+            "title": "Warp name (for whistle)",
+            "tooltip": "The internal name of the warp that the whistle leads to while inside this area."
         },
 		{
 			"control": "description",
