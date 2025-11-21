@@ -76,7 +76,7 @@
             "scale": 2,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 527.75,
+                "x": 553.75,
                 "y": 412.5
             }
         },
@@ -84,8 +84,8 @@
             "scale": 2,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 42.75,
-                "y": -24.5
+                "x": -33.25,
+                "y": 43.5
             }
         },
         "world8.tmx": {

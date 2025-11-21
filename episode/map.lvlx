@@ -668,6 +668,7 @@ ID:753;X:-198560;Y:-200608;
 ID:754;X:-197600;Y:-200608;
 ID:755;X:-199232;Y:-200192;
 ID:757;X:-199232;Y:-199776;
+ID:758;X:-197792;Y:-200160;
 BGO_END
 NPC
 ID:800;X:-199104;Y:-200480;D:-1;XTRA:"{\n    \"levelTitle\"\: \"Start\"\,\n    \"unlock_right\"\: 1\n}\n";
@@ -1193,7 +1194,16 @@ ID:754;X:-198176;Y:-199616;D:-1;XTRA:"{\n    \"levelFilename\"\: \"8-airship.lvl
 ID:751;X:-199104;Y:-200480;D:-1;
 ID:831;X:-199104;Y:-199968;D:-1;
 ID:753;X:-197888;Y:-200192;D:-1;XTRA:"{\n    \"backgroundName\"\: \"water\"\,\n    \"height\"\: 408\,\n    \"music\"\: 8\,\n    \"name\"\: \"World 8\"\,\n    \"name1\"\: \"World 9\"\,\n    \"name1hud\"\: \"ω9\"\,\n    \"name2\"\: \"Warp Zone\"\,\n    \"restrictCamera\"\: true\n}\n";
-ID:832;X:-197664;Y:-200000;D:-1;XTRA:"{\n    \"warpName\"\: \"9-A\"\n}\n";
+ID:832;X:-197664;Y:-199968;D:-1;XTRA:"{\n    \"warpName\"\: \"9-B\"\n}\n";
+ID:832;X:-197664;Y:-200032;D:-1;XTRA:"{\n    \"unlock_right\"\: true\,\n    \"warpName\"\: \"9-A\"\n}\n";
+ID:832;X:-197536;Y:-199904;D:-1;XTRA:"{\n    \"unlock_right\"\: true\,\n    \"warpName\"\: \"9-C\"\n}\n";
+ID:827;X:-197600;Y:-200032;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"2-S\"\,\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: true\,\n    \"warpName\"\: \"9to2\"\n}\n";
+ID:827;X:-197536;Y:-200032;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"3-S\"\,\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: true\,\n    \"warpName\"\: \"9to3\"\n}\n";
+ID:827;X:-197472;Y:-200032;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"4-S\"\,\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: false\,\n    \"warpName\"\: \"9to4\"\n}\n";
+ID:827;X:-197600;Y:-199968;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"5-S\"\,\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: true\,\n    \"warpName\"\: \"9to5\"\n}\n";
+ID:827;X:-197536;Y:-199968;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"6-S\"\,\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: true\,\n    \"warpName\"\: \"9to6\"\n}\n";
+ID:827;X:-197472;Y:-199968;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"7-S\"\,\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: false\,\n    \"warpName\"\: \"9to7\"\n}\n";
+ID:827;X:-197472;Y:-199904;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"8-S\"\,\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: false\,\n    \"warpName\"\: \"9to8\"\n}\n";
 NPC_END
 LAYERS
 LR:"Default";

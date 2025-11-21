@@ -8,7 +8,7 @@ smwMap.setObjConfig(npcID,{
     isWarp = true,
 
     onTickObj = function(v)
-        v.frameY = smwMap.doBasicAnimation(v, smwMap.getObjectConfig(v.id).framesY, 6)
+        v.frameY = smwMap.doBasicAnimation(v, smwMap.getObjectConfig(v.id).framesY, 16)
     end,
 })
 
