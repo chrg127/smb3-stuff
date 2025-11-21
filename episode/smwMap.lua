@@ -184,6 +184,7 @@ smwMap.hudSettings = {
         image = Graphics.loadImageResolved("smwMap/item-panel.png"),
         itemsImage = Graphics.loadImageResolved("smwMap/items.png"),
         wrongSound = SFX.open(Misc.resolveSoundFile("smwMap/choice-wrong")),
+        whistleSound = SFX.open(Misc.resolveSoundFile("smwMap/whistle")),
     },
 
     levelTitle = {
@@ -944,6 +945,7 @@ local PLAYER_STATE = {
     SELECT_START         = 6, -- selecting the start point
     GOING_BACK           = 7, -- lost a level and going back to previous one
     ITEM_PANEL           = 8, -- viewing item panel
+    USING_WHISTLE        = 9, -- Using a whistle and being carried by a twister
 }
 
 local LOOK_AROUND_STATE = {
@@ -976,7 +978,7 @@ smwMap.ITEM = {
 
 smwMap.itemPanel = {
     cursor = 1,
-    items = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 },
+    items = { 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 },
 }
 
 local function givePowerup(index)
@@ -992,10 +994,12 @@ end
 
 smwMap.itemPanelFunctions = {
     [smwMap.ITEM.WHISTLE] = function ()
-        local mid = function ()
-            smwMap.warpPlayer(smwMap.mainPlayer, {}, smwMap.warpsMap[smwMap.currentCameraArea.whistleWarpName])
-        end
-        smwMap.startTransition(mid, nil, smwMap.transitionSettings.whistleWarp)
+        local obj = smwMap.createObject(smwMap.twisterID, smwMap.camera.x + smwMap.camera.width, smwMap.mainPlayer.y)
+        obj.isComing = true
+        smwMap.mainPlayer.twisterObj = obj
+        smwMap.mainPlayer.state = PLAYER_STATE.USING_WHISTLE
+        SFX.play(smwMap.hudSettings.itemPanel.whistleSound)
+        Audio.MusicStop()
         return true
     end,
     [smwMap.ITEM.HAMMER] = function ()
@@ -1053,6 +1057,11 @@ smwMap.itemPanelFunctions = {
     end,
     [smwMap.ITEM.ANCHOR] = function () end,
 }
+
+function smwMap.removeTwister()
+    smwMap.mainPlayer.twisterObj = nil
+    smwMap.mainPlayer.state = PLAYER_STATE.NORMAL
+end
 
 local function postLevelBeaten(filename)
     -- Initialise showing/hiding sceneries
@@ -2067,6 +2076,9 @@ do
         end
     end
 
+    stateFunctions[PLAYER_STATE.USING_WHISTLE] = function (v)
+    end
+
     -- Handling looking around (done by pressing altJump)
     local lookAroundStateFunctions = {}
 
@@ -2196,6 +2208,8 @@ do
                     end
                 elseif v.insideCloud then
                     v.frame = 16 + (math.floor(v.animationTimer / 8) % 2)
+                elseif v.twisterObj ~= nil and ((v.twisterObj.isComing and v.x > v.twisterObj.x) or (not v.twisterObj.isComing and v.x < v.twisterObj.x)) then
+                    v.frame = 1
                 elseif v.basePlayer.mount == MOUNT_BOOT then
                     v.mountFrame = math.floor(v.animationTimer / 8) % smwMap.playerSettings.bootFrames
 
