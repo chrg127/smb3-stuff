@@ -87,6 +87,7 @@ local textplus = require("textplus")
 
 
 smwMap.playerSettings = {
+    numSupported = 4, -- mario, luigi, peach and toad TODO: need to check if this could be removed, it's used in level scripts
     images = {
         [CHARACTER_MARIO] = Graphics.loadImageResolved("smwMap/player-mario.png"),
         [CHARACTER_LUIGI] = Graphics.loadImageResolved("smwMap/player-luigi.png"),
@@ -97,20 +98,16 @@ smwMap.playerSettings = {
     shadowImage = Graphics.loadImageResolved("smwMap/shadow.png"),
     waterImage = Graphics.loadImageResolved("smwMap/water.png"),
 
-    goingBackSound = SFX.open(Misc.resolveSoundFile("smwMap/spinjump.wav")),
+    goingBackSound = 33,
     itemPanelSound = SFX.open(Misc.resolveSoundFile("smwMap/item-panel")),
-
-    canEnterDestroyedLevels = true,
-    canEnterDestroyedBonusLevels = false,
-
 
     walkSpeed = 4,
     climbSpeed = 0.75, -- should be unused
 
-
-    lookAroundArrowImage = Graphics.loadImageResolved("smwMap/lookAroundArrow.png"),
-    lookAroundMoveSpeed = 4,
-
+    lookAround = {
+        image = Graphics.loadImageResolved("smwMap/lookAroundArrow.png"),
+        moveSpeed = 4,
+    },
 
     framesX = 1,
     framesY = 18,
@@ -126,7 +123,6 @@ smwMap.playerSettings = {
         [MOUNT_YOSHI]    = -8,
     },
 
-    numSupported = 4, -- mario, luigi, peach and toad
     goingBackTime = 30,
 }
 
@@ -164,6 +160,7 @@ smwMap.encounterSettings = {
 smwMap.hudSettings = {
     fontYellow = textplus.loadFont("smwMap/smb3-font-yellow.ini"),
     fontWhite  = textplus.loadFont("smwMap/smb3-font-white.ini"),
+    priority = 5,
 
     border = {
         enabled = true,
@@ -174,6 +171,7 @@ smwMap.hudSettings = {
         bottomHeight = 96,
     },
 
+    -- the box at the bottom of the screen
     box = {
         image = Graphics.loadImageResolved("smwMap/hud.png"),
         x = 48,
@@ -192,26 +190,6 @@ smwMap.hudSettings = {
         x = 104,
         y = 26,
     },
-
-    starcoin = {
-        enabled = true,
-        uncollectedImage = Graphics.loadImageResolved("hardcoded-51-0.png"),
-        collectedImage = Graphics.loadImageResolved("hardcoded-51-1.png"),
-        x = 456,
-        y = 30,
-    },
-
-    playerIcon = {
-        x = 8,
-        y = 30,
-    },
-
-    worldName = {
-        x = 8,
-        y = 12
-    },
-
-    priority = 5,
 
     worldCard = {
         cardImage = Graphics.loadImageResolved("smwMap/world-card.png"),
@@ -2111,7 +2089,7 @@ do
         end
 
         -- Move around the camera
-        local moveSpeed = smwMap.playerSettings.lookAroundMoveSpeed
+        local moveSpeed = smwMap.playerSettings.lookAround.moveSpeed
 
         if player.keys.left then
             v.lookAroundX = v.lookAroundX - moveSpeed
@@ -2134,7 +2112,7 @@ do
 
     -- Return to the original position
     lookAroundStateFunctions[LOOK_AROUND_STATE.RETURN] = (function(v)
-        local moveSpeed = smwMap.playerSettings.lookAroundMoveSpeed * 2
+        local moveSpeed = smwMap.playerSettings.lookAround.moveSpeed * 2
 
         local goalX,goalY = getUsualCameraPos()
 
@@ -3380,8 +3358,7 @@ do
 
     smwMap.hudComponents = {
         lives = {
-            pos = vector(smwMap.hudSettings.box.x, smwMap.hudSettings.box.y)
-                + vector(smwMap.hudSettings.playerIcon.x, smwMap.hudSettings.playerIcon.y),
+            pos = vector(smwMap.hudSettings.box.x, smwMap.hudSettings.box.y) + vector(8, 30),
             font = smwMap.hudSettings.fontYellow,
             getText = function ()
                 local charBlocks = { "α", "β", "γ", "δ" }
@@ -3404,8 +3381,7 @@ do
             end
         },
         starcoins = {
-            pos = vector(smwMap.hudSettings.box.x,      smwMap.hudSettings.box.y)
-                + vector(smwMap.hudSettings.starcoin.x, smwMap.hudSettings.starcoin.y),
+            pos = vector(smwMap.hudSettings.box.x, smwMap.hudSettings.box.y) + vector(456, 30),
             font = smwMap.hudSettings.fontYellow,
             getText = function (level)
                 local res = ""
@@ -3422,8 +3398,7 @@ do
             end
         },
         areaName = {
-            pos = vector(smwMap.hudSettings.box.x, smwMap.hudSettings.box.y)
-                + vector(smwMap.hudSettings.worldName.x, smwMap.hudSettings.worldName.y),
+            pos = vector(smwMap.hudSettings.box.x, smwMap.hudSettings.box.y) + vector(8, 12),
             font = smwMap.hudSettings.fontYellow,
             getText = function ()
                 return smwMap.currentCameraArea.name1hud
@@ -3476,11 +3451,10 @@ do
 
         Graphics.drawImageWP(smwMap.hudSettings.box.image, smwMap.hudSettings.box.x, smwMap.hudSettings.box.y, smwMap.hudSettings.priority);
 
-        local levelTitle = ""
-        if smwMap.hudSettings.levelTitle.enabled and levelObj ~= nil then
-            levelTitle = levelObj.settings.levelTitle or ""
+        if smwMap.hudSettings.levelTitle.enabled then
+            local levelTitle = levelObj ~= nil and levelObj.settings.levelTitle or ""
+            drawHudText(levelTitle, vector(smwMap.hudSettings.levelTitle.x, smwMap.hudSettings.levelTitle.y), smwMap.hudSettings.fontWhite)
         end
-        drawHudText(levelTitle, vector(smwMap.hudSettings.levelTitle.x, smwMap.hudSettings.levelTitle.y), smwMap.hudSettings.fontWhite)
 
         if smwMap.mainPlayer.state == PLAYER_STATE.ITEM_PANEL then
             smwMap.drawItemPanel()
@@ -3569,7 +3543,7 @@ do
         end
 
 
-        local image = smwMap.playerSettings.lookAroundArrowImage
+        local image = smwMap.playerSettings.lookAround.image
 
         local halfCameraSize = vector(smwMap.camera.width*0.5,smwMap.camera.height*0.5)
 

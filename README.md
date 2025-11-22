@@ -2,11 +2,9 @@
 
 - 1up effect when using a 1up from the item panel
 - star item
-- re-check settings (specifically hud settings, but others too)
 - think about isClimbing and isWater properties
 - add more characters in fonts
 - world 3 conditional bridges
-- find default spinjump sound
 - flashing effect for whistle warps and castles
 - object spawning when user-defined conditions are met
     - airship animation
@@ -16,6 +14,7 @@
     - pipes would still play the animation, i think? they need to to implement the warp world
 - check out interaction between encounters, bridges and water tiles
 - implements encounters's movesWhen function
+- check the selectStartPointSettings stuff
 
 ## other
 
