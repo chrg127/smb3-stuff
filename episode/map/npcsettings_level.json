@@ -35,9 +35,9 @@
 		},
 		{
 			"control": "checkBox",
-			"name": "destroyAfterWin",
-			"title": "Destroy After Win",
-			"tooltip": "If checked, the level will play a destroyed animation after being beaten (if it has one).",
+			"name": "preventEnterAfterWin",
+			"title": "Prevent entering after beating",
+			"tooltip": "If checked, the level will prevent the player from entering it after beating it.",
 			"value-default": false
 		},
 

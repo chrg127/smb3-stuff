@@ -1455,7 +1455,8 @@ do
 
         -- Handle warps
         if smwMap.getObjectConfig(levelObj.id).isWarp then
-            return smwMap.warpsMap[levelObj.settings.destinationWarpName] ~= nil
+            local dest = smwMap.warpsMap[levelObj.settings.destinationWarpName]
+            return dest ~= nil and dest ~= ""
         end
 
         -- Does the level file actually exist?
@@ -1467,15 +1468,11 @@ do
             return false
         end
 
-        if levelObj.settings.destroyAfterWin then
-            if smwMap.getObjectConfig(levelObj.id).isBonusLevel then
-                return smwMap.playerSettings.canEnterDestroyedBonusLevels
-            else
-                return smwMap.playerSettings.canEnterDestroyedLevels
-            end
-        else
-            return true
+        if levelObj.settings.preventEnterAfterWin and isLevelCompletelyBeaten(levelObj) then
+            return false
         end
+
+        return true
     end
 
     function smwMap.unlockLevelPaths(levelObj, winType)
@@ -1559,11 +1556,13 @@ do
         end
 
         local areaName =  smwMap.currentCameraArea.name1 .. smwMap.currentCameraArea.name2
-        if gameData.areaName ~= areaName and smwMap.currentCameraArea.showWorldCard then
+        if gameData.areaName ~= areaName then
             gameData.areaName = areaName
-            table.insert(smwMap.activeEvents, {
-                type = EVENT_TYPE.SHOW_WORLD_CARD
-            })
+            if smwMap.currentCameraArea.enableWorldCard then
+                table.insert(smwMap.activeEvents, {
+                    type = EVENT_TYPE.SHOW_WORLD_CARD
+                })
+            end
         end
     end
 
@@ -1868,29 +1867,23 @@ do
                 })
             end
 
-            if v.levelObj.settings.destroyAfterWin then
-                -- Create the destruction event
-                if config.hasDestroyedAnimation then
-                    table.insert(smwMap.activeEvents, {
-                        type = EVENT_TYPE.LEVEL_DESTROYED,
-                        timer = 0,
-                        levelObj = v.levelObj,
-                        winType = gameData.winType,
-                    })
-                else
-                    smwMap.unlockLevelPaths(v.levelObj, gameData.winType)
-                end
+            -- Create the destruction event
+            if config.hasDestroyedAnimation then
+                table.insert(smwMap.activeEvents, {
+                    type = EVENT_TYPE.LEVEL_DESTROYED,
+                    timer = 0,
+                    levelObj = v.levelObj,
+                    winType = gameData.winType,
+                })
+            elseif config.hasBeatenAnimation then
+                table.insert(smwMap.activeEvents, {
+                    type = EVENT_TYPE.BEAT_LEVEL,
+                    timer = 0,
+                    levelObj = v.levelObj,
+                    winType = gameData.winType,
+                })
             else
-                if config.hasBeatenAnimation then
-                    table.insert(smwMap.activeEvents, {
-                        type = EVENT_TYPE.BEAT_LEVEL,
-                        timer = 0,
-                        levelObj = v.levelObj,
-                        winType = gameData.winType,
-                    })
-                else
-                    smwMap.unlockLevelPaths(v.levelObj, gameData.winType)
-                end
+                smwMap.unlockLevelPaths(v.levelObj, gameData.winType)
             end
         else
             smwMap.unlockLevelPaths(v.levelObj, gameData.winType)
@@ -2300,10 +2293,10 @@ do
     }
 
     local CAN_WALK_ON = {
-        NON_HIDDEN = 0,
-        ANY        = 1,
-        UNLOCKED   = 2,
-        NONE       = 3,
+        STOP_POINTS_ONLY = 0,
+        WATER_TILES_ONLY = 1,
+        ANYTHING         = 2,
+        NONE             = 3,
     }
 
     smwMap.encountersWaitingTimer = 0
@@ -2325,14 +2318,18 @@ do
     end
 
     local function choosePath(v, data, level)
+        local config = smwMap.getObjectConfig(level.id)
+
         local canWalkOn = v.settings.canWalkOn
         if canWalkOn == CAN_WALK_ON.NONE then
             return false
         end
 
-        -- should be updated to check a list of ids instead
-        if smwMap.getObjectConfig(level.id).canStopEncounters and level ~= v.data.levelObj and level ~= smwMap.mainPlayer.levelObj then
-            return false
+        if (canWalkOn == CAN_WALK_ON.STOP_POINTS_ONLY and config.canStopEncounters)
+        or (canWalkOn == CAN_WALK_ON.WATER_TILES_ONLY and config.isWaterTile) then
+            if level ~= v.data.levelObj and level ~= smwMap.mainPlayer.levelObj then
+                return false
+            end
         end
 
         -- Find any paths that are available

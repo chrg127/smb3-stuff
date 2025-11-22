@@ -22,11 +22,19 @@
 		{
 			"control": "comboBox",
 			"name": "canWalkOn",
-			"title": "Can walk on...",
-			"tooltip": "Controls what types of paths it can walk on.",
-			"elements": ["Any non-hidden paths","Any paths","Any unlocked paths","None"],
+			"title": "Can stop on...",
+			"tooltip": "Controls what types of levels it can walk on.",
+			"elements": ["Stop points only", "Water tiles only", "Anything", "None (remains in its original position)"],
 			"value-default": 0
-		}
+		},
+        {
+            "control": "comboBox",
+            "name": "movesWhen",
+            "title": "Moves when",
+            "tooltip": "Controls when this encounter moves.",
+            "elements": ["A level is beaten", "Any time the player moves", "Never"],
+            "value-default": 0
+        }
 	]
 }
 

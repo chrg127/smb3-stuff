@@ -2,7 +2,6 @@
 
 - 1up effect when using a 1up from the item panel
 - star item
-- encounter movement types
 - re-check settings (specifically hud settings, but others too)
 - think about isClimbing and isWater properties
 - add more characters in fonts
@@ -15,6 +14,8 @@
 - figure out warps interaction with area names
     - possibly something like this: check if we came to an area through warp, if we did then simply do not play the animation
     - pipes would still play the animation, i think? they need to to implement the warp world
+- check out interaction between encounters, bridges and water tiles
+- implements encounters's movesWhen function
 
 ## other
 
