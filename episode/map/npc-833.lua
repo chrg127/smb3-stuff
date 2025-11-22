@@ -12,14 +12,17 @@ smwMap.setObjConfig(npcID, {
         v.frameY = smwMap.doBasicAnimation(v, smwMap.getObjectConfig(v.id).framesY, 16)
         v.x = v.x - 4
 
+        print("camera =", smwMap.camera.x, smwMap.camera.y)
+
         if v.x + 32 < smwMap.camera.x then
             if v.isComing then
                 local mid = function ()
                     smwMap.warpPlayer(smwMap.mainPlayer, {}, smwMap.warpsMap[smwMap.currentCameraArea.whistleWarpName])
                     Audio.MusicPlay()
-                    local obj = smwMap.createObject(smwMap.twisterID, smwMap.camera.x + smwMap.camera.width, smwMap.mainPlayer.y)
+                    local x, y = smwMap.getUsualCameraPos()
+                    local obj = smwMap.createObject(smwMap.twisterID, x + smwMap.camera.width, smwMap.mainPlayer.y)
                     obj.isComing = false
-                    smwMap.mainPlayer.twisterObj = obj
+                    smwMap.addTwister(obj)
                     v:remove()
                 end
                 smwMap.startTransition(mid, nil, smwMap.transitionSettings.whistleWarp)

@@ -1,21 +1,19 @@
 ## TODO
 
-- flute and twister warp
-- music box item
-- anchor item
 - 1up effect when using a 1up from the item panel
+- star item
 - encounter movement types
 - re-check settings (specifically hud settings, but others too)
 - think about isClimbing and isWater properties
 - add more characters in fonts
 - world 3 conditional bridges
 - find default spinjump sound
-
+- flashing effect for whistle warps and castles
 - object spawning when user-defined conditions are met
     - airship animation
-- castle full-screen flash animation (low priority)
-- figure out invisible warps and their interaction with area names
-    - possibly something like this: check if we came to an area through inv. warp, if we did then simply do not play the animation
+    - anchor item
+- figure out warps interaction with area names
+    - possibly something like this: check if we came to an area through warp, if we did then simply do not play the animation
     - pipes would still play the animation, i think? they need to to implement the warp world
 
 ## other

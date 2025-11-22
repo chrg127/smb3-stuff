@@ -353,6 +353,8 @@ local function getUsualCameraPos()
     return x,y
 end
 
+smwMap.getUsualCameraPos = getUsualCameraPos
+
 local function dirToVec(dir)
     return ({ up   = vector( 0, -1), down  = vector(0, 1),
               left = vector(-1,  0), right = vector(1, 0), })[dir]
@@ -997,10 +999,9 @@ smwMap.itemPanelFunctions = {
         local obj = smwMap.createObject(smwMap.twisterID, smwMap.camera.x + smwMap.camera.width, smwMap.mainPlayer.y)
         obj.isComing = true
         smwMap.mainPlayer.twisterObj = obj
-        smwMap.mainPlayer.state = PLAYER_STATE.USING_WHISTLE
         SFX.play(smwMap.hudSettings.itemPanel.whistleSound)
         Audio.MusicStop()
-        return true
+        return true, PLAYER_STATE.USING_WHISTLE
     end,
     [smwMap.ITEM.HAMMER] = function ()
         local p = smwMap.mainPlayer
@@ -1057,6 +1058,11 @@ smwMap.itemPanelFunctions = {
     end,
     [smwMap.ITEM.ANCHOR] = function () end,
 }
+
+function smwMap.addTwister(twisterObj)
+    smwMap.mainPlayer.twisterObj = twisterObj
+    smwMap.mainPlayer.state = PLAYER_STATE.USING_WHISTLE
+end
 
 function smwMap.removeTwister()
     smwMap.mainPlayer.twisterObj = nil
@@ -2067,9 +2073,10 @@ do
             smwMap.itemPanel.cursor = math.clamp(smwMap.itemPanel.cursor + (player.keys.down == KEYS_PRESSED and 11 or -11), 1, #smwMap.itemPanel.items)
         elseif player.keys.jump == KEYS_PRESSED then
             local item = smwMap.itemPanel.items[smwMap.itemPanel.cursor]
-            if smwMap.itemPanelFunctions[item](item) then
+            local used, newState = smwMap.itemPanelFunctions[item](item)
+            if used then
                 table.remove(smwMap.itemPanel.items, smwMap.itemPanel.cursor)
-                v.state = PLAYER_STATE.NORMAL
+                v.state = newState ~= nil and newState or PLAYER_STATE.NORMAL
             else
                 SFX.play(smwMap.hudSettings.itemPanel.wrongSound)
             end
