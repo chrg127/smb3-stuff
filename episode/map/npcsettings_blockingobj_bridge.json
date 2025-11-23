@@ -1,0 +1,23 @@
+{
+	"style" : "groupbox",
+	"title" : "Bridge settings",
+	"layout": [
+		{
+			"control": "checkBox",
+			"name": "isOpen",
+			"title": "Is open",
+			"tooltip": "Controls whether the bridge is open or closed at the start.",
+			"value-default": false
+		},
+        {
+            "control": "comboBox",
+            "name": "changesStateWhen",
+            "title": "Changes state when",
+            "tooltip": "Controls when the bridge opens or closes.",
+            "elements": ["A level is beaten", "The player moves", "Never"],
+            "value-default": 0
+        }
+	]
+}
+
+

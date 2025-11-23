@@ -15,6 +15,7 @@
 - check out interaction between encounters, bridges and water tiles
 - implements encounters's movesWhen function
 - check the selectStartPointSettings stuff
+- join the yoshi gfx together
 
 ## other
 

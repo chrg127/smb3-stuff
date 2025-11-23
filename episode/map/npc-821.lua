@@ -6,7 +6,7 @@ smwMap.setObjConfig(npcID, {
     framesY = 4,
     isLevel = true,
     hasBeatenAnimation = true,
-    cantGetBack = true,
+    isBonusLevel = true,
 
     onTickObj = function(v)
         if smwMap.isLevelBeaten(v) then

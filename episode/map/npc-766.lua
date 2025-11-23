@@ -12,12 +12,15 @@ smwMap.setObjConfig(npcID,{
         v.originalPos = vector(v.x, v.y)
 
         if SaveData.smwMap.objectData[v.data.index] == nil then
-            SaveData.smwMap.objectData[v.data.index] = {}
-        else
-            v.x = SaveData.smwMap.objectData[v.data.index].x
-            v.y = SaveData.smwMap.objectData[v.data.index].y
+            SaveData.smwMap.objectData[v.data.index] = {
+                x = v.x,
+                y = v.y
+            }
         end
 
+        local savedPos = SaveData.smwMap.objectData[v.data.index]
+        v.x = savedPos.x
+        v.y = savedPos.y
     end,
 
     -- checking for whether to start attaching to the player must be done
@@ -50,8 +53,10 @@ smwMap.setObjConfig(npcID,{
             v.y = smwMap.mainPlayer.y
         end
 
-        SaveData.smwMap.objectData[v.data.index].x = v.x
-        SaveData.smwMap.objectData[v.data.index].y = v.y
+        SaveData.smwMap.objectData[v.data.index] = {
+            x = v.x,
+            y = v.y,
+        }
     end,
 })
 

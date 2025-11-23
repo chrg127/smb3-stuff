@@ -656,6 +656,7 @@ local EVENT_TYPE = {
     SHOW_HIDE_SCENERIES = 4,
     MOVE_ENCOUNTERS     = 5,
     SHOW_WORLD_CARD     = 6,
+    OPEN_CLOSE_BRIDGES  = 7,
 }
 
 local updateEvent
@@ -676,9 +677,10 @@ do
         elseif eventObj.timer == 3 * 8 then
             smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
         elseif eventObj.timer >= 5 * 8 then
-            table.insert(smwMap.activeEvents, {
-                type = EVENT_TYPE.MOVE_ENCOUNTERS,
-            })
+            table.insert(smwMap.activeEvents, { type = EVENT_TYPE.MOVE_ENCOUNTERS, })
+            if not smwMap.getObjectConfig(eventObj.levelObj.id).isBonusLevel then
+                table.insert(smwMap.activeEvents, { type = EVENT_TYPE.OPEN_CLOSE_BRIDGES, })
+            end
             table.remove(smwMap.activeEvents, 1)
         end
     end
@@ -732,9 +734,10 @@ do
         elseif eventObj.timer == 32 then
             smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
         elseif eventObj.timer >= 64 then
-            table.insert(smwMap.activeEvents, {
-                type = EVENT_TYPE.MOVE_ENCOUNTERS,
-            })
+            table.insert(smwMap.activeEvents, { type = EVENT_TYPE.MOVE_ENCOUNTERS, })
+            if not smwMap.getObjectConfig(eventObj.levelObj.id).isBonusLevel then
+                table.insert(smwMap.activeEvents, { type = EVENT_TYPE.OPEN_CLOSE_BRIDGES, })
+            end
             table.remove(smwMap.activeEvents,1)
         end
     end)
@@ -838,6 +841,17 @@ do
             worldCard.state = WORLD_CARD_STATE.NOT_SHOWN
             table.remove(smwMap.activeEvents, 1)
         end
+    end
+
+    updateFunctions[EVENT_TYPE.OPEN_CLOSE_BRIDGES] = function (eventObj)
+        for _, o in ipairs(smwMap.objects) do
+            -- also check if it is in the current camera area
+            local config = smwMap.getObjectConfig(o.id)
+            if config.isBlocking and config.canBeOpened and o.settings.changesStateWhen == 0 then
+                o.isOpen = not o.isOpen
+            end
+        end
+        table.remove(smwMap.activeEvents, 1)
     end
 
     function updateEvent(eventObj)
@@ -987,7 +1001,7 @@ smwMap.itemPanelFunctions = {
         for _, dir in ipairs({ vector(1, 0), vector(-1, 0), vector(0, 1), vector(0, -1) }) do
             local pos = vector(p.x + dir.x * 32, p.y + dir.y * 32)
             local obj = findFirstObj(pos.x, pos.y, p.width, p.height, function (o, c)
-                return c.isBlocking and c.isBreakable
+                return c.isBlocking and c.isBreakable and not o.isOpen
             end)
             if obj ~= nil then
                 SFX.play(4) -- block smashed
@@ -1546,7 +1560,7 @@ do
 
 
     local function setLastLevelBeaten(level)
-        if level ~= nil and not smwMap.getObjectConfig(level.id).cantGetBack then
+        if level ~= nil and not smwMap.getObjectConfig(level.id).isBonusLevel then
             gameData.lastLevelBeaten = {
                 x = level.x,
                 y = level.y,
@@ -1748,7 +1762,7 @@ do
             end
         else
             local obj = findFirstObj(v.x, v.y, v.width, v.height, function (o, c) return c.isBlocking end)
-            if obj ~= nil then
+            if obj ~= nil and not obj.isOpen then
                 -- player must stay to the left/right/up/down of the blocking object
                 v.x = obj.x + ({ left = 32, right = -32, up =   0, down =  0 })[v.lastMovement]
                 v.y = obj.y + ({ left =  0, right =   0, up = 32, down = -32 })[v.lastMovement]
@@ -2026,9 +2040,8 @@ do
             v.state = PLAYER_STATE.NORMAL
             v.timer = 0
             setPlayerLevel(smwMap.mainPlayer, smwMap.findLevel(smwMap.mainPlayer, gameData.lastLevelBeaten.x, gameData.lastLevelBeaten.y))
-            table.insert(smwMap.activeEvents, {
-                type = EVENT_TYPE.MOVE_ENCOUNTERS,
-            })
+            table.insert(smwMap.activeEvents, { type = EVENT_TYPE.MOVE_ENCOUNTERS, })
+            table.insert(smwMap.activeEvents, { type = EVENT_TYPE.OPEN_CLOSE_BRIDGES, })
         end
     end
 
@@ -2405,7 +2418,7 @@ do
                 end
             else
                 local obj = findFirstObj(v.x, v.y, v.width, v.height, function (o, c) return c.isBlocking end)
-                if obj ~= nil then
+                if obj ~= nil and not obj.isOpen then
                     v.x = obj.x + ({ left = 32, right = -32, up =   0, down =  0 })[v.lastMovement]
                     v.y = obj.y + ({ left =  0, right =   0, up = 32, down = -32 })[v.lastMovement]
                     if v.levelObj ~= nil and (v.x ~= v.levelObj.x or v.y ~= v.levelObj.y) then
