@@ -5,3 +5,4 @@ save*.dat
 *.swp
 *_autosave.lvlx
 refs
+*.tiled-session
