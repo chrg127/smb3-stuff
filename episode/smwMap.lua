@@ -215,7 +215,7 @@ smwMap.selectStartPointSettings = {
     textColorSelected = Color(1,1,0.25),
     textColorUnselected = Color.white,
 
-    backColor = Color.black .. 0.9,
+    image = Graphics.loadImageResolved("smwMap/card-frame.png"),
 
     optionGap = 8,
     borderSize = 16,
@@ -1222,18 +1222,39 @@ do
 
 
     function smwMap.getStartSelectLayouts()
-        local settings = smwMap.selectStartPointSettings
-
         local layouts = {}
-
-        for _,option in ipairs(smwMap.startPointSelectOptions) do
+        for _, option in ipairs(smwMap.startPointSelectOptions) do
             table.insert(layouts, textplus.layout(option[1],nil, {
-                font = settings.textFont,
+                font = smwMap.selectStartPointSettings.textFont,
                 xscale = 2,
                 yscale = 2,
             }))
         end
         return layouts
+    end
+
+    local function drawCardFrame(target, priority, color, x, y, width, height, frameImage)
+        local function drawPiece(x, y, w, h, sx, sy)
+            Graphics.drawBox{
+                target = target, priority = priority, color = color,
+                x = x, y = y, width = w, height = h,
+                texture = frameImage,
+                sourceX = sx, sourceY = sy,
+                sourceWidth = 8, sourceHeight = 8,
+            }
+        end
+
+        drawPiece(x - 8,     y - 8,      8, 8,  0,  0)
+        drawPiece(x + width, y - 8,      8, 8, 16,  0)
+        drawPiece(x - 8,     y + height, 8, 8,  0, 16)
+        drawPiece(x + width, y + height, 8, 8, 16, 16)
+
+        drawPiece(x - 8,     y,              8, height,  0,  8)
+        drawPiece(x + width, y,              8, height, 16,  8)
+        drawPiece(x,         y - 8,      width,      8,  8,  0)
+        drawPiece(x        , y + height, width,      8,  8, 16)
+
+        drawPiece(x, y, width, height, 8, 8, 8, 8)
     end
 
     function smwMap.drawStartSelect()
@@ -1278,14 +1299,14 @@ do
         local x = math.lerp(startX,finalX,progress)
         local y = math.lerp(startY,finalY,progress)
 
-        local backColor = settings.backColor
+        local backColor = Color.white
         backColor = Color(backColor.r,backColor.g,backColor.b,backColor.a*progress)
 
-        Graphics.drawBox{
-            target = smwMap.mainBuffer,priority = settings.priority,color = backColor,
-            x = x - smwMap.camera.x,y = y - smwMap.camera.y,width = fullWidth,height = fullHeight,
-        }
-
+        drawCardFrame(
+            smwMap.mainBuffer, settings.priority, backColor,
+            x - smwMap.camera.x, y - smwMap.camera.y, fullWidth, fullHeight,
+            settings.image
+        )
 
         local textY = y + settings.borderSize - smwMap.camera.y
 
@@ -2055,8 +2076,6 @@ do
 
     stateFunctions[PLAYER_STATE.ITEM_PANEL] = function (v)
         v.timer = v.timer + smwMap.itemPanel.timerDir
-
-        print("timer =", v.timer)
 
         if v.timer == 8 then
             smwMap.itemPanel.timerDir = 0
@@ -3442,7 +3461,6 @@ do
             pos = vector(smwMap.hudSettings.box.x, smwMap.hudSettings.box.y) + vector(248, 12),
             font = smwMap.hudSettings.fontYellow,
             getText = function ()
-                print("pmeter gettext called")
                 return "»»»»»»ρ"
             end
         }

@@ -4,7 +4,6 @@
     - check out that n char in world 9 text
 - object spawning when user-defined conditions are met
     - airship animation
-- check the selectStartPointSettings stuff
 
 ### low priority
 

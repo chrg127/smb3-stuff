@@ -736,7 +736,7 @@ ID:819;X:-198784;Y:-200352;D:-1;XTRA:"{\n    \"levelFilename\"\: \"1-castle.lvlx
 ID:753;X:-199232;Y:-200608;D:-1;XTRA:"{\n    \"backgroundName\"\: \"water\"\,\n    \"height\"\: 408\,\n    \"music\"\: 10\,\n    \"name\"\: \"World 1\"\,\n    \"name1\"\: \"World 1\"\,\n    \"name1hud\"\: \"ω1\"\,\n    \"name2\"\: \"Grass Land\"\,\n    \"restrictCamera\"\: true\,\n    \"whistleWarpName\"\: \"9-A\"\,\n    \"width\"\: 668\n}\n";
 ID:754;X:-199040;Y:-200448;D:-1;XTRA:"{\n    \"levelFilename\"\: \"1-fortress.lvlx\"\n}\n";
 ID:761;X:-198848;Y:-200352;D:-1;XTRA:"{\n    \"canWalkOn\"\: 0\n}\n";
-ID:753;X:-198560;Y:-200608;D:-1;XTRA:"{\n    \"backgroundName\"\: \"water\"\,\n    \"height\"\: 408\,\n    \"music\"\: 11\,\n    \"name\"\: \"World 2\"\,\n    \"restrictCamera\"\: true\,\n    \"width\"\: 960\n}\n";
+ID:753;X:-198560;Y:-200608;D:-1;XTRA:"{\n    \"backgroundName\"\: \"water\"\,\n    \"enableWorldCard\"\: true\,\n    \"height\"\: 408\,\n    \"music\"\: 11\,\n    \"name\"\: \"World 2\"\,\n    \"name1\"\: \"World 2\"\,\n    \"name1hud\"\: \"ω2\"\,\n    \"name2\"\: \"Desert Hill\"\,\n    \"restrictCamera\"\: true\,\n    \"width\"\: 960\n}\n";
 ID:800;X:-198528;Y:-200288;D:-1;XTRA:"{\n    \"levelTitle\"\: \"Start\"\,\n    \"unlock_right\"\: 1\n}\n";
 ID:811;X:-198464;Y:-200288;D:-1;XTRA:"{\n    \"unlock_left\"\: 1\,\n    \"unlock_right\"\: 1\,\n    \"unlock_up\"\: 1\n}\n";
 ID:811;X:-198400;Y:-200288;D:-1;XTRA:"{\n    \"unlock_left\"\: 1\,\n    \"unlock_right\"\: 1\,\n    \"unlock_up\"\: 0\n}\n";
@@ -839,7 +839,7 @@ ID:827;X:-196992;Y:-200448;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"3-F\"\,
 ID:827;X:-196192;Y:-200384;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"3-E\"\,\n    \"levelTitle\"\: \"3-Pipe\"\,\n    \"unlock_down\"\: false\,\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: false\,\n    \"unlock_up\"\: false\,\n    \"warpName\"\: \"3-F\"\n}\n";
 ID:754;X:-197344;Y:-200384;D:-1;XTRA:"{\n    \"levelFilename\"\: \"3-fortress1.lvlx\"\n}\n";
 ID:754;X:-196928;Y:-200480;D:-1;XTRA:"{\n    \"levelFilename\"\: \"3-fortress2.lvlx\"\n}\n";
-ID:753;X:-197600;Y:-200608;D:-1;XTRA:"{\n    \"backgroundName\"\: \"water\"\,\n    \"height\"\: 408\,\n    \"music\"\: 12\,\n    \"name\"\: \"World 3\"\,\n    \"restrictCamera\"\: true\,\n    \"width\"\: 1472\n}\n";
+ID:753;X:-197600;Y:-200608;D:-1;XTRA:"{\n    \"backgroundName\"\: \"water\"\,\n    \"enableWorldCard\"\: true\,\n    \"height\"\: 408\,\n    \"music\"\: 12\,\n    \"name\"\: \"World 3\"\,\n    \"name1\"\: \"World 3\"\,\n    \"name1hud\"\: \"ω3\"\,\n    \"name2\"\: \"Ocean side\"\,\n    \"restrictCamera\"\: true\,\n    \"width\"\: 1472\n}\n";
 ID:761;X:-197376;Y:-200320;D:-1;XTRA:"{\n    \"levelFilename\"\: \"3-hammer1.lvlx\"\n}\n";
 ID:761;X:-197184;Y:-200512;D:-1;XTRA:"{\n    \"levelFilename\"\: \"3-hammer2.lvlx\"\n}\n";
 ID:814;X:-196992;Y:-200384;D:-1;XTRA:"{\n    \"unlock_down\"\: false\,\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: false\,\n    \"unlock_up\"\: false\n}\n";
