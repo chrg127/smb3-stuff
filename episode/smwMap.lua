@@ -173,7 +173,7 @@ smwMap.hudSettings = {
 
     -- the box at the bottom of the screen
     box = {
-        image = Graphics.loadImageResolved("smwMap/hud.png"),
+        image = Graphics.loadImageResolved("smwMap/hud-box.png"),
         x = 48,
         y = 528,
     },
@@ -973,6 +973,9 @@ smwMap.ITEM = {
 smwMap.itemPanel = {
     cursor = 1,
     items = { 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 },
+    frame = 0,
+    timerDir = 1,
+    savedState = nil,
 }
 
 local function givePowerup(index)
@@ -1024,6 +1027,9 @@ smwMap.itemPanelFunctions = {
     [smwMap.ITEM.ONE_UP] = function ()
         SFX.play(15)
         setLives(getLives() + 1)
+        if smwMap.oneUpEffectID ~= nil then
+            smwMap.createObject(smwMap.oneUpEffectID, smwMap.mainPlayer.x, smwMap.mainPlayer.y)
+        end
         return true
     end,
     [smwMap.ITEM.CLOUD] = function ()
@@ -1671,6 +1677,8 @@ do
             elseif player.keys.run == KEYS_PRESSED then
                 v.state = PLAYER_STATE.ITEM_PANEL
                 v.timer = 0
+                smwMap.itemPanel.frame = 0
+                smwMap.itemPanel.timerDir = 1
                 SFX.play(smwMap.playerSettings.itemPanelSound)
             --[[ elseif player.keys.run == KEYS_PRESSED and Misc.inEditor() and gameData.lastLevelBeaten ~= nil then
                 v.state = PLAYER_STATE.GOING_BACK
@@ -2046,25 +2054,38 @@ do
     end
 
     stateFunctions[PLAYER_STATE.ITEM_PANEL] = function (v)
-        if player.keys.run == KEYS_PRESSED then
-            v.state = PLAYER_STATE.NORMAL
-            SFX.play(smwMap.playerSettings.itemPanelSound)
-        elseif player.keys.right == KEYS_PRESSED or player.keys.left == KEYS_PRESSED then
-            SFX.play(26)
-            smwMap.itemPanel.cursor = math.clamp(smwMap.itemPanel.cursor + (player.keys.right == KEYS_PRESSED and  1 or  -1), 1, #smwMap.itemPanel.items)
-        elseif player.keys.down == KEYS_PRESSED or player.keys.up == KEYS_PRESSED then
-            SFX.play(26)
-            smwMap.itemPanel.cursor = math.clamp(smwMap.itemPanel.cursor + (player.keys.down == KEYS_PRESSED and 11 or -11), 1, #smwMap.itemPanel.items)
-        elseif player.keys.jump == KEYS_PRESSED then
-            local item = smwMap.itemPanel.items[smwMap.itemPanel.cursor]
-            local used, newState = smwMap.itemPanelFunctions[item](item)
-            if used then
-                table.remove(smwMap.itemPanel.items, smwMap.itemPanel.cursor)
-                v.state = newState ~= nil and newState or PLAYER_STATE.NORMAL
-            else
-                SFX.play(smwMap.hudSettings.itemPanel.wrongSound)
+        v.timer = v.timer + smwMap.itemPanel.timerDir
+
+        print("timer =", v.timer)
+
+        if v.timer == 8 then
+            smwMap.itemPanel.timerDir = 0
+            if player.keys.run == KEYS_PRESSED then
+                smwMap.itemPanel.savedState = PLAYER_STATE.NORMAL
+                smwMap.itemPanel.timerDir = -1
+                SFX.play(smwMap.playerSettings.itemPanelSound)
+            elseif player.keys.right == KEYS_PRESSED or player.keys.left == KEYS_PRESSED then
+                SFX.play(26)
+                smwMap.itemPanel.cursor = math.clamp(smwMap.itemPanel.cursor + (player.keys.right == KEYS_PRESSED and  1 or  -1), 1, #smwMap.itemPanel.items)
+            elseif player.keys.down == KEYS_PRESSED or player.keys.up == KEYS_PRESSED then
+                SFX.play(26)
+                smwMap.itemPanel.cursor = math.clamp(smwMap.itemPanel.cursor + (player.keys.down == KEYS_PRESSED and 11 or -11), 1, #smwMap.itemPanel.items)
+            elseif player.keys.jump == KEYS_PRESSED then
+                local item = smwMap.itemPanel.items[smwMap.itemPanel.cursor]
+                local used, newState = smwMap.itemPanelFunctions[item](item)
+                if used then
+                    table.remove(smwMap.itemPanel.items, smwMap.itemPanel.cursor)
+                    smwMap.itemPanel.savedState = newState ~= nil and newState or PLAYER_STATE.NORMAL
+                    smwMap.itemPanel.timerDir = -1
+                else
+                    SFX.play(smwMap.hudSettings.itemPanel.wrongSound)
+                end
             end
+        elseif v.timer == 0 then
+            v.state = smwMap.itemPanel.savedState
         end
+
+        smwMap.itemPanel.frame = math.floor(v.timer / 2)
     end
 
     stateFunctions[PLAYER_STATE.USING_WHISTLE] = function (v)
@@ -3417,6 +3438,14 @@ do
                 return smwMap.currentCameraArea.name1hud
             end
         },
+        pmeter = {
+            pos = vector(smwMap.hudSettings.box.x, smwMap.hudSettings.box.y) + vector(248, 12),
+            font = smwMap.hudSettings.fontYellow,
+            getText = function ()
+                print("pmeter gettext called")
+                return "»»»»»»ρ"
+            end
+        }
     }
 
     local yoshiAnimationFrames = {
@@ -3440,19 +3469,28 @@ do
     end
 
     function smwMap.drawItemPanel()
-        Graphics.drawImageWP(smwMap.hudSettings.itemPanel.image, smwMap.hudSettings.box.x, smwMap.hudSettings.box.y, smwMap.hudSettings.priority);
-        local cursor = smwMap.itemPanel.cursor - 1
-        for i = 0, 10 do
-            local page = math.floor(cursor / 11)
-            local cursorInPage = cursor % 11
-            local itemIndex = smwMap.itemPanel.items[1 + page * 11 + i]
-            if itemIndex ~= nil then
-                Graphics.drawImageWP(smwMap.hudSettings.itemPanel.itemsImage,
-                    (i+1) * 48 + 16, smwMap.hudSettings.box.y + 12,
-                    i == cursorInPage and 32 or 0, itemIndex * 32,
-                    32, 32,
-                    smwMap.hudSettings.priority
-                )
+        Graphics.drawImageWP(
+            smwMap.hudSettings.box.image,
+            smwMap.hudSettings.box.x, smwMap.hudSettings.box.y,
+            0, 56 * smwMap.itemPanel.frame,
+            544, 56,
+            smwMap.hudSettings.priority
+        );
+
+        if smwMap.itemPanel.frame == 4 then
+            local cursor = smwMap.itemPanel.cursor - 1
+            for i = 0, 10 do
+                local page = math.floor(cursor / 11)
+                local cursorInPage = cursor % 11
+                local itemIndex = smwMap.itemPanel.items[1 + page * 11 + i]
+                if itemIndex ~= nil then
+                    Graphics.drawImageWP(smwMap.hudSettings.itemPanel.itemsImage,
+                        (i+1) * 48 + 16, smwMap.hudSettings.box.y + 12,
+                        i == cursorInPage and 32 or 0, itemIndex * 32,
+                        32, 32,
+                        smwMap.hudSettings.priority
+                    )
+                end
             end
         end
     end
@@ -3462,8 +3500,6 @@ do
             Graphics.drawImageWP(smwMap.hudSettings.border.image, 0, 0, smwMap.hudSettings.priority)
         end
 
-        Graphics.drawImageWP(smwMap.hudSettings.box.image, smwMap.hudSettings.box.x, smwMap.hudSettings.box.y, smwMap.hudSettings.priority);
-
         if smwMap.hudSettings.levelTitle.enabled then
             local levelTitle = levelObj ~= nil and levelObj.settings.levelTitle or ""
             drawHudText(levelTitle, vector(smwMap.hudSettings.levelTitle.x, smwMap.hudSettings.levelTitle.y), smwMap.hudSettings.fontWhite)
@@ -3472,6 +3508,13 @@ do
         if smwMap.mainPlayer.state == PLAYER_STATE.ITEM_PANEL then
             smwMap.drawItemPanel()
         else
+            Graphics.drawImageWP(
+                smwMap.hudSettings.box.image,
+                smwMap.hudSettings.box.x, smwMap.hudSettings.box.y,
+                0, 0,
+                544, 56,
+                smwMap.hudSettings.priority
+            );
             local levelObj = smwMap.mainPlayer.levelObj
             for _, c in pairs(smwMap.hudComponents) do
                 local text = c.getText(levelObj)

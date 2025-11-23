@@ -12,8 +12,6 @@ smwMap.setObjConfig(npcID, {
         v.frameY = smwMap.doBasicAnimation(v, smwMap.getObjectConfig(v.id).framesY, 16)
         v.x = v.x - 4
 
-        print("camera =", smwMap.camera.x, smwMap.camera.y)
-
         if v.x + 32 < smwMap.camera.x then
             if v.isComing then
                 local mid = function ()
