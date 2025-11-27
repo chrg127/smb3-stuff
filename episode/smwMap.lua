@@ -656,12 +656,38 @@ local EVENT_TYPE = {
     SHOW_HIDE_SCENERIES = 4,
     MOVE_ENCOUNTERS     = 5,
     SHOW_WORLD_CARD     = 6,
-    OPEN_CLOSE_BRIDGES  = 7,
+    CUSTOM              = 8,
 }
+
+smwMap.EVENT_TYPE = EVENT_TYPE
 
 local updateEvent
 
 smwMap.activeEvents = {}
+
+smwMap.postLevelBeatenFunctions = {}
+
+local function postLevelBeaten(levelObj, winType)
+    -- Initialise showing/hiding sceneries
+    if not smwMap.getObjectConfig(levelObj.id).isEncounter and winType ~= LEVEL_WIN_TYPE_NONE then
+        local showSceneries, hideSceneries = getSceneryEventData(levelObj.settings.filename)
+        table.insert(smwMap.activeEvents, {
+            type = EVENT_TYPE.SHOW_HIDE_SCENERIES,
+            neededSceneryProgress = math.max(arrayMax(showSceneries, function (e) return e.globalSettings.showDelay end),
+                                             arrayMax(hideSceneries, function (e) return e.globalSettings.hideDelay end)),
+            sceneryProgress = 0,
+            timer = 0,
+            showSceneries = showSceneries,
+            hideSceneries = hideSceneries,
+        })
+    end
+
+    table.insert(smwMap.activeEvents, { type = EVENT_TYPE.MOVE_ENCOUNTERS, })
+
+    for _, f in ipairs(smwMap.postLevelBeatenFunctions) do
+        f(levelObj, winType)
+    end
+end
 
 do
     local updateFunctions = {}
@@ -676,11 +702,7 @@ do
             end
         elseif eventObj.timer == 3 * 8 then
             smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
-        elseif eventObj.timer >= 5 * 8 then
-            table.insert(smwMap.activeEvents, { type = EVENT_TYPE.MOVE_ENCOUNTERS, })
-            if not smwMap.getObjectConfig(eventObj.levelObj.id).isBonusLevel then
-                table.insert(smwMap.activeEvents, { type = EVENT_TYPE.OPEN_CLOSE_BRIDGES, })
-            end
+        elseif eventObj.timer == 5 * 8 then
             table.remove(smwMap.activeEvents, 1)
         end
     end
@@ -733,11 +755,7 @@ do
             end
         elseif eventObj.timer == 32 then
             smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
-        elseif eventObj.timer >= 64 then
-            table.insert(smwMap.activeEvents, { type = EVENT_TYPE.MOVE_ENCOUNTERS, })
-            if not smwMap.getObjectConfig(eventObj.levelObj.id).isBonusLevel then
-                table.insert(smwMap.activeEvents, { type = EVENT_TYPE.OPEN_CLOSE_BRIDGES, })
-            end
+        elseif eventObj.timer == 64 then
             table.remove(smwMap.activeEvents,1)
         end
     end)
@@ -770,7 +788,6 @@ do
 
                 switchBlockReleasedSound = SFX.play(smwMap.levelSettings.switchBlockReleasedSound)
             elseif interval > 12 then
-                smwMap.unlockLevelPaths(eventObj.levelObj, eventObj.winType)
                 table.remove(smwMap.activeEvents,1)
             end
         end
@@ -779,6 +796,7 @@ do
     end)
 
     updateFunctions[EVENT_TYPE.ENCOUNTER_DEFEATED] = (function(eventObj)
+        -- keep holding player movement for the duration of the animation
         if not eventObj.encounterObj.isValid then
             table.remove(smwMap.activeEvents,1)
         end
@@ -843,15 +861,8 @@ do
         end
     end
 
-    updateFunctions[EVENT_TYPE.OPEN_CLOSE_BRIDGES] = function (eventObj)
-        for _, o in ipairs(smwMap.objects) do
-            -- also check if it is in the current camera area
-            local config = smwMap.getObjectConfig(o.id)
-            if config.isBlocking and config.canBeOpened and o.settings.changesStateWhen == 0 then
-                o.isOpen = not o.isOpen
-            end
-        end
-        table.remove(smwMap.activeEvents, 1)
+    updateFunctions[EVENT_TYPE.CUSTOM] = function (event)
+        event:run()
     end
 
     function updateEvent(eventObj)
@@ -1065,23 +1076,6 @@ end
 function smwMap.removeTwister()
     smwMap.mainPlayer.twisterObj = nil
     smwMap.mainPlayer.state = PLAYER_STATE.NORMAL
-end
-
-local function postLevelBeaten(filename)
-    -- Initialise showing/hiding sceneries
-    local lastEvent = smwMap.activeEvents[#smwMap.activeEvents]
-    if lastEvent == nil or lastEvent.type ~= EVENT_TYPE.SHOW_HIDE_SCENERIES then
-        local showSceneries, hideSceneries = getSceneryEventData(filename)
-        table.insert(smwMap.activeEvents, {
-            type = EVENT_TYPE.SHOW_HIDE_SCENERIES,
-            neededSceneryProgress = math.max(arrayMax(showSceneries, function (e) return e.globalSettings.showDelay end),
-                                             arrayMax(hideSceneries, function (e) return e.globalSettings.hideDelay end)),
-            sceneryProgress = 0,
-            timer = 0,
-            showSceneries = showSceneries,
-            hideSceneries = hideSceneries,
-        })
-    end
 end
 
 do
@@ -1506,7 +1500,6 @@ do
             if (type(unlockType) == "number" and (unlockType == 2 or unlockType-2 == winType)) or unlockType == true then
                 if not saveData.beatenLevels[levelObj.settings.levelFilename][directionName] then
                     saveData.beatenLevels[levelObj.settings.levelFilename][directionName] = true
-                    postLevelBeaten(levelObj.settings.levelFilename)
                 end
             end
         end
@@ -1848,71 +1841,61 @@ do
         local encounterObj = findEncounter(v)
 
         if encounterObj ~= nil then
-            local eventObj = {}
-
-            eventObj.type = EVENT_TYPE.ENCOUNTER_DEFEATED
-            eventObj.encounterObj = encounterObj
-
-            table.insert(smwMap.activeEvents,eventObj)
-
-
             encounterObj.data.state = smwMap.ENCOUNTER_STATE.DEFEATED
             encounterObj.data.timer = 0
 
+            table.insert(smwMap.activeEvents, {
+                type = EVENT_TYPE.ENCOUNTER_DEFEATED,
+                encounterObj = encounterObj
+            })
 
-            gameData.winType = LEVEL_WIN_TYPE_NONE
-
-            v.state = PLAYER_STATE.NORMAL
-            v.timer = 0
-
-            Misc.saveGame()
-
-            return
-        end
-
-        -- if the player hasn't already beaten the level
-        local config = smwMap.getObjectConfig(v.levelObj.id)
-        local isNormalLevel = config.isLevel and not (config.isWarp or config.isStopPoint)
-
-        if not saveData.beatenLevels[v.levelObj.settings.levelFilename] and isNormalLevel then
-            -- Releasing blocks from switch palace
+            postLevelBeaten(encounterObj, gameData.winType)
+        else
             local config = smwMap.getObjectConfig(v.levelObj.id)
-            if config.switchColorID ~= nil and smwMap.switchBlockEffectID ~= nil then
-                -- Create the event for blocks flying
-                table.insert(smwMap.activeEvents, {
-                    type = EVENT_TYPE.SWITCH_PALACE,
-                    timer = 0,
-                    levelObj = v.levelObj,
-                    switchColorID = config.switchColorID,
-                    winType = gameData.winType,
-                })
-            end
+            local isNormalLevel = config.isLevel and not (config.isWarp or config.isStopPoint)
 
-            -- Create the destruction event
-            if config.hasDestroyedAnimation then
-                table.insert(smwMap.activeEvents, {
-                    type = EVENT_TYPE.LEVEL_DESTROYED,
-                    timer = 0,
-                    levelObj = v.levelObj,
-                    winType = gameData.winType,
-                })
-            elseif config.hasBeatenAnimation then
-                table.insert(smwMap.activeEvents, {
-                    type = EVENT_TYPE.BEAT_LEVEL,
-                    timer = 0,
-                    levelObj = v.levelObj,
-                    winType = gameData.winType,
-                })
+            -- if the player hasn't already beaten the level
+            if not saveData.beatenLevels[v.levelObj.settings.levelFilename] and isNormalLevel then
+                -- Releasing blocks from switch palace
+                local config = smwMap.getObjectConfig(v.levelObj.id)
+                if config.switchColorID ~= nil and smwMap.switchBlockEffectID ~= nil then
+                    -- Create the event for blocks flying
+                    table.insert(smwMap.activeEvents, {
+                        type = EVENT_TYPE.SWITCH_PALACE,
+                        timer = 0,
+                        levelObj = v.levelObj,
+                        switchColorID = config.switchColorID,
+                        winType = gameData.winType,
+                    })
+                end
+
+                if config.hasDestroyedAnimation then
+                    table.insert(smwMap.activeEvents, {
+                        type = EVENT_TYPE.LEVEL_DESTROYED,
+                        timer = 0,
+                        levelObj = v.levelObj,
+                        winType = gameData.winType,
+                    })
+                elseif config.hasBeatenAnimation then
+                    table.insert(smwMap.activeEvents, {
+                        type = EVENT_TYPE.BEAT_LEVEL,
+                        timer = 0,
+                        levelObj = v.levelObj,
+                        winType = gameData.winType,
+                    })
+                else
+                    smwMap.unlockLevelPaths(v.levelObj, gameData.winType)
+                end
             else
                 smwMap.unlockLevelPaths(v.levelObj, gameData.winType)
             end
-        else
-            smwMap.unlockLevelPaths(v.levelObj, gameData.winType)
+
+            postLevelBeaten(v.levelObj, gameData.winType)
         end
 
-        -- End the state
         gameData.winType = LEVEL_WIN_TYPE_NONE
 
+        -- End the state
         v.state = PLAYER_STATE.NORMAL
         v.timer = 0
 
@@ -2069,8 +2052,7 @@ do
             v.state = PLAYER_STATE.NORMAL
             v.timer = 0
             setPlayerLevel(smwMap.mainPlayer, smwMap.findLevel(smwMap.mainPlayer, gameData.lastLevelBeaten.x, gameData.lastLevelBeaten.y))
-            table.insert(smwMap.activeEvents, { type = EVENT_TYPE.MOVE_ENCOUNTERS, })
-            table.insert(smwMap.activeEvents, { type = EVENT_TYPE.OPEN_CLOSE_BRIDGES, })
+            postLevelBeaten(v.levelObj, LEVEL_WIN_TYPE_NONE)
         end
     end
 
@@ -2490,8 +2472,6 @@ do
 
                 SFX.play(9)
             elseif data.timer > 32 then
-                postLevelBeaten(v.settings.levelFilename)
-
                 if smwMap.encounterBeatenSmokeID ~= nil then
                     smwMap.createObject(smwMap.encounterBeatenSmokeID,v.x + v.graphicsOffsetX,v.y + v.graphicsOffsetY)
                 end
