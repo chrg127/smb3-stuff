@@ -359,6 +359,29 @@ local function findObjByID(v, x, y, id)
     return findFirstObj(x, y, v.width, v.height, function (o, c) return o.id == id end)
 end
 
+local function findEncounter(v, x, y)
+    return findFirstObj(x ~= nil and x or v.x, y ~= nil and y or v.y, v.width, v.height, function (obj, c)
+        if c.isEncounter then
+            local levelFilename = obj.settings.levelFilename
+            return levelFilename ~= "" and io.exists(Misc.episodePath().. levelFilename) and obj.data.state == smwMap.ENCOUNTER_STATE.NORMAL
+        end
+        return false
+    end)
+end
+
+local function findEncounter2(v, x, y)
+    return findFirstObj(x ~= nil and x or v.x, y ~= nil and y or v.y, v.width, v.height, function (obj, c)
+        print("found obj, id =", obj.id)
+        if c.isEncounter then
+            local levelFilename = obj.settings.levelFilename
+            print("found possible encounter")
+            print("filename =", levelFilename, "data =", obj.data.state)
+            return levelFilename ~= "" and io.exists(Misc.episodePath().. levelFilename) and obj.data.state == smwMap.ENCOUNTER_STATE.NORMAL
+        end
+        return false
+    end)
+end
+
 local function getPlayerScreenPos()
     local playerY = smwMap.mainPlayer.y
                   + (smwMap.playerSettings.mountOffsets[smwMap.mainPlayer.basePlayer.mount] or 0)
@@ -665,25 +688,27 @@ local updateEvent
 
 smwMap.activeEvents = {}
 
-smwMap.postLevelBeatenFunctions = {}
+smwMap.postLevelBeatenFunctions = {
+    function (levelObj, winType)
+        -- Initialise showing/hiding sceneries
+        if not smwMap.getObjectConfig(levelObj.id).isEncounter and winType ~= LEVEL_WIN_TYPE_NONE then
+            local showSceneries, hideSceneries = getSceneryEventData(levelObj.settings.filename)
+            table.insert(smwMap.activeEvents, {
+                type = EVENT_TYPE.SHOW_HIDE_SCENERIES,
+                neededSceneryProgress = math.max(arrayMax(showSceneries, function (e) return e.globalSettings.showDelay end),
+                                                 arrayMax(hideSceneries, function (e) return e.globalSettings.hideDelay end)),
+                sceneryProgress = 0,
+                timer = 0,
+                showSceneries = showSceneries,
+                hideSceneries = hideSceneries,
+            })
+        end
+
+        table.insert(smwMap.activeEvents, { type = EVENT_TYPE.MOVE_ENCOUNTERS, })
+    end,
+}
 
 local function postLevelBeaten(levelObj, winType)
-    -- Initialise showing/hiding sceneries
-    if not smwMap.getObjectConfig(levelObj.id).isEncounter and winType ~= LEVEL_WIN_TYPE_NONE then
-        local showSceneries, hideSceneries = getSceneryEventData(levelObj.settings.filename)
-        table.insert(smwMap.activeEvents, {
-            type = EVENT_TYPE.SHOW_HIDE_SCENERIES,
-            neededSceneryProgress = math.max(arrayMax(showSceneries, function (e) return e.globalSettings.showDelay end),
-                                             arrayMax(hideSceneries, function (e) return e.globalSettings.hideDelay end)),
-            sceneryProgress = 0,
-            timer = 0,
-            showSceneries = showSceneries,
-            hideSceneries = hideSceneries,
-        })
-    end
-
-    table.insert(smwMap.activeEvents, { type = EVENT_TYPE.MOVE_ENCOUNTERS, })
-
     for _, f in ipairs(smwMap.postLevelBeatenFunctions) do
         f(levelObj, winType)
     end
@@ -1322,18 +1347,6 @@ do
     end
 
 
-    local function findEncounter(v)
-        for _,obj in ipairs(smwMap.getIntersectingObjects(v.x - v.width*0.5,v.y - v.height*0.5,v.x + v.width*0.5,v.y + v.height*0.5)) do
-            if smwMap.getObjectConfig(obj.id).isEncounter then
-                local levelFilename = obj.settings.levelFilename
-                if levelFilename ~= "" and io.exists(Misc.episodePath().. levelFilename) and obj.data.state == smwMap.ENCOUNTER_STATE.NORMAL then
-                    return obj
-                end
-            end
-        end
-    end
-
-
     local function getIntersectingInstantWarps(x,y)
         local ret = {}
 
@@ -1831,12 +1844,10 @@ do
             gameData.winType = LEVEL_WIN_TYPE_NONE
         end
 
-
         v.timer = v.timer + 1
         if v.timer < 24 then
             return
         end
-
 
         local encounterObj = findEncounter(v)
 
@@ -1997,10 +2008,10 @@ do
     end)
 
     -- on start point menu
-    -- whether timer is 0 or > 0 indicates the state of the menu:
-    -- == 0 => opening / open and selecting a start point
-    --  > 0 => closing
     stateFunctions[PLAYER_STATE.SELECT_START] = (function(v)
+        -- whether timer is 0 or > 0 indicates the state of the menu:
+        -- == 0 => opening / open and selecting a start point
+        --  > 0 => closing
         if v.timer > 0 then
             smwMap.startPointOpenProgress = math.max(0,smwMap.startPointOpenProgress - v.timer*0.003)
 
@@ -2258,37 +2269,53 @@ do
     end
 
     function smwMap.initPlayers()
-        local levelObj
-        if saveData.playerX ~= nil and saveData.playerY ~= nil then
-            levelObj = smwMap.findLevel(smwMap.mainPlayer,saveData.playerX,saveData.playerY)
-        end
+        local px = saveData.playerX ~= nil and saveData.playerX or smwMap.mainPlayer.x
+        local py = saveData.playerY ~= nil and saveData.playerY or smwMap.mainPlayer.y
 
-        levelObj = levelObj or smwMap.findLevel(smwMap.mainPlayer,smwMap.mainPlayer.x,smwMap.mainPlayer.y)
-
-        setPlayerLevel(smwMap.mainPlayer,levelObj)
-
-        if gameData.winType ~= LEVEL_WIN_TYPE_NONE and smwMap.mainPlayer.levelObj ~= nil then
-            smwMap.mainPlayer.state = PLAYER_STATE.WON
-            setLastLevelBeaten(levelObj)
-            if gameData.winType == LEVEL_WIN_TYPE_WARP and gameData.warpIndex + 1 == levelObj.settings.exitWarpIndex then
-                local destinationLevel = smwMap.warpsMap[levelObj.settings.destinationWarpName]
-                if destinationLevel ~= nil then
-                    smwMap.warpPlayer(smwMap.mainPlayer, levelObj, destinationLevel)
-                end
+        local encounter = findEncounter(smwMap.mainPlayer, px, py)
+        if gameData.winType == LEVEL_WIN_TYPE_WARP and encounter ~= nil and encounter.settings.destinationWarpName ~= nil and encounter.settings.destinationWarpName ~= "" then
+            local destinationLevel = smwMap.warpsMap[encounter.settings.destinationWarpName]
+            if destinationLevel ~= nil then
+                encounter.data.savedData.killed = true
+                saveData.beatenLevels[encounter.settings.levelFilename] = {
+                    character = smwMap.mainPlayer.basePlayer.character
+                }
+                encounter:remove()
+                smwMap.warpPlayer(smwMap.mainPlayer, smwMap.transitionSettings.warpToWarpSettings, destinationLevel)
             end
-        elseif gameData.lastLevelBeaten ~= nil and not (smwMap.mainPlayer.x == gameData.lastLevelBeaten.x and smwMap.mainPlayer.y == gameData.lastLevelBeaten.y) then
-            smwMap.mainPlayer.state = PLAYER_STATE.GOING_BACK
         else
-            smwMap.mainPlayer.state = PLAYER_STATE.NORMAL
-        end
+            local levelObj = smwMap.findLevel(smwMap.mainPlayer, px, py)
+            setPlayerLevel(smwMap.mainPlayer,levelObj)
 
-        if gameData.lastLevelBeaten == nil then
-            setLastLevelBeaten(levelObj)
+            if gameData.winType ~= LEVEL_WIN_TYPE_NONE and smwMap.mainPlayer.levelObj ~= nil then
+                smwMap.mainPlayer.state = PLAYER_STATE.WON
+                setLastLevelBeaten(levelObj)
+                if gameData.winType == LEVEL_WIN_TYPE_WARP and gameData.warpIndex + 1 == levelObj.settings.exitWarpIndex then
+                    local destinationLevel = smwMap.warpsMap[levelObj.settings.destinationWarpName]
+                    if destinationLevel ~= nil then
+                        smwMap.warpPlayer(smwMap.mainPlayer, levelObj, destinationLevel)
+                    end
+                end
+            elseif gameData.lastLevelBeaten ~= nil and not (smwMap.mainPlayer.x == gameData.lastLevelBeaten.x and smwMap.mainPlayer.y == gameData.lastLevelBeaten.y) then
+                smwMap.mainPlayer.state = PLAYER_STATE.GOING_BACK
+            else
+                smwMap.mainPlayer.state = PLAYER_STATE.NORMAL
+            end
+
+            if gameData.lastLevelBeaten == nil then
+                setLastLevelBeaten(levelObj)
+            end
         end
 
         updateNonMainPlayerCounts()
-
         updateActiveAreas(smwMap.mainPlayer,0)
+    end
+
+    -- utility function for objects
+    -- if used on the first frame, it can tell if the player has just lost
+    function smwMap.hasPlayerJustLost(levelObj)
+        return smwMap.mainPlayer.state == PLAYER_STATE.GOING_BACK
+           and (levelObj == nil or smwMap.mainPlayer.levelObj == levelObj)
     end
 end
 
@@ -2311,10 +2338,6 @@ do
         ANYTHING         = 2,
         NONE             = 3,
     }
-
-    smwMap.encountersWaitingTimer = 0
-    smwMap.encountersWaitingToMove = {}
-
 
     local function setEncounterLevel(v,data,levelObj)
         local config = smwMap.getObjectConfig(levelObj.id)
@@ -2370,44 +2393,44 @@ do
         return true
     end
 
+    function smwMap.initEncounterObj(v)
+        saveData.objectData[v.data.index] = saveData.objectData[v.data.index] or {
+            x = v.x,
+            y = v.y,
+            killed = false,
+        }
+        v.data.savedData = saveData.objectData[v.data.index]
+
+        if v.data.savedData.killed then
+            v:remove()
+            return
+        end
+
+        v.x = v.data.savedData.x
+        v.y = v.data.savedData.y
+
+        -- Initialise
+        v.data.state = smwMap.ENCOUNTER_STATE.NORMAL
+        v.data.timer = 0
+
+        v.data.direction = DIR_LEFT
+
+        v.data.animationSpeed = 1
+
+        v.data.defeatedSpeedY = 0
+
+        local levelObj = smwMap.findLevel(v,v.x,v.y)
+        if levelObj ~= nil then
+            setEncounterLevel(v,v.data,levelObj)
+        else
+            v.data.levelObj = nil
+        end
+    end
 
     function onTickEncounterObj(v)
         local data = v.data
 
         if data.state == nil then
-            saveData.objectData[data.index] = saveData.objectData[data.index] or {
-                x = v.x,
-                y = v.y,
-                killed = false,
-            }
-            data.savedData = saveData.objectData[data.index]
-
-
-            if data.savedData.killed then
-                v:remove()
-                return
-            end
-
-            v.x = data.savedData.x
-            v.y = data.savedData.y
-
-
-            -- Initialise
-            data.state = smwMap.ENCOUNTER_STATE.NORMAL
-            data.timer = 0
-
-            data.direction = DIR_LEFT
-
-            data.animationSpeed = 1
-
-            data.defeatedSpeedY = 0
-
-            local levelObj = smwMap.findLevel(v,v.x,v.y)
-            if levelObj ~= nil then
-                setEncounterLevel(v,data,levelObj)
-            else
-                data.levelObj = nil
-            end
         end
 
 
@@ -2454,6 +2477,7 @@ do
                 end
             end
         elseif data.state == smwMap.ENCOUNTER_STATE.SLEEPING then
+            -- nothing to do
         elseif data.state == smwMap.ENCOUNTER_STATE.DEFEATED then
             data.timer = data.timer + 1
 
@@ -2578,7 +2602,7 @@ do
 
     smwMap.objectCount = 0
 
-    function smwMap.createObject(id, x, y, npc)
+    function smwMap.createObject(id, x, y, npc, index)
         local config = smwMap.getObjectConfig(id)
 
         local v = {}
@@ -2621,10 +2645,17 @@ do
         v.cutoffTopY = nil
 
 
-        v.data = {
-            index = smwMap.objectCount,
-        }
-        smwMap.objectCount = smwMap.objectCount + 1
+        if index == nil then
+            v.data = {
+                index = smwMap.objectCount,
+            }
+            smwMap.objectCount = smwMap.objectCount + 1
+        else
+            v.data = {
+                index = index
+            }
+            smwMap.objectCount = math.max(smwMap.objectCount, index)
+        end
 
         if npc ~= nil then
             v.settings = npc.data._settings
@@ -2657,6 +2688,9 @@ do
             },
         })
 
+        if config.isEncounter then
+            smwMap.initEncounterObj(v)
+        end
 
         if config.onInitObj ~= nil then
             config.onInitObj(v)
@@ -2742,10 +2776,65 @@ do
         end
     end
 
-
     function smwMap.doBasicAnimation(v,frames,framespeed)
         v.data.animationTimer = (v.data.animationTimer or 0) + 1
         return math.floor(v.data.animationTimer / framespeed) % frames
+    end
+
+    smwMap.FIND_TYPES = {
+        STOP_POINTS_ONLY = 1,
+        WATER_TILES_ONLY = 2,
+        GROUND_ONLY = 3,
+        WATER_ONLY = 4,
+        ANY = 5,
+    }
+
+    local function isInsideArea(obj, area)
+        return area.collider:collide(Colliders.Box(
+            obj.x - obj.width/2, obj.y - obj.height/2, obj.width, obj.height
+        ))
+    end
+
+    -- Finds a random level in an area (default: current one) and returns its position.
+    -- Can be useful for creating new objects and deciding their position.
+    --
+    -- `settings.types` controls which type of candidates can be chosen:
+    -- - STOP_POINTS_ONLY: will always choose stop points only.
+    -- - WATER_TILES_ONLY: will always choose water tiles only.
+    -- - GROUND_ONLY: either a level or a stop point, but not a water tile
+    -- - WATER_ONLY: either a level or a water tile
+    -- - ANY: any levels in the area
+    --
+    -- `settings.visitedOnly`, if `true` restricts the candidates to only the ones
+    -- the player has stopped on or beaten.
+    function smwMap.getRandomLevelPositionInArea(area, settings)
+        if area == nil then
+            area = smwMap.currentCameraArea
+        end
+
+        local preds = {
+            function (o, c) return c.isStopPoint and not c.isWaterTile end,
+            function (o, c) return c.isStopPoint and c.isWaterTile end,
+            function (o, c) return not c.isWaterTile end,
+            function (o, c) return (not c.isStopPoint or (c.isStopPoint and c.isWaterTile)) end,
+            function (o, c) return true end,
+        }
+
+        local candidates = {}
+        local pred = preds[settings.types ~= nil and settings.types or 1]
+        for _, o in ipairs(smwMap.objects) do
+            local config = smwMap.getObjectConfig(o.id)
+            if config.isLevel and isInsideArea(o, area) and pred(o, config) then
+                table.insert(candidates, o)
+            end
+        end
+
+        if #candidates == 0 then
+            return nil
+        end
+
+        local chosen = candidates[math.random(1, #candidates)]
+        return vector(chosen.x, chosen.y)
     end
 end
 
