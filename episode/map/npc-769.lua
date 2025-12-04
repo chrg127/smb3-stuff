@@ -3,7 +3,7 @@ local smwMap = require("smwMap")
 local npcID = NPC_ID
 
 smwMap.setObjConfig(npcID,{
-    framesY = 2,
+    framesY = 4,
     usePositionBasedPriority = true,
     isEncounter = true,
 

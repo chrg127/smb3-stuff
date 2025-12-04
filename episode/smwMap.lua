@@ -347,12 +347,8 @@ local function findFirstObj(x, y, width, height, pred)
     return nil
 end
 
-function smwMap.findLevel(v, x, y)
-    return findFirstObj(x, y, v.width, v.height, function (o, c) return c.isLevel end)
-end
-
-function smwMap.findLevelInDir(x, y, dir)
-    return smwMap.findLevel({ width = 16, height = 16, }, x + dir.x * 32, y + dir.y * 32)
+function smwMap.findLevel(v)
+    return findFirstObj(v.x, v.y, v.width, v.height, function (o, c) return c.isLevel end)
 end
 
 local function findObjByID(v, x, y, id)
@@ -363,19 +359,6 @@ local function findEncounter(v, x, y)
     return findFirstObj(x ~= nil and x or v.x, y ~= nil and y or v.y, v.width, v.height, function (obj, c)
         if c.isEncounter then
             local levelFilename = obj.settings.levelFilename
-            return levelFilename ~= "" and io.exists(Misc.episodePath().. levelFilename) and obj.data.state == smwMap.ENCOUNTER_STATE.NORMAL
-        end
-        return false
-    end)
-end
-
-local function findEncounter2(v, x, y)
-    return findFirstObj(x ~= nil and x or v.x, y ~= nil and y or v.y, v.width, v.height, function (obj, c)
-        print("found obj, id =", obj.id)
-        if c.isEncounter then
-            local levelFilename = obj.settings.levelFilename
-            print("found possible encounter")
-            print("filename =", levelFilename, "data =", obj.data.state)
             return levelFilename ~= "" and io.exists(Misc.episodePath().. levelFilename) and obj.data.state == smwMap.ENCOUNTER_STATE.NORMAL
         end
         return false
@@ -398,20 +381,6 @@ local function arrayMax(t, f)
         res = math.max(res, f(e))
     end
     return res
-end
-
-local function getSceneryEventData(name)
-    local show = {}
-    local hide = {}
-    for _, scenery in ipairs(smwMap.sceneries) do
-        if scenery.globalSettings.showLevelName == name and (scenery.opacity == 0 or scenery.globalSettings.hideLevelName == name) then
-            table.insert(show, scenery)
-        end
-        if scenery.globalSettings.hideLevelName == name and (scenery.opacity == 1 or scenery.globalSettings.showLevelName == name) then
-            table.insert(hide, scenery)
-        end
-    end
-    return show, hide
 end
 
 local function getLives()
@@ -690,9 +659,23 @@ smwMap.activeEvents = {}
 
 smwMap.postLevelBeatenFunctions = {
     function (levelObj, winType)
+        local function getSceneryEventData(name)
+            local show = {}
+            local hide = {}
+            for _, scenery in ipairs(smwMap.sceneries) do
+                if scenery.globalSettings.showLevelName == name and (scenery.opacity == 0 or scenery.globalSettings.hideLevelName == name) then
+                    table.insert(show, scenery)
+                end
+                if scenery.globalSettings.hideLevelName == name and (scenery.opacity == 1 or scenery.globalSettings.showLevelName == name) then
+                    table.insert(hide, scenery)
+                end
+            end
+            return show, hide
+        end
+
         -- Initialise showing/hiding sceneries
-        if not smwMap.getObjectConfig(levelObj.id).isEncounter and winType ~= LEVEL_WIN_TYPE_NONE then
-            local showSceneries, hideSceneries = getSceneryEventData(levelObj.settings.filename)
+        if levelObj.settings.levelFilename ~= nil and levelObj.settings.levelFilename ~= "" and winType ~= LEVEL_WIN_TYPE_NONE then
+            local showSceneries, hideSceneries = getSceneryEventData(levelObj.settings.levelFilename)
             table.insert(smwMap.activeEvents, {
                 type = EVENT_TYPE.SHOW_HIDE_SCENERIES,
                 neededSceneryProgress = math.max(arrayMax(showSceneries, function (e) return e.globalSettings.showDelay end),
@@ -1112,7 +1095,7 @@ do
 
     local FOLLOWING_DELAY = 16
 
-    function smwMap.createPlayer(basePlayerIdx)
+    function smwMap.createPlayer(basePlayerIdx, mainPlayer)
         local v = {}
 
         v.width = 32
@@ -1135,7 +1118,7 @@ do
 
 
 
-        if smwMap.mainPlayer == nil then
+        if mainPlayer == nil then
             v.x = 0
             v.y = 0
 
@@ -1147,15 +1130,15 @@ do
             v.isClimbing = false
 
         else
-            v.x = smwMap.mainPlayer.x
-            v.y = smwMap.mainPlayer.y
+            v.x = mainPlayer.x
+            v.y = mainPlayer.y
 
-            v.levelObj = smwMap.mainPlayer.levelObj
+            v.levelObj = mainPlayer.levelObj
 
-            v.warpCooldown = smwMap.mainPlayer.warpCooldown
+            v.warpCooldown = mainPlayer.warpCooldown
 
-            v.isUnderwater = smwMap.mainPlayer.isUnderwater
-            v.isClimbing = smwMap.mainPlayer.isClimbing
+            v.isUnderwater = mainPlayer.isUnderwater
+            v.isClimbing = mainPlayer.isClimbing
         end
 
 
@@ -1400,7 +1383,10 @@ do
 
         local config = smwMap.getObjectConfig(levelObj.id)
         if config.isWaterTile then
-            local newLevelObj = smwMap.findLevelInDir(levelObj.x, levelObj.y, dir)
+            local newLevelObj = smwMap.findLevel({
+                x = levelObj.x + dir.x * 32, y = levelObj.y + dir.y * 32,
+                width = 16, height = 16
+            })
             if newLevelObj == nil then
                 return false
             end
@@ -1465,8 +1451,7 @@ do
 
             levelObj.lockedFade = 0
 
-
-            if v.isMainPlayer --[[and not smwMap.getObjectConfig(levelObj.id).isStopPoint]] then
+            if v.isMainPlayer then
                 saveData.playerX = v.x
                 saveData.playerY = v.y
             end
@@ -1580,13 +1565,15 @@ do
             end
         end
 
-        local areaName =  smwMap.currentCameraArea.name1 .. smwMap.currentCameraArea.name2
-        if gameData.areaName ~= areaName then
-            gameData.areaName = areaName
-            if smwMap.currentCameraArea.enableWorldCard then
-                table.insert(smwMap.activeEvents, {
-                    type = EVENT_TYPE.SHOW_WORLD_CARD
-                })
+        if smwMap.currentCameraArea ~= nil then
+            local areaName =  smwMap.currentCameraArea.name1 .. smwMap.currentCameraArea.name2
+            if gameData.areaName ~= areaName then
+                gameData.areaName = areaName
+                if smwMap.currentCameraArea.enableWorldCard then
+                    table.insert(smwMap.activeEvents, {
+                        type = EVENT_TYPE.SHOW_WORLD_CARD
+                    })
+                end
             end
         end
     end
@@ -1669,12 +1656,14 @@ do
 
                 if config.isWarp and v.levelObj.settings.levelFilename == "" then
                     -- Warps
-                    if config.doWarpOverride == nil then
-                        smwMap.warpPlayerWithTransition(v, v.levelObj.settings)
-                    else
-                        -- Make all players do the custom warping
-                        v.state = PLAYER_STATE.CUSTOM_WARPING
-                        v.timer = 0
+                    if v.levelObj.settings.destinationWarpName ~= "" then
+                        if config.doWarpOverride == nil then
+                            smwMap.warpPlayerWithTransition(v, v.levelObj.settings)
+                        else
+                            -- Make all players do the custom warping
+                            v.state = PLAYER_STATE.CUSTOM_WARPING
+                            v.timer = 0
+                        end
                     end
                 else
                     -- Normal levels
@@ -1693,7 +1682,7 @@ do
                         smwMap.startSelectLayouts = nil
                     end
                 end
-            elseif player.keys.dropItem == KEYS_PRESSED and v.levelObj ~= nil and Misc.inEditor() then -- unlock ALL the things (only works from in editor)
+            elseif player.keys.dropItem == KEYS_PRESSED and v.levelObj ~= nil and v.levelObj.settings.levelFilename ~= "" and Misc.inEditor() then -- unlock ALL the things (only works from in editor)
                 v.state = PLAYER_STATE.WON
                 v.timer = 1000
                 setLastLevelBeaten(v.levelObj)
@@ -1701,16 +1690,13 @@ do
             elseif player.keys.altRun == KEYS_PRESSED and Misc.inEditor() then
                 v.state = PLAYER_STATE.PARKING_WHERE_I_WANT
                 v.timer = 0
+                v.lastMovement = nil
             elseif player.keys.run == KEYS_PRESSED then
                 v.state = PLAYER_STATE.ITEM_PANEL
                 v.timer = 0
                 smwMap.itemPanel.frame = 0
                 smwMap.itemPanel.timerDir = 1
                 SFX.play(smwMap.playerSettings.itemPanelSound)
-            --[[ elseif player.keys.run == KEYS_PRESSED and Misc.inEditor() and gameData.lastLevelBeaten ~= nil then
-                v.state = PLAYER_STATE.GOING_BACK
-                v.timer = 0
-                gameData.winType = LEVEL_WIN_TYPE_NONE ]]
             else
                 -- moving
                 for _, dir in ipairs{"up", "down", "left", "right"} do
@@ -1765,7 +1751,7 @@ do
         v.warpCooldown = math.max(0, v.warpCooldown - 1)
 
         -- has the player has finished walking the path (i.e. is resting on a level)?
-        local levelObj = smwMap.findLevel(v,v.x,v.y)
+        local levelObj = smwMap.findLevel(v)
 
         local function isWithin(movement, x, y, lx, ly)
             return movement == "down"  and (y >= ly and x == lx)
@@ -1957,7 +1943,7 @@ do
         end
 
 
-        v.levelObj = smwMap.findLevel(v,v.x,v.y)
+        v.levelObj = smwMap.findLevel(v)
 
         if v.levelObj ~= nil and player.keys.jump == KEYS_PRESSED then
             for _,p in ipairs(smwMap.players) do
@@ -2062,7 +2048,10 @@ do
         if v.timer == smwMap.playerSettings.goingBackTime then
             v.state = PLAYER_STATE.NORMAL
             v.timer = 0
-            setPlayerLevel(smwMap.mainPlayer, smwMap.findLevel(smwMap.mainPlayer, gameData.lastLevelBeaten.x, gameData.lastLevelBeaten.y))
+            setPlayerLevel(smwMap.mainPlayer, smwMap.findLevel({
+                x = gameData.lastLevelBeaten.x, y = gameData.lastLevelBeaten.y,
+                width = smwMap.mainPlayer.width, height = smwMap.mainPlayer.height,
+            }))
             postLevelBeaten(v.levelObj, LEVEL_WIN_TYPE_NONE)
         end
     end
@@ -2186,7 +2175,7 @@ do
         elseif realPlayerCount > mapPlayerCount then
             -- Too little map players
             for idx = mapPlayerCount+1, realPlayerCount do
-                smwMap.createPlayer(idx)
+                smwMap.createPlayer(idx, smwMap.mainPlayer)
             end
         end
     end
@@ -2269,11 +2258,8 @@ do
     end
 
     function smwMap.initPlayers()
-        local px = saveData.playerX ~= nil and saveData.playerX or smwMap.mainPlayer.x
-        local py = saveData.playerY ~= nil and saveData.playerY or smwMap.mainPlayer.y
-
-        local encounter = findEncounter(smwMap.mainPlayer, px, py)
-        if gameData.winType == LEVEL_WIN_TYPE_WARP and encounter ~= nil and encounter.settings.destinationWarpName ~= nil and encounter.settings.destinationWarpName ~= "" then
+        local encounter = findEncounter(smwMap.mainPlayer, smwMap.mainPlayer.x, smwMap.mainPlayer.y)
+        if encounter ~= nil and gameData.winType == LEVEL_WIN_TYPE_WARP and encounter.settings.destinationWarpName ~= nil and encounter.settings.destinationWarpName ~= "" then
             local destinationLevel = smwMap.warpsMap[encounter.settings.destinationWarpName]
             if destinationLevel ~= nil then
                 encounter.data.savedData.killed = true
@@ -2284,18 +2270,17 @@ do
                 smwMap.warpPlayer(smwMap.mainPlayer, smwMap.transitionSettings.warpToWarpSettings, destinationLevel)
             end
         else
-            local levelObj = smwMap.findLevel(smwMap.mainPlayer, px, py)
+            local levelObj = smwMap.findLevel(smwMap.mainPlayer)
             setPlayerLevel(smwMap.mainPlayer,levelObj)
 
-            if gameData.winType ~= LEVEL_WIN_TYPE_NONE and smwMap.mainPlayer.levelObj ~= nil then
+            if levelObj ~= nil and gameData.winType == LEVEL_WIN_TYPE_WARP and gameData.warpIndex + 1 == levelObj.settings.exitWarpIndex then
+                local destinationLevel = smwMap.warpsMap[levelObj.settings.destinationWarpName]
+                if destinationLevel ~= nil then
+                    smwMap.warpPlayer(smwMap.mainPlayer, levelObj, destinationLevel)
+                end
+            elseif gameData.winType ~= LEVEL_WIN_TYPE_NONE and levelObj ~= nil then
                 smwMap.mainPlayer.state = PLAYER_STATE.WON
                 setLastLevelBeaten(levelObj)
-                if gameData.winType == LEVEL_WIN_TYPE_WARP and gameData.warpIndex + 1 == levelObj.settings.exitWarpIndex then
-                    local destinationLevel = smwMap.warpsMap[levelObj.settings.destinationWarpName]
-                    if destinationLevel ~= nil then
-                        smwMap.warpPlayer(smwMap.mainPlayer, levelObj, destinationLevel)
-                    end
-                end
             elseif gameData.lastLevelBeaten ~= nil and not (smwMap.mainPlayer.x == gameData.lastLevelBeaten.x and smwMap.mainPlayer.y == gameData.lastLevelBeaten.y) then
                 smwMap.mainPlayer.state = PLAYER_STATE.GOING_BACK
             else
@@ -2353,46 +2338,6 @@ do
         data.levelObj = levelObj
     end
 
-    local function choosePath(v, data, level)
-        local config = smwMap.getObjectConfig(level.id)
-
-        local canWalkOn = v.settings.canWalkOn
-        if canWalkOn == CAN_WALK_ON.NONE then
-            return false
-        end
-
-        if (canWalkOn == CAN_WALK_ON.STOP_POINTS_ONLY and config.canStopEncounters)
-        or (canWalkOn == CAN_WALK_ON.WATER_TILES_ONLY and config.isWaterTile) then
-            if level ~= v.data.levelObj and level ~= smwMap.mainPlayer.levelObj then
-                return false
-            end
-        end
-
-        -- Find any paths that are available
-        local validPaths = {}
-        for _, dir in ipairs{"up","right","down","left"} do
-            -- value here may be bool or number
-            local value = level.settings["unlock_" .. dir]
-            if value and value ~= 0 then
-                table.insert(validPaths, dir)
-            end
-        end
-
-        if #validPaths == 0 then
-            return false
-        end
-
-        -- Walk down one
-        local chosenPath = RNG.irandomEntry(validPaths)
-        v.walkingDirection = ({ down = vector( 0, 1), up    = vector(0, -1),
-                                left = vector(-1, 0), right = vector(1,  0) })[chosenPath]
-        data.direction = v.walkingDirection.x == 0 and DIR_LEFT or v.walkingDirection.x
-        v.lastMovement = chosenPath
-        data.state = smwMap.ENCOUNTER_STATE.WALKING
-        data.timer = 0
-        return true
-    end
-
     function smwMap.initEncounterObj(v)
         saveData.objectData[v.data.index] = saveData.objectData[v.data.index] or {
             x = v.x,
@@ -2419,7 +2364,7 @@ do
 
         v.data.defeatedSpeedY = 0
 
-        local levelObj = smwMap.findLevel(v,v.x,v.y)
+        local levelObj = smwMap.findLevel(v)
         if levelObj ~= nil then
             setEncounterLevel(v,v.data,levelObj)
         else
@@ -2427,21 +2372,58 @@ do
         end
     end
 
+    local function choosePath(v, data, level)
+        local config = smwMap.getObjectConfig(level.id)
+
+        local canWalkOn = v.settings.canWalkOn
+        if canWalkOn == CAN_WALK_ON.NONE then
+            return false
+        end
+
+        if (canWalkOn == CAN_WALK_ON.STOP_POINTS_ONLY and config.canStopEncounters)
+        or (canWalkOn == CAN_WALK_ON.WATER_TILES_ONLY and config.isWaterTile) then
+            if level ~= v.data.levelObj and level ~= smwMap.mainPlayer.levelObj then
+                return false
+            end
+        end
+
+        -- Find any paths that are available
+        local validPaths = {}
+        for _, dir in ipairs{"right","up","down","left"} do
+            -- value here may be bool or number
+            local value = level.settings["unlock_" .. dir]
+            if value and value ~= 0 then
+                table.insert(validPaths, dir)
+            end
+        end
+
+        if #validPaths == 0 then
+            return false
+        end
+
+        -- Walk down one
+        local chosenPath = RNG.irandomEntry(validPaths)
+        v.walkingDirection = ({ down = vector( 0, 1), up    = vector(0, -1),
+                                left = vector(-1, 0), right = vector(1,  0) })[chosenPath]
+        data.direction = v.walkingDirection.x == 0 and DIR_LEFT or v.walkingDirection.x
+        v.lastMovement = chosenPath
+        data.state = smwMap.ENCOUNTER_STATE.WALKING
+        data.timer = 0
+        return true
+    end
+
     function onTickEncounterObj(v)
         local data = v.data
 
-        if data.state == nil then
-        end
-
-
         if data.state == smwMap.ENCOUNTER_STATE.NORMAL then
+            -- nothing to do (any animations are done inside the object's script)
         elseif data.state == smwMap.ENCOUNTER_STATE.WALKING then
             local walkSpeed = smwMap.encounterSettings.walkSpeed
             local newPosition = vector(v.x, v.y) + v.walkingDirection * walkSpeed
             v.x = newPosition.x
             v.y = newPosition.y
 
-            local levelObj = smwMap.findLevel(v,v.x,v.y)
+            local levelObj = smwMap.findLevel(v)
 
             local function isWithin(movement, x, y, lx, ly)
                 return movement == "down"  and (y >= ly and x == lx)
@@ -2466,14 +2448,18 @@ do
                 if obj ~= nil and not obj.isOpen then
                     v.x = obj.x + ({ left = 32, right = -32, up =   0, down =  0 })[v.lastMovement]
                     v.y = obj.y + ({ left =  0, right =   0, up = 32, down = -32 })[v.lastMovement]
-                    if v.levelObj ~= nil and (v.x ~= v.levelObj.x or v.y ~= v.levelObj.y) then
-                        -- reset current level object in case the encounter moved a substantial amount
-                        v.levelObj = nil
+                    -- TODO: check if we should just check for blocking objects when starting to walk
+                    if v.data.levelObj ~= nil and v.x == v.data.levelObj.x and v.y == v.data.levelObj.y then
+                        -- couldn't move due to blocking object: reset encounter state
+                        v.data.state = smwMap.ENCOUNTER_STATE.NORMAL
+                        v.data.timer = 0
+                    else
+                        -- make encounter go the opposite direction
+                        v.data.levelObj = nil
+                        v.walkingDirection = -v.walkingDirection
+                        v.lastMovement = ({ left = "right", right = "left", up = "down", down = "up", })[v.lastMovement]
+                        data.direction = v.walkingDirection.x == 0 and DIR_LEFT or v.walkingDirection.x
                     end
-                    -- make encounter go the opposite direction
-                    v.walkingDirection = -v.walkingDirection
-                    v.lastMovement = ({ left = "right", right = "left", up = "down", down = "up", })[v.lastMovement]
-                    data.direction = v.walkingDirection.x == 0 and DIR_LEFT or v.walkingDirection.x
                 end
             end
         elseif data.state == smwMap.ENCOUNTER_STATE.SLEEPING then
@@ -2807,7 +2793,7 @@ do
     --
     -- `settings.visitedOnly`, if `true` restricts the candidates to only the ones
     -- the player has stopped on or beaten.
-    function smwMap.getRandomLevelPositionInArea(area, settings)
+    function smwMap.getRandomLevelInArea(area, settings)
         if area == nil then
             area = smwMap.currentCameraArea
         end
@@ -2833,8 +2819,7 @@ do
             return nil
         end
 
-        local chosen = candidates[math.random(1, #candidates)]
-        return vector(chosen.x, chosen.y)
+        return candidates[math.random(1, #candidates)]
     end
 end
 
@@ -3523,7 +3508,7 @@ do
             pos = vector(smwMap.hudSettings.box.x, smwMap.hudSettings.box.y) + vector(8, 12),
             font = smwMap.hudSettings.fontYellow,
             getText = function ()
-                return smwMap.currentCameraArea.name1hud
+                return smwMap.currentCameraArea ~= nil and smwMap.currentCameraArea.name1hud or ""
             end
         },
         pmeter = {
@@ -3588,7 +3573,7 @@ do
         end
 
         if smwMap.hudSettings.levelTitle.enabled then
-            local levelTitle = levelObj ~= nil and levelObj.settings.levelTitle or ""
+            local levelTitle = smwMap.mainPlayer.levelObj ~= nil and smwMap.mainPlayer.levelObj.settings.levelTitle or ""
             drawHudText(levelTitle, vector(smwMap.hudSettings.levelTitle.x, smwMap.hudSettings.levelTitle.y), smwMap.hudSettings.fontWhite)
         end
 
@@ -3677,7 +3662,9 @@ do
     }
 
     function smwMap.drawAreaEffect()
-        smwMap.areaEffects[smwMap.currentCameraArea.areaEffect+1]()
+        if smwMap.currentCameraArea ~= nil then
+            smwMap.areaEffects[smwMap.currentCameraArea.areaEffect+1]()
+        end
     end
 
     local function drawLookAroundArrows()

@@ -34,6 +34,14 @@
             "tooltip": "Controls when this encounter moves.",
             "elements": ["A level is beaten", "Any time the player moves", "Never"],
             "value-default": 0
+        },
+        {
+            "control": "comboBox",
+            "name": "moveType",
+            "title": "Move type",
+            "tooltip": "How this encounter moves.",
+            "elements": ["Walk", "Float (airship-like)"],
+            "value-default": 0
         }
 	]
 }
