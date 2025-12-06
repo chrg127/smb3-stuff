@@ -46,6 +46,10 @@ smwMap.setObjConfig(npcID,{
             v.isPlayerOnBoat = false
             v.x = v.originalPos.x
             v.y = v.originalPos.y
+        elseif smwMap.mainPlayer.state == smwMap.PLAYER_STATE.CUSTOM_WARPING
+            or smwMap.mainPlayer.state == smwMap.PLAYER_STATE.PARKING_WHERE_I_WANT
+            or smwMap.mainPlayer.state == smwMap.PLAYER_STATE.USING_WHISTLE then
+            v.isPlayerOnBoat = false
         end
 
         if v.isPlayerOnBoat then
