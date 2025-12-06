@@ -15,7 +15,11 @@ smwMap.setObjConfig(npcID, {
         if v.x + 32 < smwMap.camera.x then
             if v.isComing then
                 local mid = function ()
-                    smwMap.warpPlayer(smwMap.mainPlayer, {}, smwMap.warpsMap[smwMap.currentCameraArea.whistleWarpName])
+                    -- create a fake level obj
+                    local levelObj = {
+                        settings = {},
+                    }
+                    smwMap.warpPlayer(smwMap.mainPlayer, levelObj, smwMap.currentCameraArea.whistleWarpName)
                     Audio.MusicPlay()
                     local x, y = smwMap.getUsualCameraPos()
                     local obj = smwMap.createObject(smwMap.twisterID, x + smwMap.camera.width, smwMap.mainPlayer.y)

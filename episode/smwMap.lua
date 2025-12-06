@@ -1590,15 +1590,20 @@ do
     end
 
 
-    function smwMap.warpPlayer(v, settings, destinationLevel)
-        if settings.pathWalkingDirection ~= nil then
+    function smwMap.warpPlayer(v, levelObj, destinationLevelName)
+        local destinationLevel = smwMap.warpsMap[destinationLevelName]
+        if destinationLevel == nil then
+            error("Destination level " .. destinationLevelName .. " not found")
+        end
+
+        if levelObj.settings.pathWalkingDirection ~= nil then
             for _,p in ipairs(smwMap.players) do
                 p.state = PLAYER_STATE.WALKING
                 p.timer = p.followingDelay
                 p.zOffset = 0
                 p.warpCooldown = 60
 
-                local directionName = ({ "up", "down", "left", "right" })[settings.pathWalkingDirection + 1]
+                local directionName = ({ "up", "down", "left", "right" })[levelObj.settings.pathWalkingDirection + 1]
                 p.lastMovement = directionName
                 p.movementHistory[1] = directionName
                 p.walkingDirection = ({ down = vector( 0, 1), up    = vector(0, -1),
@@ -1626,12 +1631,10 @@ do
         updateActiveAreas(v,64)
     end
 
-    function smwMap.warpPlayerWithTransition(player, settings)
-        local destinationLevel = smwMap.warpsMap[settings.destinationWarpName]
-        if destinationLevel ~= nil then
-            local middleFunction = function() smwMap.warpPlayer(player, settings, destinationLevel) end
-            smwMap.startTransition(middleFunction, nil, smwMap.transitionSettings.warpToWarpSettings)
-        end
+    function smwMap.warpPlayerWithTransition(player, levelObj)
+        print("level =", levelObj)
+        local middleFunction = function() smwMap.warpPlayer(player, levelObj, levelObj.settings.destinationWarpName) end
+        smwMap.startTransition(middleFunction, nil, smwMap.transitionSettings.warpToWarpSettings)
     end
 
 
@@ -1645,7 +1648,6 @@ do
             v.direction = 0
         end
 
-
         if #smwMap.activeEvents == 0 and v.isMainPlayer then
             local encounterObj = findEncounter(v)
 
@@ -1658,7 +1660,7 @@ do
                     -- Warps
                     if v.levelObj.settings.destinationWarpName ~= "" then
                         if config.doWarpOverride == nil then
-                            smwMap.warpPlayerWithTransition(v, v.levelObj.settings)
+                            smwMap.warpPlayerWithTransition(v, v.levelObj)
                         else
                             -- Make all players do the custom warping
                             v.state = PLAYER_STATE.CUSTOM_WARPING
@@ -1742,7 +1744,7 @@ do
         if v.isMainPlayer and v.warpCooldown == 0 then
             for _,warpObj in ipairs(getIntersectingInstantWarps(v.x,v.y)) do
                 if canEnterLevel(warpObj) then
-                    smwMap.warpPlayerWithTransition(v, warpObj.settings)
+                    smwMap.warpPlayerWithTransition(v, warpObj)
                     return
                 end
             end
@@ -1924,7 +1926,7 @@ do
         end
 
         if shouldFinishWarp and v.isMainPlayer then
-            smwMap.warpPlayerWithTransition(v, v.levelObj.settings)
+            smwMap.warpPlayerWithTransition(v, v.levelObj)
         end
     end)
 
@@ -2260,24 +2262,18 @@ do
     function smwMap.initPlayers()
         local encounter = findEncounter(smwMap.mainPlayer, smwMap.mainPlayer.x, smwMap.mainPlayer.y)
         if encounter ~= nil and gameData.winType == LEVEL_WIN_TYPE_WARP and encounter.settings.destinationWarpName ~= nil and encounter.settings.destinationWarpName ~= "" then
-            local destinationLevel = smwMap.warpsMap[encounter.settings.destinationWarpName]
-            if destinationLevel ~= nil then
-                encounter.data.savedData.killed = true
-                saveData.beatenLevels[encounter.settings.levelFilename] = {
-                    character = smwMap.mainPlayer.basePlayer.character
-                }
-                encounter:remove()
-                smwMap.warpPlayer(smwMap.mainPlayer, smwMap.transitionSettings.warpToWarpSettings, destinationLevel)
-            end
+            encounter.data.savedData.killed = true
+            saveData.beatenLevels[encounter.settings.levelFilename] = {
+                character = smwMap.mainPlayer.basePlayer.character
+            }
+            encounter:remove()
+            smwMap.warpPlayer(smwMap.mainPlayer, encounter, encounter.settings.destinationWarpName)
         else
             local levelObj = smwMap.findLevel(smwMap.mainPlayer)
             setPlayerLevel(smwMap.mainPlayer,levelObj)
 
             if levelObj ~= nil and gameData.winType == LEVEL_WIN_TYPE_WARP and gameData.warpIndex + 1 == levelObj.settings.exitWarpIndex then
-                local destinationLevel = smwMap.warpsMap[levelObj.settings.destinationWarpName]
-                if destinationLevel ~= nil then
-                    smwMap.warpPlayer(smwMap.mainPlayer, levelObj, destinationLevel)
-                end
+                smwMap.warpPlayer(smwMap.mainPlayer, levelObj, levelObj.settings.destinationWarpName)
             elseif gameData.winType ~= LEVEL_WIN_TYPE_NONE and levelObj ~= nil then
                 smwMap.mainPlayer.state = PLAYER_STATE.WON
                 setLastLevelBeaten(levelObj)
