@@ -199,6 +199,7 @@ smwMap.hudSettings = {
         expandSpeed = 9,
         starSpeed = 6,
         starFrameSpeed = 4,
+        priority = -5, -- less than the transition priorities
     }
 }
 
@@ -554,6 +555,7 @@ do
                 updateTransition()
             end
 
+            -- updateTransition may set transitionDrawFunction to nil, gotta re-check
             if smwMap.transitionDrawFunction ~= nil then
                 smwMap.transitionDrawFunction(smwMap.transitionProgress,smwMap.transitionPriority)
             end
@@ -579,13 +581,13 @@ smwMap.transitionSettings = {
     selectedLevelSettings = {
         drawFunction = smwMap.TRANSITION_IRIS_OUT,
         progressTime = 60,
-        priority = 6,
+        priority = -4,
     },
 
     enterEncounterSettings = {
         drawFunction = smwMap.TRANSITION_IRIS_OUT,
         progressTime = 60,
-        priority = 6,
+        priority = -4,
     },
 
     enterMapSettings = {
@@ -608,7 +610,7 @@ smwMap.transitionSettings = {
         drawFunction = smwMap.TRANSITION_IRIS_OUT,
         progressTime = 60,
         waitTime = 8,
-        priority = -6,
+        priority = -4,
         pauses = false,
     },
 
@@ -1583,6 +1585,8 @@ do
             if gameData.areaName ~= areaName then
                 gameData.areaName = areaName
                 if smwMap.areas.name.enableWorldCard then
+                    worldCard.state = WORLD_CARD_STATE.ON_CARD
+                    smwMap.mainPlayer.frame = 1
                     table.insert(smwMap.activeEvents, {
                         type = EVENT_TYPE.SHOW_WORLD_CARD
                     })
@@ -1638,15 +1642,17 @@ do
             gameData.winType = LEVEL_WIN_TYPE_NONE
         end
 
-        -- maybe this shouldn't be changed with instant warps?
+        -- TODO: maybe this shouldn't be changed with instant warps?
         v.direction = 0
 
         updateActiveAreas(v,64)
     end
 
     function smwMap.warpPlayerWithTransition(player, levelObj)
-        print("level =", levelObj)
         local middleFunction = function() smwMap.warpPlayer(player, levelObj, levelObj.settings.destinationWarpName) end
+        local settings = levelObj.settings.pathWalkingDirection ~= nil
+            and smwMap.transitionSettings.warpToPathSettings
+            or  smwMap.transitionSettings.warpToWarpSettings
         smwMap.startTransition(middleFunction, nil, smwMap.transitionSettings.warpToWarpSettings)
     end
 
@@ -1742,7 +1748,9 @@ do
 
     -- Walking around
     stateFunctions[PLAYER_STATE.WALKING] = (function(v)
-        if (smwMap.transitionDrawFunction ~= nil and not smwMap.transitionPauses) then
+        if smwMap.transitionDrawFunction ~= nil and not smwMap.transitionPauses then
+            return
+        elseif #smwMap.activeEvents > 0 and smwMap.activeEvents[1].type == smwMap.EVENT_TYPE.SHOW_WORLD_CARD then
             return
         end
 
@@ -2219,7 +2227,9 @@ do
                 -- Normal animation
                 v.animationTimer = v.animationTimer + 1
 
-                if #smwMap.activeEvents > 0 then
+                if worldCard.state == WORLD_CARD_STATE.ON_CARD then
+                    v.frame = 1
+                elseif #smwMap.activeEvents > 0 then
                     if smwMap.activeEvents[1].type == EVENT_TYPE.BEAT_LEVEL
                     or smwMap.activeEvents[1].type == EVENT_TYPE.SHOW_WORLD_CARD then
                         v.frame = 1
@@ -2402,6 +2412,8 @@ do
             return false
         end
 
+        -- Walk down one
+        local chosenPath = RNG.irandomEntry(validPaths)
         -- check for objects right next to the encounter
         local dir = dirToVec(chosenPath)
         local obj = findFirstObj(v.x + dir.x * 32, v.y + dir.y * 32, v.width, v.height, function (o, c) return c.isBlocking end)
@@ -2409,8 +2421,6 @@ do
             return false
         end
 
-        -- Walk down one
-        local chosenPath = RNG.irandomEntry(validPaths)
         v.walkingDirection = ({ down = vector( 0, 1), up    = vector(0, -1),
                                 left = vector(-1, 0), right = vector(1,  0) })[chosenPath]
         data.direction = v.walkingDirection.x == 0 and DIR_LEFT or v.walkingDirection.x
@@ -3527,14 +3537,14 @@ do
         {bodyFrame = 1,headFrame = 0,headOffsetX = -1,headOffsetY = 2,bodyOffsetX = 0,bodyOffsetY = 1,playerOffset = 1},
     }
 
-    local function drawHudText(text, pos, font)
+    local function drawHudText(text, pos, font, priority)
         textplus.render{
             layout = textplus.layout(text, nil, {
                 font = font,
                 xscale = 2,
                 yscale = 2,
             }),
-            priority = smwMap.hudSettings.priority,
+            priority = priority ~= nil and priority or smwMap.hudSettings.priority,
             x = pos.x,
             y = pos.y
         }
@@ -3601,25 +3611,25 @@ do
                 smwMap.camera.renderX + (smwMap.camera.width  - smwMap.hudSettings.worldCard.cardImage.width ) / 2,
                 smwMap.camera.renderY + (smwMap.camera.height - smwMap.hudSettings.worldCard.cardImage.height) / 2
             )
-            Graphics.drawImageWP(smwMap.hudSettings.worldCard.cardImage, cardPos.x, cardPos.y, smwMap.hudSettings.priority)
+            Graphics.drawImageWP(smwMap.hudSettings.worldCard.cardImage, cardPos.x, cardPos.y, smwMap.hudSettings.worldCard.priority)
 
             for _, obj in ipairs({ {smwMap.areas.name.name1, 24}, {smwMap.areas.name.name2, 24+16} }) do
                 -- TODO: not a great way to calculate text width
                 local areaNameX = (smwMap.hudSettings.worldCard.cardImage.width - #obj[1] * 16) / 2
-                drawHudText(obj[1], cardPos + vector(areaNameX, obj[2]), smwMap.hudSettings.fontWhite)
+                drawHudText(obj[1], cardPos + vector(areaNameX, obj[2]), smwMap.hudSettings.fontWhite, smwMap.hudSettings.worldCard.priority)
             end
 
             local characterNames = { "MARIO", "LUIGI", "PEACH", "TOAD " }
-            drawHudText(characterNames[smwMap.mainPlayer.basePlayer.character], cardPos + vector(24, 70), smwMap.hudSettings.fontWhite)
+            drawHudText(characterNames[smwMap.mainPlayer.basePlayer.character], cardPos + vector(24, 70), smwMap.hudSettings.fontWhite, smwMap.hudSettings.worldCard.priority)
 
             local lives = getLives()
-            drawHudText(string.format("×%2d", lives), cardPos + vector(168, 72), smwMap.hudSettings.fontWhite)
+            drawHudText(string.format("×%2d", lives), cardPos + vector(168, 72), smwMap.hudSettings.fontWhite, smwMap.hudSettings.worldCard.priority)
 
             Graphics.drawImageWP(
                 smwMap.playerSettings.images[player.character],
                 cardPos.x + 128, cardPos.y + 10,
                 0, 80 * smwMap.mainPlayer.basePlayer.powerup * 2, 32, 80,
-                smwMap.hudSettings.priority
+                smwMap.hudSettings.worldCard.priority
             )
         elseif worldCard.state == WORLD_CARD_STATE.EXPANDING_STARS
             or worldCard.state == WORLD_CARD_STATE.CLOSING_STARS then
@@ -3633,7 +3643,7 @@ do
                     smwMap.hudSettings.worldCard.starImage,
                     pos.x - 16, pos.y - 16,
                     0, worldCard.starFrame * 32, 32, 32,
-                    smwMap.hudSettings.priority
+                    smwMap.hudSettings.worldCard.priority
                 )
             end
         end
@@ -3643,19 +3653,16 @@ do
     smwMap.areaEffects = {
         function () end,
         function ()
-            local focus = getPlayerScreenPos() - vector(smwMap.camera.renderX, smwMap.camera.renderY)
-            local radius = 64
-
             Graphics.drawBox{
-                priority = 6,
+                priority = -4,
                 color = Color.black,
-                x = smwMap.camera.renderX, y = smwMap.camera.renderY,
-                width = smwMap.camera.width, height = smwMap.camera.height,
+                x = 0, y = 0,
+                width = SCREEN_WIDTH, height = SCREEN_HEIGHT,
                 shader = irisOutShader,
                 uniforms = {
-                    screenSize = vector(smwMap.camera.width, smwMap.camera.height),
-                    radius = radius,
-                    focus = focus,
+                    screenSize = vector(SCREEN_WIDTH, SCREEN_HEIGHT),
+                    radius = 64,
+                    focus = getPlayerScreenPos(),
                 },
             }
         end
@@ -3848,6 +3855,8 @@ do
             drawLookAroundArrows()
         end
 
+        smwMap.drawWorldCard()
+        smwMap.drawAreaEffect()
 
         -- Finally, draw the buffer to the screen
         if not smwMap.fullBufferView then
@@ -3863,12 +3872,10 @@ do
             }
 
             smwMap.drawHUD()
-            smwMap.drawAreaEffect()
         else
             Graphics.drawBox{texture = smwMap.mainBuffer,x = 0,y = 0,priority = -5.01}
         end
 
-        smwMap.drawWorldCard()
     end
 
     function smwMap.onCameraUpdate()
