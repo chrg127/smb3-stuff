@@ -3,10 +3,8 @@
 - add more characters in fonts
     - check out that n char in world 9 text
 - anchor item
-- fix bug with no restrict camera => no world card
 - encounters should be moved on an area basis, and fallback to camera if no area
     - this fixes some airship stuff too
-- fix stuff with blocking objs right next to player
 
 ### low priority
 

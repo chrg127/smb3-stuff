@@ -19,7 +19,7 @@ smwMap.setObjConfig(npcID, {
                     local levelObj = {
                         settings = {},
                     }
-                    smwMap.warpPlayer(smwMap.mainPlayer, levelObj, smwMap.currentCameraArea.whistleWarpName)
+                    smwMap.warpPlayer(smwMap.mainPlayer, levelObj, smwMap.areas.name.whistleWarpName)
                     Audio.MusicPlay()
                     local x, y = smwMap.getUsualCameraPos()
                     local obj = smwMap.createObject(smwMap.twisterID, x + smwMap.camera.width, smwMap.mainPlayer.y)

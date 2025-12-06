@@ -313,7 +313,7 @@ local function getUsualCameraPos()
     end
 
     -- Restrict the camera, if necessary
-    local cameraArea = smwMap.currentCameraArea
+    local cameraArea = smwMap.areas.camera
     if cameraArea ~= nil and not smwMap.freeCamera then
         if cameraArea.collider.width >= smwMap.camera.width then -- the camera can fit here
             x = math.clamp(x,cameraArea.collider.x,cameraArea.collider.x + cameraArea.collider.width - smwMap.camera.width)
@@ -1088,10 +1088,14 @@ end
 
 do
     smwMap.players = {}
-    smwMap.activeAreas = {}
-    smwMap.currentBackgroundArea = nil
-    smwMap.currentMusicArea = nil
-    smwMap.currentCameraArea = nil
+
+    smwMap.areas = {
+        background = nil,
+        music = nil,
+        camera = nil,
+        name = nil,
+        effects = nil,
+    }
 
     local FOLLOWING_DELAY = 16
 
@@ -1357,12 +1361,19 @@ do
             return
         end
 
+        -- check for blocking objects right next to the player
+        local dir = dirToVec(directionName)
+        local obj = findFirstObj(v.x + dir.x * 32, v.y + dir.y * 32, v.width, v.height, function (o, c) return c.isBlocking end)
+        if obj ~= nil then
+            SFX.play(3)
+            return
+        end
+
         v.state = PLAYER_STATE.WALKING
         v.timer = 0
         v.lastMovement = directionName
         v.movementHistory[1] = directionName
-        v.walkingDirection = dirToVec(directionName)
-        return true
+        v.walkingDirection = dir
     end
 
     function smwMap.levelExitIsUnlocked(levelObj, directionName, lastMovement)
@@ -1529,11 +1540,6 @@ do
 
 
     local function updateActiveAreas(v,padding)
-        for i = #smwMap.activeAreas, 1, -1 do
-            smwMap.activeAreas[i] = nil
-        end
-
-
         local collider = Colliders.Box(v.x - v.width*0.5 - padding,v.y - v.height*0.5 - padding,v.width + padding*2,v.height + padding*2)
 
         local hasCollided = false
@@ -1541,35 +1547,42 @@ do
         for _,areaObj in ipairs(smwMap.areas) do
             if areaObj.collider:collide(collider) then
                 if not hasCollided then
-                    smwMap.currentBackgroundArea = nil
-                    smwMap.currentMusicArea = nil
-                    smwMap.currentCameraArea = nil
+                    smwMap.areas.background = nil
+                    smwMap.areas.music = nil
+                    smwMap.areas.camera = nil
+                    smwMap.areas.name = nil
+                    smwMap.areas.effect = nil
 
                     hasCollided = true
                 end
 
-
-                table.insert(smwMap.activeAreas,areaObj)
-
                 if areaObj.music ~= nil then
-                    smwMap.currentMusicArea = areaObj
+                    smwMap.areas.music = areaObj
                 end
 
                 if areaObj.backgroundName ~= "" or areaObj.backgroundColor ~= Color.black then
-                    smwMap.currentBackgroundArea = areaObj
+                    smwMap.areas.background = areaObj
                 end
 
                 if areaObj.restrictCamera then
-                    smwMap.currentCameraArea = areaObj
+                    smwMap.areas.camera = areaObj
+                end
+
+                if areaObj.name1 ~= "" or areaObj.name2 ~= "" then
+                    smwMap.areas.name = areaObj
+                end
+
+                if areaObj.areaEffect ~= 0 then
+                    smwMap.areas.effect = areaObj
                 end
             end
         end
 
-        if smwMap.currentCameraArea ~= nil then
-            local areaName =  smwMap.currentCameraArea.name1 .. smwMap.currentCameraArea.name2
+        if smwMap.areas.name ~= nil then
+            local areaName =  smwMap.areas.name.name1 .. smwMap.areas.name.name2
             if gameData.areaName ~= areaName then
                 gameData.areaName = areaName
-                if smwMap.currentCameraArea.enableWorldCard then
+                if smwMap.areas.name.enableWorldCard then
                     table.insert(smwMap.activeEvents, {
                         type = EVENT_TYPE.SHOW_WORLD_CARD
                     })
@@ -1792,17 +1805,9 @@ do
                 v.state = PLAYER_STATE.NORMAL
                 v.timer = 0
                 v.warpCooldown = 0
-                if v.levelObj ~= nil and (v.x ~= v.levelObj.x or v.y ~= v.levelObj.y) then
-                    v.levelObj = nil
-                    if v.isMainPlayer then
-                        SFX.play(26)
-                    end
-                else
-                    -- we haven't actually moved, so restore previous lastMovement
-                    v.lastMovement = saveData.lastMovement
-                    if v.isMainPlayer then
-                        SFX.play(3)
-                    end
+                v.levelObj = nil
+                if v.isMainPlayer then
+                    SFX.play(26)
                 end
             end
         end
@@ -2104,7 +2109,7 @@ do
         -- attempt to look around
         if v.isMainPlayer and player.keys.altJump == KEYS_PRESSED and #smwMap.activeEvents == 0 and smwMap.transitionDrawFunction == nil and not cantEnterLookAroundStates[v.state] then
             -- Is the area big enough?
-            local areaObj = smwMap.currentCameraArea
+            local areaObj = smwMap.areas.camera
 
             if areaObj ~= nil and (areaObj.collider.width > smwMap.camera.width+16 or areaObj.collider.height > smwMap.camera.height+16) or smwMap.freeCamera then
                 -- Enter the state
@@ -2118,7 +2123,7 @@ do
 
     -- Can move the camera around
     lookAroundStateFunctions[LOOK_AROUND_STATE.ACTIVE] = (function(v)
-        local areaObj = smwMap.currentCameraArea
+        local areaObj = smwMap.areas.camera
 
         if player.keys.altJump == KEYS_PRESSED or (areaObj == nil and not smwMap.freeCamera) then -- return to normal behaviour
             v.lookAroundState = LOOK_AROUND_STATE.RETURN
@@ -2397,6 +2402,13 @@ do
             return false
         end
 
+        -- check for objects right next to the encounter
+        local dir = dirToVec(chosenPath)
+        local obj = findFirstObj(v.x + dir.x * 32, v.y + dir.y * 32, v.width, v.height, function (o, c) return c.isBlocking end)
+        if obj ~= nil then
+            return false
+        end
+
         -- Walk down one
         local chosenPath = RNG.irandomEntry(validPaths)
         v.walkingDirection = ({ down = vector( 0, 1), up    = vector(0, -1),
@@ -2444,18 +2456,11 @@ do
                 if obj ~= nil and not obj.isOpen then
                     v.x = obj.x + ({ left = 32, right = -32, up =   0, down =  0 })[v.lastMovement]
                     v.y = obj.y + ({ left =  0, right =   0, up = 32, down = -32 })[v.lastMovement]
-                    -- TODO: check if we should just check for blocking objects when starting to walk
-                    if v.data.levelObj ~= nil and v.x == v.data.levelObj.x and v.y == v.data.levelObj.y then
-                        -- couldn't move due to blocking object: reset encounter state
-                        v.data.state = smwMap.ENCOUNTER_STATE.NORMAL
-                        v.data.timer = 0
-                    else
-                        -- make encounter go the opposite direction
-                        v.data.levelObj = nil
-                        v.walkingDirection = -v.walkingDirection
-                        v.lastMovement = ({ left = "right", right = "left", up = "down", down = "up", })[v.lastMovement]
-                        data.direction = v.walkingDirection.x == 0 and DIR_LEFT or v.walkingDirection.x
-                    end
+                    -- make encounter go the opposite direction
+                    v.data.levelObj = nil
+                    v.walkingDirection = -v.walkingDirection
+                    v.lastMovement = ({ left = "right", right = "left", up = "down", down = "up", })[v.lastMovement]
+                    data.direction = v.walkingDirection.x == 0 and DIR_LEFT or v.walkingDirection.x
                 end
             end
         elseif data.state == smwMap.ENCOUNTER_STATE.SLEEPING then
@@ -2771,7 +2776,10 @@ do
         ANY = 5,
     }
 
-    local function isInsideArea(obj, area)
+    function smwMap.isInsideArea(obj, area)
+        if area == nil then
+            return true
+        end
         return area.collider:collide(Colliders.Box(
             obj.x - obj.width/2, obj.y - obj.height/2, obj.width, obj.height
         ))
@@ -2790,10 +2798,6 @@ do
     -- `settings.visitedOnly`, if `true` restricts the candidates to only the ones
     -- the player has stopped on or beaten.
     function smwMap.getRandomLevelInArea(area, settings)
-        if area == nil then
-            area = smwMap.currentCameraArea
-        end
-
         local preds = {
             function (o, c) return c.isStopPoint and not c.isWaterTile end,
             function (o, c) return c.isStopPoint and c.isWaterTile end,
@@ -2806,7 +2810,7 @@ do
         local pred = preds[settings.types ~= nil and settings.types or 1]
         for _, o in ipairs(smwMap.objects) do
             local config = smwMap.getObjectConfig(o.id)
-            if config.isLevel and isInsideArea(o, area) and pred(o, config) then
+            if config.isLevel and smwMap.isInsideArea(o, area) and pred(o, config) then
                 table.insert(candidates, o)
             end
         end
@@ -3504,7 +3508,7 @@ do
             pos = vector(smwMap.hudSettings.box.x, smwMap.hudSettings.box.y) + vector(8, 12),
             font = smwMap.hudSettings.fontYellow,
             getText = function ()
-                return smwMap.currentCameraArea ~= nil and smwMap.currentCameraArea.name1hud or ""
+                return smwMap.areas.name ~= nil and smwMap.areas.name.name1hud or ""
             end
         },
         pmeter = {
@@ -3599,7 +3603,7 @@ do
             )
             Graphics.drawImageWP(smwMap.hudSettings.worldCard.cardImage, cardPos.x, cardPos.y, smwMap.hudSettings.priority)
 
-            for _, obj in ipairs({ {smwMap.currentCameraArea.name1, 24}, {smwMap.currentCameraArea.name2, 24+16} }) do
+            for _, obj in ipairs({ {smwMap.areas.name.name1, 24}, {smwMap.areas.name.name2, 24+16} }) do
                 -- TODO: not a great way to calculate text width
                 local areaNameX = (smwMap.hudSettings.worldCard.cardImage.width - #obj[1] * 16) / 2
                 drawHudText(obj[1], cardPos + vector(areaNameX, obj[2]), smwMap.hudSettings.fontWhite)
@@ -3658,8 +3662,8 @@ do
     }
 
     function smwMap.drawAreaEffect()
-        if smwMap.currentCameraArea ~= nil then
-            smwMap.areaEffects[smwMap.currentCameraArea.areaEffect+1]()
+        if smwMap.areas.effect ~= nil then
+            smwMap.areaEffects[smwMap.areas.effect.areaEffect+1]()
         end
     end
 
@@ -3734,7 +3738,7 @@ do
         if name == "" then
             -- Draw flat colour
             Graphics.drawBox{
-                target = smwMap.mainBuffer,color = smwMap.currentBackgroundArea.backgroundColor,priority = -101,
+                target = smwMap.mainBuffer,color = smwMap.areas.background.backgroundColor,priority = -101,
                 x = 0,y = 0,width = smwMap.camera.width,height = smwMap.camera.height
             }
 
@@ -3782,8 +3786,8 @@ do
 
 
         -- Draw background
-        if smwMap.currentBackgroundArea ~= nil then
-            drawBackground(smwMap.currentBackgroundArea)
+        if smwMap.areas.background ~= nil then
+            drawBackground(smwMap.areas.background)
         end
 
 
@@ -3914,8 +3918,8 @@ do
 
     function smwMap.updateMusic()
         local newMusic = 0
-        if smwMap.currentMusicArea ~= nil and not smwMap.forceMutedMusic then
-            newMusic = smwMap.currentMusicArea.music
+        if smwMap.areas.music ~= nil and not smwMap.forceMutedMusic then
+            newMusic = smwMap.areas.music.music
         end
 
         if smwMap.currentlyPlayingMusic ~= newMusic then

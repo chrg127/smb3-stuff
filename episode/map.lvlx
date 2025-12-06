@@ -1594,7 +1594,9 @@ ID:828;X:-197088;Y:-199232;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"7-P\"\,
 ID:828;X:-196864;Y:-199296;D:-1;XTRA:"{\n    \"destinationWarpName\"\: \"7-O\"\,\n    \"levelTitle\"\: \"Pipe\"\,\n    \"unlock_down\"\: true\,\n    \"unlock_left\"\: true\,\n    \"unlock_right\"\: false\,\n    \"unlock_up\"\: false\,\n    \"warpName\"\: \"7-P\"\n}\n";
 ID:753;X:-197696;Y:-199360;D:-1;XTRA:"{\n    \"height\"\: 408\,\n    \"music\"\: 16\,\n    \"name1\"\: \"World 7\"\,\n    \"name1hud\"\: \"ω7\"\,\n    \"name2\"\: \"Pipe Maze\"\,\n    \"restrictCamera\"\: true\,\n    \"whistleWarpName\"\: \"9-C\"\,\n    \"width\"\: 1052\n}\n";
 ID:754;X:-196960;Y:-199168;D:-1;XTRA:"{\n    \"levelFilename\"\: \"7-fortress2.lvlx\"\n}\n";
-ID:751;X:-197568;Y:-200320;D:-1;
+ID:751;X:-197632;Y:-199296;D:-1;
+ID:765;X:-197280;Y:-199232;D:-1;XTRA:"{\n    \"canWalkOn\"\: 3\,\n    \"levelFilename\"\: \"7-hammer1.lvlx\"\,\n    \"movesWhen\"\: 2\n}\n";
+ID:765;X:-196800;Y:-199104;D:-1;XTRA:"{\n    \"canWalkOn\"\: 3\,\n    \"levelFilename\"\: \"7-hammer1.lvlx\"\,\n    \"movesWhen\"\: 2\n}\n";
 NPC_END
 LAYERS
 LR:"Default";

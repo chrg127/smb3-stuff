@@ -11,8 +11,7 @@ table.insert(smwMap.postLevelBeatenFunctions, function (level, winType)
         type = smwMap.EVENT_TYPE.CUSTOM,
         run = function (event)
             for _, o in ipairs(smwMap.objects) do
-                -- also check if it is in the current camera area
-                if o.id == npcID and o.settings.changesStateWhen == 0 then
+                if o.id == npcID and o.settings.changesStateWhen == 0 and smwMap.isInsideArea(o, smwMap.areas.camera) then
                     o.isOpen = not o.isOpen
                 end
             end
